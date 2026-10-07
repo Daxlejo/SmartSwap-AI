@@ -11,7 +11,11 @@ export interface BadgeProps {
     | 'secondary-subtle'
     | 'tertiary-subtle'
     | 'surface'
-    | 'outline';
+    | 'outline'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'info';
   icon?: string;
   iconFilled?: boolean;
   className?: string;
@@ -25,6 +29,10 @@ const variantClasses: Record<NonNullable<BadgeProps['variant']>, string> = {
   'tertiary-subtle': 'bg-tertiary-fixed text-on-tertiary-fixed',
   surface: 'bg-surface-container-high text-on-surface-variant',
   outline: 'border border-outline-variant text-on-surface bg-transparent',
+  success: 'bg-green-100 text-green-800',
+  warning: 'bg-yellow-100 text-yellow-800',
+  error: 'bg-red-100 text-red-800',
+  info: 'bg-blue-100 text-blue-800',
 };
 
 export const Badge = ({
