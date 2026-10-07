@@ -10,6 +10,10 @@ import { PublishScreen } from '@/screens/PublishScreen';
 import { ExchangesScreen } from '@/screens/ExchangesScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { NotificationsScreen } from '@/screens/NotificationsScreen';
+import { RouteResultsScreen } from '@/screens/RouteResultsScreen';
+import { RouteDetailScreen } from '@/screens/RouteDetailScreen';
+import { ProposalConfirmScreen } from '@/screens/ProposalConfirmScreen';
+import { ProposalSentScreen } from '@/screens/ProposalSentScreen';
 
 export const router = createBrowserRouter([
   {
@@ -55,6 +59,22 @@ export const router = createBrowserRouter([
       {
         path: '/swap/searching',
         element: <SearchingScreen />,
+      },
+      {
+        path: '/swap/results',
+        element: <RouteResultsScreen />,
+      },
+      {
+        path: '/swap/route/:routeId',
+        element: <RouteDetailScreen />,
+      },
+      {
+        path: '/swap/proposal/confirm',
+        element: <ProposalConfirmScreen />,
+      },
+      {
+        path: '/swap/proposal/sent',
+        element: <ProposalSentScreen />,
       },
       {
         path: '/notifications',
