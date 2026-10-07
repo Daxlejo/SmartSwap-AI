@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <linearGradient id="grad-sofia" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#006A61" />
+      <stop offset="100%" stop-color="#6BD8CB" />
+    </linearGradient>
+  </defs>
+  <rect width="80" height="80" rx="40" fill="url(#grad-sofia)" />
+  <circle cx="40" cy="32" r="16" fill="#F4FFFC" />
+  <path d="M16 68C16 54 26 48 40 48C54 48 64 54 64 68" fill="#F4FFFC" />
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg-cam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#DAE2FD" />
+      <stop offset="100%" stop-color="#D2D9F4" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg-cam)" />
+  <!-- Camera Body -->
+  <rect x="40" y="70" width="120" height="76" rx="12" fill="#283044" />
+  <rect x="40" y="70" width="120" height="24" rx="6" fill="#BCC9C6" />
+  <rect x="55" y="58" width="28" height="12" rx="4" fill="#BCC9C6" />
+  <circle cx="140" cy="64" r="6" fill="#FD761A" />
+  <!-- Lens -->
+  <circle cx="100" cy="112" r="30" fill="#131B2E" stroke="#BCC9C6" stroke-width="4" />
+  <circle cx="100" cy="112" r="20" fill="#00685F" />
+  <circle cx="94" cy="106" r="6" fill="#89F5E7" opacity="0.6" />
+</svg>

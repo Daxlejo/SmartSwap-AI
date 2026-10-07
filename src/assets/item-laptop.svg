@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg-laptop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EAEDFF" />
+      <stop offset="100%" stop-color="#E2E7FF" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg-laptop)" />
+  <!-- Laptop Screen -->
+  <rect x="45" y="60" width="110" height="70" rx="6" fill="#131B2E" />
+  <rect x="52" y="66" width="96" height="58" rx="3" fill="#00685F" />
+  <circle cx="100" cy="95" r="14" fill="#89F5E7" opacity="0.8" />
+  <!-- Laptop Base -->
+  <path d="M35 136H165L155 144H45L35 136Z" fill="#BCC9C6" />
+  <rect x="88" y="137" width="24" height="3" rx="1.5" fill="#6D7A77" />
+</svg>

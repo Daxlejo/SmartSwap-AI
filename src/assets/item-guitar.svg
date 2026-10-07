@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg-guitar" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFDBCA" />
+      <stop offset="100%" stop-color="#FFB690" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg-guitar)" />
+  <!-- Guitar Neck -->
+  <rect x="96" y="35" width="8" height="60" fill="#783200" />
+  <rect x="94" y="28" width="12" height="12" rx="2" fill="#5C2400" />
+  <!-- Body -->
+  <circle cx="100" cy="100" r="24" fill="#9D4300" />
+  <circle cx="100" cy="132" r="32" fill="#9D4300" />
+  <circle cx="100" cy="108" r="10" fill="#341100" />
+  <!-- Bridge -->
+  <rect x="92" y="136" width="16" height="5" rx="1" fill="#341100" />
+</svg>

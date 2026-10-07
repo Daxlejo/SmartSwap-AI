@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg-swatch" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F2F3FF" />
+      <stop offset="100%" stop-color="#DAE2FD" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg-swatch)" />
+  <!-- Strap -->
+  <rect x="84" y="30" width="32" height="140" rx="6" fill="#3D4947" />
+  <!-- Watch Body -->
+  <rect x="70" y="70" width="60" height="60" rx="16" fill="#131B2E" />
+  <rect x="76" y="76" width="48" height="48" rx="12" fill="#00685F" />
+  <!-- UI on screen -->
+  <circle cx="100" cy="100" r="14" stroke="#89F5E7" stroke-width="3" fill="none" />
+  <path d="M100 92V100H106" stroke="#89F5E7" stroke-width="2.5" stroke-linecap="round" />
+</svg>

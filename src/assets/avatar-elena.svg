@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <linearGradient id="grad-elena" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#783200" />
+      <stop offset="100%" stop-color="#FD761A" />
+    </linearGradient>
+  </defs>
+  <rect width="80" height="80" rx="40" fill="url(#grad-elena)" />
+  <circle cx="40" cy="32" r="16" fill="#FFF8F0" />
+  <path d="M16 68C16 54 26 48 40 48C54 48 64 54 64 68" fill="#FFF8F0" />
+</svg>

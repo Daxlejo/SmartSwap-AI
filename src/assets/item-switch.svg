@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg-sw" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EAEDFF" />
+      <stop offset="100%" stop-color="#DAE2FD" />
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="24" fill="url(#bg-sw)" />
+  <!-- Screen -->
+  <rect x="62" y="70" width="76" height="60" fill="#131B2E" />
+  <rect x="66" y="74" width="68" height="52" fill="#006194" />
+  <!-- Left Joycon (Blue) -->
+  <path d="M40 85C40 76.7 46.7 70 55 70H62V130H55C46.7 130 40 123.3 40 115V85Z" fill="#007BB9" />
+  <circle cx="51" cy="85" r="5" fill="#131B2E" />
+  <!-- Right Joycon (Red/Orange) -->
+  <path d="M138 70H145C153.3 70 160 76.7 160 85V115C160 123.3 153.3 130 145 130H138V70Z" fill="#FD761A" />
+  <circle cx="149" cy="115" r="5" fill="#131B2E" />
+</svg>
