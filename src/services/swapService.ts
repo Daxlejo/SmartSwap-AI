@@ -41,3 +41,10 @@ export const getRecommendedRoutes = async (): Promise<SwapRoute[]> => {
 export const getProposals = async (): Promise<Proposal[]> => {
   return simulateLatency([...mockProposals]);
 };
+
+import { findRoutes as findRoutesLogic } from '@/lib/routeFinder';
+
+export const findRoutes = async (haveItemId: string, wantItemId: string): Promise<SwapRoute[]> => {
+  const routes = findRoutesLogic(mockItems, mockUsers, haveItemId, wantItemId);
+  return simulateLatency(routes, 1500, 2500); // 1.5 - 2.5s delay
+};
