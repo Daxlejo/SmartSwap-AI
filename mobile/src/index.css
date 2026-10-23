@@ -1,0 +1,146 @@
+@import '@fontsource/plus-jakarta-sans/index.css';
+@import '@fontsource/inter/index.css';
+@import 'material-symbols/outlined.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-background: #faf8ff;
+    --color-on-background: #131b2e;
+    --color-surface: #faf8ff;
+    --color-surface-dim: #d2d9f4;
+    --color-surface-bright: #faf8ff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f2f3ff;
+    --color-surface-container: #eaedff;
+    --color-surface-container-high: #e2e7ff;
+    --color-surface-container-highest: #dae2fd;
+    --color-surface-variant: #dae2fd;
+    --color-on-surface: #131b2e;
+    --color-on-surface-variant: #3d4947;
+    --color-inverse-surface: #283044;
+    --color-inverse-on-surface: #eef0ff;
+    --color-outline: #6d7a77;
+    --color-outline-variant: #bcc9c6;
+    --color-surface-tint: #006a61;
+    --color-primary: #00685f;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #008378;
+    --color-on-primary-container: #f4fffc;
+    --color-inverse-primary: #6bd8cb;
+    --color-primary-fixed: #89f5e7;
+    --color-primary-fixed-dim: #6bd8cb;
+    --color-on-primary-fixed: #00201d;
+    --color-on-primary-fixed-variant: #005049;
+    --color-secondary: #9d4300;
+    --color-on-secondary: #ffffff;
+    --color-secondary-container: #fd761a;
+    --color-on-secondary-container: #5c2400;
+    --color-secondary-fixed: #ffdbca;
+    --color-secondary-fixed-dim: #ffb690;
+    --color-on-secondary-fixed: #341100;
+    --color-on-secondary-fixed-variant: #783200;
+    --color-tertiary: #006194;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #007bb9;
+    --color-on-tertiary-container: #fdfcff;
+    --color-tertiary-fixed: #cce5ff;
+    --color-tertiary-fixed-dim: #93ccff;
+    --color-on-tertiary-fixed: #001d31;
+    --color-on-tertiary-fixed-variant: #004b73;
+    --color-error: #ba1a1a;
+    --color-on-error: #ffffff;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #93000a;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-background: #0f1514;
+    --color-on-background: #e0eae8;
+    --color-surface: #1a2322;
+    --color-surface-dim: #0f1514;
+    --color-surface-bright: #374847;
+    --color-surface-container-lowest: #141f1e;
+    --color-surface-container-low: #1e2b2a;
+    --color-surface-container: #233130;
+    --color-surface-container-high: #2d3c3b;
+    --color-surface-container-highest: #374847;
+    --color-surface-variant: #374847;
+    --color-on-surface: #e0eae8;
+    --color-on-surface-variant: #bec9c7;
+    --color-inverse-surface: #e0eae8;
+    --color-inverse-on-surface: #2d3c3b;
+    --color-outline: #889390;
+    --color-outline-variant: #3e4c4a;
+    --color-surface-tint: #6bd8cb;
+    --color-primary: #6bd8cb;
+    --color-on-primary: #003731;
+    --color-primary-container: #005049;
+    --color-on-primary-container: #89f5e7;
+    --color-inverse-primary: #00685f;
+    --color-primary-fixed: #89f5e7;
+    --color-primary-fixed-dim: #6bd8cb;
+    --color-on-primary-fixed: #00201d;
+    --color-on-primary-fixed-variant: #005049;
+    --color-secondary: #ffb690;
+    --color-on-secondary: #542100;
+    --color-secondary-container: #c45a0e;
+    --color-on-secondary-container: #ffdbca;
+    --color-secondary-fixed: #ffdbca;
+    --color-secondary-fixed-dim: #ffb690;
+    --color-on-secondary-fixed: #341100;
+    --color-on-secondary-fixed-variant: #783200;
+    --color-tertiary: #93ccff;
+    --color-on-tertiary: #003353;
+    --color-tertiary-container: #004b73;
+    --color-on-tertiary-container: #cce5ff;
+    --color-tertiary-fixed: #cce5ff;
+    --color-tertiary-fixed-dim: #93ccff;
+    --color-on-tertiary-fixed: #001d31;
+    --color-on-tertiary-fixed-variant: #004b73;
+    --color-error: #ffb4ab;
+    --color-on-error: #690005;
+    --color-error-container: #93000a;
+    --color-on-error-container: #ffdad6;
+  }
+
+  html,
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  main > :first-child {
+    margin-top: 0;
+  }
+
+  main > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.icon-filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
