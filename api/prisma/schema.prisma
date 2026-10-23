@@ -1,0 +1,168 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ItemStatus {
+  AVAILABLE
+  PENDING_SWAP
+  SWAPPED
+  ARCHIVED
+}
+
+enum RouteStatus {
+  SUGGESTED
+  ACTIVE
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum StepAcceptance {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model User {
+  id              String          @id @default(uuid())
+  email           String          @unique
+  passwordHash    String
+  name            String
+  initials        String
+  avatarUrl       String?
+  location        String?
+  level           Int             @default(1)
+  rating          Float           @default(5.0)
+  tradesCompleted Int             @default(0)
+  co2SavedKg      Float           @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  items           Item[]
+  wants           Want[]
+  initiatedRoutes SwapRoute[]     @relation("RouteInitiator")
+  steps           SwapRouteStep[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Item {
+  id             String          @id @default(uuid())
+  ownerId        String
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  category       String
+  condition      ItemCondition   @default(GOOD)
+  description    String?
+  estimatedValue Float?
+  location       String?
+  status         ItemStatus      @default(AVAILABLE)
+  images         String[]
+  aiTags         String[]
+  embedding      Float[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  wants          Want[]
+  stepsGives     SwapRouteStep[] @relation("StepGivesItem")
+  stepsReceives  SwapRouteStep[] @relation("StepReceivesItem")
+
+  @@index([ownerId])
+  @@map("items")
+}
+
+model Want {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String?
+  item       Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  queryText  String
+  category   String?
+  minValue   Float?
+  maxValue   Float?
+  embedding  Float[]
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemId])
+  @@map("wants")
+}
+
+model SwapRoute {
+  id            String          @id @default(uuid())
+  code          String          @unique
+  initiatorId   String
+  initiator     User            @relation("RouteInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  objectiveText String
+  matchScore    Float
+  status        RouteStatus     @default(SUGGESTED)
+  aiExplanation String?
+  co2SavedKg    Float           @default(0)
+  expiresAt     DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  steps         SwapRouteStep[]
+  notifications Notification[]
+
+  @@index([initiatorId])
+  @@map("swap_routes")
+}
+
+model SwapRouteStep {
+  id                String         @id @default(uuid())
+  routeId           String
+  route             SwapRoute      @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stepOrder         Int
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  givesItemId       String
+  givesItem         Item           @relation("StepGivesItem", fields: [givesItemId], references: [id], onDelete: Restrict)
+  receivesItemId    String
+  receivesItem      Item           @relation("StepReceivesItem", fields: [receivesItemId], references: [id], onDelete: Restrict)
+  acceptance        StepAcceptance @default(PENDING)
+  respondedAt       DateTime?
+  deliveryConfirmed Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([routeId, stepOrder])
+  @@index([userId])
+  @@index([givesItemId])
+  @@index([receivesItemId])
+  @@map("swap_route_steps")
+}
+
+model Notification {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  badge     String
+  title     String
+  body      String
+  read      Boolean    @default(false)
+  routeId   String?
+  route     SwapRoute? @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  createdAt DateTime   @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
