@@ -1,17 +1,28 @@
 # Dependencies
-node_modules
+node_modules/
+mobile/node_modules/
+api/node_modules/
 .pnp
 .pnp.js
 
-# Production build
-dist
-dist-ssr
+# Build outputs
+dist/
+dist-ssr/
+mobile/dist/
+mobile/dist-ssr/
+api/dist/
 *.local
 
 # Environment variables
 .env
 .env.*
 !.env.example
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+api/.env
+api/.env.*
+!api/.env.example
 
 # Logs
 *.log
@@ -33,4 +44,27 @@ Thumbs.db
 *.sln
 *.sw?
 
+# Visual reference
 design/stitch-reference/
+
+# Capacitor & Android build outputs
+mobile/android/.gradle/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/app/release/
+mobile/android/*.iml
+mobile/android/.idea/
+android/.gradle/
+android/captures/
+android/local.properties
+android/build/
+android/app/build/
+android/app/release/
+android/*.iml
+android/.idea/
+*.apk
+*.aab
+*.jks
+*.keystore

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SmartSwap</string>
+    <string name="title_activity_main">SmartSwap</string>
+    <string name="package_name">com.smartswap.app</string>
+    <string name="custom_url_scheme">com.smartswap.app</string>
+</resources>

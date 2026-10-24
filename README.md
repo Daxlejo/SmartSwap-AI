@@ -1,80 +1,104 @@
-# SmartSwap Mobile
+# SmartSwap Monorepo
 
-SmartSwap is a mobile-first circular bartering platform prototype built with React and TypeScript. Instead of traditional 1-to-1 exchanges, SmartSwap discovers multi-user circular trade loops (e.g., Bicycle -> Ball -> Headphones -> Laptop -> Camera) so that everyone gets what they desire without spending money.
+SmartSwap is a circular bartering platform designed to discover multi-user exchange loops (e.g., *Bicycle → Ball → Headphones → Camera → Bicycle*), eliminating monetary transactions in favor of sustainable circular trade.
 
-## Tech Stack
+This repository is structured as an npm monorepo with workspace orchestration across the mobile client and backend API.
 
-- **Framework**: React 18 + Vite
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS v3.4 (with customized design system tokens)
-- **Routing**: React Router v6
-- **Typography**: `@fontsource/plus-jakarta-sans`, `@fontsource/inter`
-- **Icons**: `material-symbols`
-- **Utilities**: `clsx`
-- **Quality & Tooling**: ESLint + Prettier
-
-## Folder Structure
+## Monorepo Architecture
 
 ```text
-design/
-  stitch-reference/       # Visual reference from Stitch (read-only)
-src/
-  assets/                 # Local SVGs for logos, avatars, and item thumbnails
-  components/
-    ui/                   # Primitive reusable UI atoms (Button, Input, Badge, Avatar, Chip, Icon)
-    BottomNav.tsx         # Mobile bottom navigation bar
-    ObjectCard.tsx        # Item feed & catalog card
-    TopBar.tsx            # Header bar with navigation and notifications
-  data/
-    mockData.ts           # Strict typed mock users, items, and circular chains
-  layouts/
-    AppLayout.tsx         # Main frame (TopBar + BottomNav + 390px desktop frame)
-    AuthLayout.tsx        # Authentication layout (clean 390px container)
-  screens/
-    ConfigureSwapScreen.tsx # Multi-step "Lo que ofreces" / "Lo que deseas recibir"
-    ExchangesScreen.tsx   # Exchanges placeholder
-    ExploreScreen.tsx     # Explore placeholder
-    HomeScreen.tsx        # Discovery feed with circular route visualizer
-    LoginScreen.tsx       # Authentication screen with demo mode
-    NotificationsScreen.tsx # Notifications placeholder
-    ProfileScreen.tsx     # User profile placeholder
-    PublishScreen.tsx     # Publish item placeholder
-    SearchingScreen.tsx   # Searching routes simulation placeholder
-  services/
-    swapService.ts        # Async data access layer simulating network latency
-  types/
-    index.ts              # Domain models (User, Item, SwapRoute, Proposal)
-  App.tsx                 # Root application component
-  main.tsx                # React 18 bootstrap
-  router.tsx              # Application route definitions
-  index.css               # Global styles, fonts, safe area utilities
+SmartSwap/
+├── docs/
+│   └── contract/
+│       └── openapi.yaml       # OpenAPI 3.1 specification for SmartSwap API
+├── mobile/                    # React 18 + Vite + Capacitor Android Application
+│   ├── android/               # Native Android project & Gradle wrapper
+│   ├── release/               # Compiled Android APKs
+│   ├── scripts/               # Asset generation utilities
+│   ├── src/                   # React source code (components, screens, services)
+│   ├── capacitor.config.ts    # Capacitor native configuration
+│   ├── package.json           # Mobile package workspace ("name": "mobile")
+│   └── vite.config.ts         # Vite bundler configuration
+├── package.json               # Monorepo root configuration & npm workspaces
+├── .gitignore                 # Monorepo-wide git exclusion rules
+└── README.md
 ```
+
+> **Note:** The `api/` workspace is owned and maintained by the backend engineering team (Agent 1B) and conforms to `docs/contract/openapi.yaml`.
+
+---
 
 ## Getting Started
 
-### 1. Install dependencies
+### Prerequisites
+- Node.js (v20+ recommended)
+- npm (v10+ recommended)
+- Android SDK & JDK 21 (for native Android builds)
+
+### Monorepo Root Scripts
+
+From the repository root (`SmartSwap/`):
+
+| Command | Description |
+|---|---|
+| `npm run dev:mobile` | Launch mobile Vite development server |
+| `npm run build:mobile` | Typecheck and build mobile production bundle to `mobile/dist` |
+| `npm run test:mobile` | Run mobile test suite (Vitest) |
+| `npm run dev:api` | Launch NestJS API development server |
+| `npm run build:api` | Compile NestJS backend API |
+| `npm run test:api` | Run NestJS unit and integration tests |
+| `npm run typecheck` | Run type checking across all workspaces |
+
+---
+
+## Mobile Application (`mobile/`)
+
+The mobile client is built with:
+- **Framework:** React 18 + Vite
+- **Mobile Container:** Capacitor v8 (Android)
+- **Styling:** Tailwind CSS v3.4 (Custom Design Tokens)
+- **State & Routing:** React Router v6
+- **Typography:** Inter, Plus Jakarta Sans
+
+### Running Mobile Independently
 
 ```bash
+cd mobile
 npm install
-```
-
-### 2. Start development server
-
-```bash
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`. On desktop screens, it automatically renders inside a centered 390px mobile phone frame.
-
-### 3. Verification & Linting
+### Mobile Verification & Typechecking
 
 ```bash
-# Type check
-npx tsc --noEmit
-
-# Lint
-npm run lint
-
-# Production build
+cd mobile
+npm run typecheck
 npm run build
 ```
+
+### Android Native Build & APK
+
+Refer to `mobile/GUIA_EQUIPO.md` for complete native build, ADB installation, and deployment instructions:
+
+```powershell
+cd mobile
+npm run build
+npx cap sync android
+cd android
+.\gradlew.bat assembleDebug
+cd ..
+```
+
+Compiled APK output: `mobile/release/SmartSwap-debug-v2.4.apk`.
+
+---
+
+## API Contract (`docs/contract/`)
+
+The backend API contract is defined in `docs/contract/openapi.yaml` using the **OpenAPI 3.1.0** standard. It covers:
+- `/health`: Health status & uptime probe
+- `/auth/*`: Registration, login, token refresh, and user profile
+- `/items/*`: Item CRUD and user inventory
+- `/routes/*`: Circular barter graph algorithm discovery (`find`, `recommended`, `{id}`)
+- `/notifications/*`: User notifications and mark-as-read endpoints
+- `/proposals/*`: Direct and circular swap proposal lifecycle
