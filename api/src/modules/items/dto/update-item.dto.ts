@@ -68,6 +68,7 @@ export const updateItemSchema = z
       .min(1, 'Location cannot be empty')
       .max(120, 'Location must be at most 120 characters long')
       .optional(),
+    imageUrl: z.string().trim().min(1).optional(),
     images: z
       .array(z.string().trim().min(1, 'Image entry cannot be empty'))
       .min(1, 'At least 1 image is required')
@@ -78,6 +79,7 @@ export const updateItemSchema = z
       .min(1, 'At least 1 want is required')
       .max(10, 'At most 10 wants are allowed')
       .optional(),
+    aiTags: z.array(z.string().trim().min(1)).optional(),
     status: itemStatusSchema.optional(),
   })
   .strict();
