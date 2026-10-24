@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getItems } from '@/services/swapService';
+import { useApp } from '@/context/AppContext';
 import { mockUsers } from '@/data/mockData';
 import type { Item, User } from '@/types';
 import { ObjectCard } from '@/components/ObjectCard';
@@ -11,6 +11,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
+import { ApiError } from '@/services/http/apiClient';
+import alexAvatar from '@/assets/avatar-alex.svg';
 
 interface CategoryOption {
   id: string;
@@ -54,9 +56,11 @@ const SORT_OPTIONS = [
 
 export const ExploreScreen = () => {
   const navigate = useNavigate();
+  const { items, currentUser, isItemsLoading, refreshItems, deleteItemReal } = useApp();
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
   const [conditionIndex, setConditionIndex] = useState<number>(0);
@@ -67,36 +71,70 @@ export const ExploreScreen = () => {
   const selectedSort = SORT_OPTIONS[sortIndex];
 
   useEffect(() => {
-    let isMounted = true;
+    refreshItems().catch(() => {});
+  }, [refreshItems]);
 
-    const loadCatalog = async () => {
-      try {
-        setIsLoading(true);
-        const fetchedItems = await getItems();
-        if (isMounted) {
-          setItems(fetchedItems);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    setActionError(null);
+    try {
+      await refreshItems();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setActionError(err.message);
       }
-    };
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
-    loadCatalog();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const handleDeleteOwnItem = async (itemId: string) => {
+    if (isDeletingId) return;
+    setIsDeletingId(itemId);
+    setActionError(null);
+    try {
+      await deleteItemReal(itemId);
+      if (selectedItem?.id === itemId) {
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setActionError(err.message);
+      } else {
+        setActionError('No se pudo eliminar el artículo.');
+      }
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
 
   const usersById = useMemo(() => {
     const map = new Map<string, User>();
     for (const user of mockUsers) {
       map.set(user.id, user);
     }
+    if (currentUser) {
+      map.set(currentUser.id, currentUser);
+    }
     return map;
-  }, []);
+  }, [currentUser]);
+
+  const resolveOwner = (item: Item): User | undefined => {
+    if (item.owner) {
+      return {
+        id: item.owner.id,
+        name: item.owner.name,
+        email: item.owner.email || '',
+        avatarUrl: item.owner.avatarUrl || alexAvatar,
+        rating: item.owner.rating,
+        location: item.owner.location,
+        verified: item.owner.verified ?? true,
+        co2SavedKg: item.owner.co2SavedKg ?? 14.2,
+      };
+    }
+    return usersById.get(item.ownerId);
+  };
 
   const filteredItems = useMemo(() => {
     const trimmedQuery = searchQuery.trim().toLowerCase();
@@ -163,7 +201,10 @@ export const ExploreScreen = () => {
     selectedCondition !== 'Todos' ||
     selectedSort !== 'Relevancia';
 
-  const selectedItemOwner = selectedItem ? usersById.get(selectedItem.ownerId) : undefined;
+  const selectedItemOwner = selectedItem ? resolveOwner(selectedItem) : undefined;
+  const isSelectedItemMine =
+    Boolean(selectedItem && currentUser && selectedItem.ownerId === currentUser.id);
+  const showSkeleton = isItemsLoading && items.length === 0;
 
   return (
     <div className="flex flex-col flex-1 w-full pb-6">
@@ -197,20 +238,38 @@ export const ExploreScreen = () => {
 
           <div className="flex items-center justify-between px-1">
             <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
-              {isLoading
+              {showSkeleton
                 ? 'Cargando catálogo...'
                 : `${filteredItems.length} ${filteredItems.length === 1 ? 'artículo encontrado' : 'artículos encontrados'}`}
             </span>
-            {hasActiveFilters && (
+
+            <div className="flex items-center gap-3">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="font-label-sm text-label-sm text-primary font-bold hover:underline flex items-center gap-0.5"
+                >
+                  <Icon name="restart_alt" size="xs" />
+                  <span>Limpiar filtros</span>
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={handleResetFilters}
-                className="font-label-sm text-label-sm text-primary font-bold hover:underline flex items-center gap-0.5"
+                onClick={handleManualRefresh}
+                disabled={isRefreshing || isItemsLoading}
+                aria-label="Actualizar catálogo"
+                className="font-label-sm text-label-sm text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
               >
-                <Icon name="restart_alt" size="xs" />
-                <span>Limpiar filtros</span>
+                <Icon
+                  name="refresh"
+                  size="xs"
+                  className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined}
+                />
+                <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
               </button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -281,9 +340,28 @@ export const ExploreScreen = () => {
         </span>
       </div>
 
+      {actionError && (
+        <div className="px-margin pb-2">
+          <div
+            role="alert"
+            className="p-3 rounded-xl bg-error-container/25 border border-error/40 text-error font-body-sm text-body-sm flex items-center justify-between"
+          >
+            <span>{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              aria-label="Cerrar error"
+              className="p-1"
+            >
+              <Icon name="close" size="xs" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Section 4: Results */}
       <div className="flex-1 flex flex-col px-margin pt-2">
-        {isLoading ? (
+        {showSkeleton ? (
           <div className="flex flex-col space-y-3" aria-label="Cargando artículos">
             {[1, 2, 3, 4].map((skeletonId) => (
               <div
@@ -324,7 +402,7 @@ export const ExploreScreen = () => {
         ) : (
           <div className="flex flex-col space-y-3">
             {filteredItems.map((item) => {
-              const owner = usersById.get(item.ownerId);
+              const owner = resolveOwner(item);
 
               return (
                 <div
@@ -463,21 +541,35 @@ export const ExploreScreen = () => {
               </span>
             </div>
 
-            {/* Primary CTA */}
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              rightIcon="send"
-              onClick={() => {
-                navigate('/swap/configure', {
-                  state: { wantItemId: selectedItem.id, wantItemName: selectedItem.name },
-                });
-                setSelectedItem(null);
-              }}
-            >
-              Proponer canje
-            </Button>
+            {/* Primary CTA or Own Item Delete */}
+            {isSelectedItemMine ? (
+              <Button
+                variant="outline"
+                size="lg"
+                fullWidth
+                leftIcon="delete"
+                isLoading={isDeletingId === selectedItem.id}
+                onClick={() => handleDeleteOwnItem(selectedItem.id)}
+                className="text-error border-error/40 hover:bg-error-container/20"
+              >
+                Eliminar mi publicación
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                rightIcon="send"
+                onClick={() => {
+                  navigate('/swap/configure', {
+                    state: { wantItemId: selectedItem.id, wantItemName: selectedItem.name },
+                  });
+                  setSelectedItem(null);
+                }}
+              >
+                Proponer canje
+              </Button>
+            )}
           </div>
         )}
       </BottomSheet>

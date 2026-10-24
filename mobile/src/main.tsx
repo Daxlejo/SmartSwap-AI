@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './i18n';
 import { App } from './App';
 import { ThemeProvider } from './context/ThemeContext';
+import { AppProvider } from './context/AppContext';
 import './index.css';
 
 // Apply initial theme before React mounts to avoid flash of wrong theme (FOUC)
@@ -25,7 +26,9 @@ if (rootElement) {
   root.render(
     <React.StrictMode>
       <ThemeProvider>
-        <App />
+        <AppProvider>
+          <App />
+        </AppProvider>
       </ThemeProvider>
     </React.StrictMode>,
   );

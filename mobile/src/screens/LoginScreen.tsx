@@ -5,32 +5,103 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
+import { useApp } from '@/context/AppContext';
+import { ApiError } from '@/services/http/apiClient';
 
-export const LoginScreen = () => {
+type AuthMode = 'login' | 'register';
+
+export interface LoginScreenProps {
+  initialMode?: AuthMode;
+}
+
+export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' }) => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('alex.morales@correo.com');
-  const [password, setPassword] = useState('CircularEconomy2025!');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const { loginWithEmail, registerWithEmail } = useApp();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/home');
-    }, 600);
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+
+  // Form fields
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [location, setLocation] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Async & Error states
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string[]>([]);
+
+  const handleModeSwitch = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setErrorMessage(null);
+    setErrorDetails([]);
   };
 
-  const handleDemoLogin = () => {
-    setEmail('alex.morales@smartswap.io');
-    setPassword('CircularSwap2025Demo!');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setErrorMessage(null);
+    setErrorDetails([]);
+
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    const trimmedLocation = location.trim();
+
+    if (!trimmedEmail || !password) {
+      setErrorMessage('Por favor ingresa tu correo electrónico y contraseña.');
+      return;
+    }
+
+    if (mode === 'register') {
+      if (trimmedName.length < 2) {
+        setErrorMessage('Por favor ingresa tu nombre completo (mínimo 2 caracteres).');
+        return;
+      }
+      if (password.length < 8) {
+        setErrorMessage('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      if (mode === 'login') {
+        await loginWithEmail(trimmedEmail, password);
+      } else {
+        await registerWithEmail({
+          name: trimmedName,
+          email: trimmedEmail,
+          password,
+          location: trimmedLocation || 'Madrid, España',
+        });
+      }
+      navigate('/home', { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.statusCode === 401) {
+          setErrorMessage('Credenciales inválidas. Verifica tu correo y contraseña.');
+        } else if (err.statusCode === 409) {
+          setErrorMessage('Este correo electrónico ya está registrado.');
+        } else if (err.statusCode === 0) {
+          setErrorMessage(
+            'No se pudo conectar con el servidor. Verifica que la API esté activa.',
+          );
+        } else {
+          setErrorMessage(err.message);
+        }
+        if (err.details && err.details.length > 1) {
+          setErrorDetails(err.details);
+        }
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Ocurrió un error inesperado al autenticar tu cuenta.');
+      }
+    } finally {
       setIsLoading(false);
-      navigate('/home');
-    }, 600);
+    }
   };
 
   return (
@@ -57,168 +128,179 @@ export const LoginScreen = () => {
         </Badge>
 
         <h1 className="font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight mb-space-xs font-bold">
-          Bienvenido de nuevo
+          {mode === 'login' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">
-          Descubre intercambios circulares inteligentes y continúa tus canjes activos.
+          {mode === 'login'
+            ? 'Descubre intercambios circulares inteligentes y continúa tus canjes activos.'
+            : 'Únete a la red colaborativa de intercambio circular sin efectivo.'}
         </p>
       </div>
 
-      {/* Quick Demo Mode Card */}
-      <section
-        aria-label="Acceso Rápido de Prueba"
-        className="mb-space-lg bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 relative overflow-hidden"
+      {/* Mode Toggle: Iniciar sesión / Crear cuenta */}
+      <div
+        role="tablist"
+        aria-label="Modo de autenticación"
+        className="grid grid-cols-2 p-1 rounded-2xl bg-surface-container-low border border-surface-container-high/60 mb-space-md"
       >
-        <div className="absolute -top-10 -right-10 w-28 h-28 rounded-full bg-secondary-container/10 pointer-events-none" />
-        <div className="flex items-start gap-space-sm mb-space-sm">
-          <div className="w-8 h-8 rounded-xl bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0 mt-0.5">
-            <Icon name="bolt" size="sm" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">
-                Acceso Rápido Demo
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
-              <span className="font-body-sm text-body-sm text-on-surface-variant">Prototipo</span>
-            </div>
-            <p className="font-body-sm text-body-sm text-on-surface font-semibold truncate">
-              Alex Morales (Nivel Oro)
-            </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-snug">
-              2 canjes activos: Bicicleta ↔ Cámara Fujifilm
-            </p>
-          </div>
-        </div>
-
-        <Button
-          variant="tonal"
-          fullWidth
-          rightIcon="arrow_forward"
-          onClick={handleDemoLogin}
-          isLoading={isLoading}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'login'}
+          onClick={() => handleModeSwitch('login')}
+          className={`h-11 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mode === 'login'
+              ? 'bg-primary text-on-primary shadow-xs'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
         >
-          Entrar de inmediato como Alex
-        </Button>
-      </section>
+          <Icon name="login" size="xs" />
+          <span>Iniciar sesión</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'register'}
+          onClick={() => handleModeSwitch('register')}
+          className={`h-11 rounded-xl font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mode === 'register'
+              ? 'bg-primary text-on-primary shadow-xs'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          <Icon name="person_add" size="xs" />
+          <span>Crear cuenta</span>
+        </button>
+      </div>
+
+      {/* Inline Error Banner from ApiError */}
+      {errorMessage && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-space-md p-3.5 rounded-2xl bg-error-container/25 border border-error/40 text-error flex items-start gap-2.5 shadow-2xs"
+        >
+          <Icon name="error" size="sm" className="shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-label-md text-label-md font-bold">{errorMessage}</p>
+            {errorDetails.length > 0 && (
+              <ul className="mt-1 list-disc list-inside font-body-sm text-body-sm space-y-0.5">
+                {errorDetails.map((detail, idx) => (
+                  <li key={idx}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setErrorMessage(null);
+              setErrorDetails([]);
+            }}
+            aria-label="Cerrar mensaje de error"
+            className="text-error/80 hover:text-error p-0.5 rounded-full"
+          >
+            <Icon name="close" size="xs" />
+          </button>
+        </div>
+      )}
 
       {/* Main Authentication Form */}
       <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 mb-space-lg">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-space-md">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-space-md" noValidate>
+          {mode === 'register' && (
+            <Input
+              label="Nombre completo"
+              id="auth-name"
+              type="text"
+              placeholder="Ej. Alex Morales"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              leftIcon="person"
+              required
+              autoComplete="name"
+            />
+          )}
+
           {/* Email */}
           <Input
             label="Correo Electrónico"
-            id="login-email"
+            id="auth-email"
             type="email"
+            placeholder="tu.correo@ejemplo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon="mail"
-            rightIcon="verified"
             required
-            subLabel={
-              <span className="font-label-sm text-label-sm text-primary flex items-center gap-0.5 font-bold">
-                <Icon name="check_circle" size="xs" />
-                Verificado
-              </span>
-            }
+            autoComplete="email"
           />
 
           {/* Password */}
           <Input
             label="Contraseña"
-            id="login-password"
+            id="auth-password"
             type={showPassword ? 'text' : 'password'}
+            placeholder={mode === 'register' ? 'Mínimo 8 caracteres' : 'Ingresa tu contraseña'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon="lock"
             rightIcon={showPassword ? 'visibility_off' : 'visibility'}
             onRightIconClick={() => setShowPassword(!showPassword)}
             required
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            helperText={
+              mode === 'register'
+                ? 'Debe contener al menos 8 caracteres'
+                : undefined
+            }
           />
 
-          {/* Utilities: Remember & Forgot */}
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-5 h-5 rounded-md bg-surface-container flex items-center justify-center peer-checked:bg-primary transition-colors">
-                {rememberMe && <Icon name="check" size="xs" className="text-on-primary" />}
-              </div>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">
-                Recordar dispositivo
-              </span>
-            </label>
+          {mode === 'register' && (
+            <Input
+              label="Ciudad / Ubicación"
+              id="auth-location"
+              type="text"
+              placeholder="Ej. Madrid, España"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              leftIcon="location_on"
+              required
+              autoComplete="address-level2"
+            />
+          )}
 
-            <button
-              type="button"
-              className="font-label-md text-label-md text-primary hover:text-primary-container transition-colors"
+          {/* Primary Submit CTA */}
+          <div className="pt-1">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              rightIcon={mode === 'login' ? 'login' : 'arrow_forward'}
+              isLoading={isLoading}
             >
-              ¿Olvidaste tu contraseña?
-            </button>
+              {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+            </Button>
           </div>
-
-          {/* CTA */}
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            rightIcon="login"
-            isLoading={isLoading}
-          >
-            Iniciar Sesión
-          </Button>
         </form>
       </div>
 
-      {/* Social Logins */}
-      <div className="flex items-center gap-space-md mb-space-md px-space-xs">
-        <div className="flex-1 h-px bg-surface-container-highest" />
-        <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">
-          o continúa con
-        </span>
-        <div className="flex-1 h-px bg-surface-container-highest" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-space-sm mb-space-lg">
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          className="h-[50px] bg-surface-container-lowest hover:bg-surface-container text-on-surface rounded-2xl shadow-xs border border-surface-container-high/60 flex items-center justify-center gap-2 active:scale-[0.98] transition-all px-space-sm font-label-md text-label-md"
-        >
-          <Icon name="mail" size="sm" className="text-secondary" />
-          <span>Google</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          className="h-[50px] bg-inverse-surface hover:bg-on-background text-inverse-on-surface rounded-2xl shadow-xs flex items-center justify-center gap-2 active:scale-[0.98] transition-all px-space-sm font-label-md text-label-md"
-        >
-          <Icon name="phone_iphone" size="sm" />
-          <span>Apple</span>
-        </button>
-      </div>
-
-      {/* Registration Link */}
+      {/* Mode Switch Link */}
       <div className="text-center mb-space-md">
         <p className="font-body-sm text-body-sm text-on-surface-variant">
-          ¿No tienes cuenta?{' '}
+          {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes una cuenta?'}{' '}
           <button
             type="button"
-            onClick={() => navigate('/register')}
+            onClick={() => handleModeSwitch(mode === 'login' ? 'register' : 'login')}
             className="text-primary font-bold hover:underline inline-flex items-center gap-0.5"
           >
-            Regístrate
+            {mode === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
           </button>
         </p>
       </div>
 
       {/* Trust micro-badges */}
-      <div className="bg-surface-container rounded-2xl p-space-md mb-space-lg border border-surface-container-high/40">
+      <div className="bg-surface-container rounded-2xl p-space-md mb-space-lg border border-surface-container-high/40 mt-auto">
         <div className="grid grid-cols-3 gap-space-sm text-center">
           <div className="flex flex-col items-center">
             <Icon name="sync_saved_locally" size="md" className="text-primary mb-1" />
