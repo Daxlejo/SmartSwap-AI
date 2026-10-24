@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import type { SwapRoute } from '@/types';
+import { useApp } from '@/context/AppContext';
+import { formatMatchScore } from '@/services/routes/routes.service';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
-import { findRoutes } from '@/services/swapService';
 
 // Item thumbnails from mock assets
 import bikeImg from '@/assets/item-bike.svg';
@@ -25,28 +27,89 @@ const FLOW_STEPS = [
   { user: 'Sofía', itemImg: cameraImg, itemName: 'Cámara' },
 ];
 
+interface SearchingLocationState {
+  offeredItemId?: string;
+  wantItemId?: string;
+  objectiveText?: string;
+  desiredCategory?: string;
+  maxSteps?: number;
+  valueTolerancePct?: number;
+}
+
 export const SearchingScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { searchRoutesReal } = useApp();
   const [searchParams] = useSearchParams();
-  const haveId = searchParams.get('have') || 'item-bike';
-  const wantId = searchParams.get('want') || 'item-camera';
+  const locationState = location.state as SearchingLocationState | null;
+
+  const haveId = searchParams.get('have') || locationState?.offeredItemId || 'item-bike';
+  const wantId = searchParams.get('want') || locationState?.wantItemId || 'item-camera';
+  const objectiveText =
+    searchParams.get('q') || locationState?.objectiveText || wantId || 'Cámara Fujifilm X-T30 II';
+  const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || 4;
+  const valueTolerancePct =
+    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
 
   // Animation phases: 1 (0-600ms), 2 (600-2500ms), 3 (2500ms+)
   const [phase, setPhase] = useState<1 | 2 | 3>(1);
   const [messageIndex, setMessageIndex] = useState(0);
   const [progressWidth, setProgressWidth] = useState(0);
   const [matchPercent, setMatchPercent] = useState(0);
+  const [discoveredRoutes, setDiscoveredRoutes] = useState<SwapRoute[]>([]);
+  const discoveredRoutesRef = useRef<SwapRoute[]>([]);
   const hasNavigated = useRef(false);
 
   const handleNavigate = useCallback(() => {
     if (hasNavigated.current) return;
     hasNavigated.current = true;
-    navigate('/swap/results?have=' + haveId + '&want=' + wantId);
-  }, [navigate, haveId, wantId]);
+    const query = new URLSearchParams({
+      have: haveId,
+      want: wantId,
+      q: objectiveText,
+      maxSteps: String(maxSteps),
+      tolerance: String(valueTolerancePct),
+    }).toString();
 
-  // Phase scheduling and pre-warming findRoutes
+    navigate(`/swap/results?${query}`, {
+      state: {
+        routes: discoveredRoutesRef.current,
+        offeredItemId: haveId,
+        wantItemId: wantId,
+        objectiveText,
+        desiredCategory: locationState?.desiredCategory,
+        maxSteps,
+        valueTolerancePct,
+      },
+    });
+  }, [
+    navigate,
+    haveId,
+    wantId,
+    objectiveText,
+    maxSteps,
+    valueTolerancePct,
+    locationState?.desiredCategory,
+  ]);
+
+  // Phase scheduling and real backend route discovery via searchRoutesReal
   useEffect(() => {
-    findRoutes(haveId, wantId).catch(() => {});
+    let isMounted = true;
+
+    searchRoutesReal({
+      offeredItemId: haveId,
+      objectiveText,
+      desiredCategory: locationState?.desiredCategory,
+      maxSteps,
+      valueTolerancePct,
+    })
+      .then((routes) => {
+        if (isMounted && routes.length > 0) {
+          discoveredRoutesRef.current = routes;
+          setDiscoveredRoutes(routes);
+        }
+      })
+      .catch(() => {});
 
     // Kick off progress bar animation (2500ms)
     const progressTimer = setTimeout(() => {
@@ -75,6 +138,7 @@ export const SearchingScreen: React.FC = () => {
     }, 4500);
 
     return () => {
+      isMounted = false;
       clearTimeout(progressTimer);
       clearTimeout(phase2Timer);
       clearTimeout(msgTimer1);
@@ -83,13 +147,25 @@ export const SearchingScreen: React.FC = () => {
       clearTimeout(phase3Timer);
       clearTimeout(autoNavTimer);
     };
-  }, [haveId, wantId, handleNavigate]);
+  }, [
+    haveId,
+    wantId,
+    objectiveText,
+    maxSteps,
+    valueTolerancePct,
+    locationState?.desiredCategory,
+    searchRoutesReal,
+    handleNavigate,
+  ]);
 
-  // Match counter animation (0 to 98% in Phase 3)
+  const topRoute = discoveredRoutes[0];
+  const targetMatchScore = topRoute ? formatMatchScore(topRoute.matchScore) : 98;
+
+  // Match counter animation (0 to targetMatchScore% in Phase 3)
   useEffect(() => {
     if (phase === 3) {
       const start = 0;
-      const end = 98;
+      const end = targetMatchScore;
       const duration = 750;
       const startTime = performance.now();
 
@@ -107,9 +183,20 @@ export const SearchingScreen: React.FC = () => {
 
       requestAnimationFrame(animateCounter);
     }
-  }, [phase]);
+  }, [phase, targetMatchScore]);
 
   const isPhase3 = phase === 3;
+  const activeFlowSteps =
+    topRoute && topRoute.chainItems.length >= 2
+      ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
+          user:
+            idx === 0
+              ? 'Tú'
+              : topRoute.participants[idx]?.name?.split(' ')[0] || `Paso ${idx + 1}`,
+          itemImg: item.imageUrl || bikeImg,
+          itemName: item.name,
+        }))
+      : FLOW_STEPS;
 
   return (
     <div className="flex flex-col items-center justify-between h-full min-h-[580px] w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-hidden select-none animate-fade-in relative">
@@ -349,7 +436,7 @@ export const SearchingScreen: React.FC = () => {
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a7a4a]/12 border border-[#1a7a4a]/30 text-[#1a7a4a] shadow-2xs">
                 <Icon name="verified" size="xs" filled />
                 <span className="font-label-sm text-label-sm font-bold">
-                  ¡Ruta Circular Encontrada! #SR-8492
+                  ¡Ruta Circular Encontrada! #{topRoute?.code || 'SR-8492'}
                 </span>
               </div>
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary">
@@ -360,10 +447,10 @@ export const SearchingScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Sequential flow indicators: Tú -> Carlos -> Laura -> Sofía with SVG item thumbnails */}
+            {/* Sequential flow indicators with SVG item thumbnails */}
             <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
-              {FLOW_STEPS.map((step, idx) => (
-                <React.Fragment key={step.user}>
+              {activeFlowSteps.map((step, idx) => (
+                <React.Fragment key={`${step.user}-${idx}`}>
                   <div className="flex flex-col items-center min-w-0">
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
                       <img
@@ -376,7 +463,7 @@ export const SearchingScreen: React.FC = () => {
                       {step.user}
                     </span>
                   </div>
-                  {idx < FLOW_STEPS.length - 1 && (
+                  {idx < activeFlowSteps.length - 1 && (
                     <Icon
                       name="arrow_forward"
                       size="xs"
@@ -410,7 +497,9 @@ export const SearchingScreen: React.FC = () => {
         {isPhase3 ? (
           <div className="w-full max-w-xs animate-slide-up">
             <Button variant="primary" size="lg" fullWidth onClick={handleNavigate}>
-              <span>Ver Cadena de Ruta Completa (4 Pasos) →</span>
+              <span>
+                Ver Cadena de Ruta Completa ({topRoute?.stepsCount ?? 4} Pasos) →
+              </span>
             </Button>
           </div>
         ) : (
