@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Item } from '@/types';
+import { useApp } from '@/context/AppContext';
 import { getMyItems, getItems } from '@/services/swapService';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -28,6 +29,7 @@ const itemIdMap: Record<string, string> = {
 export const ConfigureSwapScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { searchRoutesReal } = useApp();
   const preselectedWant = location.state as { wantItemId?: string; wantItemName?: string } | null;
 
   const [myItems, setMyItems] = useState<Item[]>([]);
@@ -619,7 +621,38 @@ export const ConfigureSwapScreen = () => {
             const offerItemId = selectedOfferItem?.id || 'item-bike';
             const targetItemId =
               (targetPreset && (itemIdMap[targetPreset.id] || targetPreset.id)) || 'item-camera';
-            navigate('/swap/searching?have=' + offerItemId + '&want=' + targetItemId);
+            const objectiveText =
+              searchQuery.trim() || targetPreset?.name || 'Cámara Fujifilm X-T30 II';
+            const maxSteps = swapMode === 'direct' ? 2 : 4;
+            const valueTolerancePct = hasSecondaryItem ? 35 : 25;
+
+            // Pre-trigger backend route discovery
+            searchRoutesReal({
+              offeredItemId: offerItemId,
+              objectiveText,
+              desiredCategory: selectedOfferItem?.category,
+              maxSteps,
+              valueTolerancePct,
+            }).catch(() => {});
+
+            const queryString = new URLSearchParams({
+              have: offerItemId,
+              want: targetItemId,
+              q: objectiveText,
+              maxSteps: String(maxSteps),
+              tolerance: String(valueTolerancePct),
+            }).toString();
+
+            navigate(`/swap/searching?${queryString}`, {
+              state: {
+                offeredItemId: offerItemId,
+                wantItemId: targetItemId,
+                objectiveText,
+                desiredCategory: selectedOfferItem?.category,
+                maxSteps,
+                valueTolerancePct,
+              },
+            });
           }}
         >
           <span>Buscar Rutas Inteligentes</span>

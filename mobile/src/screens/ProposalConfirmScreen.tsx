@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
+import { useApp } from '@/context/AppContext';
 import { mockSwapRoute } from '@/data/mockData';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -10,22 +11,34 @@ import { Icon } from '@/components/ui/Icon';
 export const ProposalConfirmScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { proposeRouteReal } = useApp();
   const route = (location.state?.route as SwapRoute | undefined) ?? mockSwapRoute;
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // First item in chain (offered by current user: item-bike / Bicicleta Trek)
-  const offeredItem = route.chainItems[0];
+  const offeredItem = route.chainItems[0] || mockSwapRoute.chainItems[0];
   // Last item in chain (desired by current user: item-camera / Cámara Fujifilm)
-  const targetItem = route.chainItems[route.chainItems.length - 1];
+  const targetItem =
+    route.chainItems[route.chainItems.length - 1] ||
+    mockSwapRoute.chainItems[mockSwapRoute.chainItems.length - 1];
   // Second participant in the chain (recipient of the user's item)
-  const recipientUser = route.participants[1];
+  const recipientUser = route.participants[1] || route.participants[0];
   const recipientDisplayName =
     recipientUser?.id === 'user-carlos' ? 'Carlos V.' : recipientUser?.name || 'Carlos V.';
 
-  const handleSendProposal = () => {
-    if (!acceptedTerms) return;
-    navigate('/swap/proposal/sent', { state: { route } });
+  const handleSendProposal = async () => {
+    if (!acceptedTerms || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const proposedRoute = await proposeRouteReal(route);
+      navigate('/swap/proposal/sent', { state: { route: proposedRoute } });
+    } catch {
+      navigate('/swap/proposal/sent', { state: { route } });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,7 +99,7 @@ export const ProposalConfirmScreen: React.FC = () => {
               <Icon name="sync_alt" size="xs" />
             </div>
             <span className="font-label-sm text-label-sm text-on-surface font-bold whitespace-nowrap">
-              Intercambio Inteligente • Sin dinero directo
+              Intercambio Inteligente • -{route.co2SavedKg} kg CO₂
             </span>
           </div>
         </div>
@@ -127,6 +140,24 @@ export const ProposalConfirmScreen: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* AI Explanation Summary if present */}
+      {route.aiExplanation && (
+        <section
+          aria-label="Equidad del circuito"
+          className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-1.5"
+        >
+          <div className="flex items-center gap-1.5 text-primary">
+            <Icon name="auto_awesome" size="xs" filled />
+            <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
+              Equidad Verificada por IA
+            </span>
+          </div>
+          <p className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+            {route.aiExplanation}
+          </p>
+        </section>
+      )}
 
       {/* Recipient Info Card */}
       {recipientUser && (
@@ -196,6 +227,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           variant="outline"
           size="lg"
           fullWidth
+          disabled={isSubmitting}
           onClick={() => navigate(-1)}
         >
           Cancelar
@@ -204,11 +236,11 @@ export const ProposalConfirmScreen: React.FC = () => {
           variant="primary"
           size="lg"
           fullWidth
-          disabled={!acceptedTerms}
+          disabled={!acceptedTerms || isSubmitting}
           rightIcon="send"
           onClick={handleSendProposal}
         >
-          Enviar Propuesta
+          {isSubmitting ? 'Enviando...' : 'Enviar Propuesta'}
         </Button>
       </div>
     </div>
