@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import {
   CreateItemDto,
   toPrismaItemCondition,
@@ -41,11 +42,34 @@ const ITEM_RELATIONS_INCLUDE = {
   },
 } satisfies Prisma.ItemInclude;
 
+const STOP_WORDS = new Set([
+  'con',
+  'sin',
+  'para',
+  'por',
+  'una',
+  'uno',
+  'los',
+  'las',
+  'del',
+  'que',
+  'como',
+  'muy',
+  'mas',
+  'este',
+  'esta',
+  'the',
+  'and',
+  'for',
+  'with',
+]);
+
 @Injectable()
 export class ItemsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly supabaseStorageService: SupabaseStorageService,
+    private readonly aiEmbeddingService: AiEmbeddingService,
   ) {}
 
   async findAll(query: QueryItemsDto = {}): Promise<ItemResponseDto[]> {
@@ -67,8 +91,9 @@ export class ItemsService {
       where.ownerId = query.ownerId.trim();
     }
 
-    if (query.search) {
-      const searchTerm = query.search.trim();
+    const rawSearch = query.search || query.query;
+    if (rawSearch) {
+      const searchTerm = rawSearch.trim();
       where.OR = [
         { name: { contains: searchTerm, mode: 'insensitive' } },
         { description: { contains: searchTerm, mode: 'insensitive' } },
@@ -78,7 +103,12 @@ export class ItemsService {
 
     const page = query.page ?? 1;
     const limit = query.limit;
-    const skip = limit ? (page - 1) * limit : undefined;
+    const skip =
+      query.offset !== undefined
+        ? query.offset
+        : limit
+          ? (page - 1) * limit
+          : undefined;
 
     const items = await this.prisma.item.findMany({
       where,
@@ -129,32 +159,55 @@ export class ItemsService {
     userId: string,
     dto: CreateItemDto,
   ): Promise<ItemResponseDto> {
+    const trimmedName = dto.name.trim();
+    const trimmedCategory = dto.category.trim();
+    const trimmedDescription = dto.description.trim();
+
     const resolvedImages = await this.resolveImages(userId, dto.images);
     const resolvedLocation = await this.resolveLocation(userId, dto.location);
     const prismaCondition = toPrismaItemCondition(dto.condition);
     const normalizedWants = dto.wants.map((want) => want.trim());
 
+    const itemEmbedding = await this.aiEmbeddingService.generateEmbedding(
+      `${trimmedName} ${trimmedCategory} ${trimmedDescription}`,
+    );
+
+    const aiTags =
+      dto.aiTags && dto.aiTags.length > 0
+        ? dto.aiTags.map((t) => t.trim().toLowerCase()).filter(Boolean)
+        : this.deriveAiTags(trimmedName, trimmedCategory, trimmedDescription);
+
+    const wantsWithEmbeddings = await Promise.all(
+      normalizedWants.map(async (queryText) => ({
+        queryText,
+        embedding: await this.aiEmbeddingService.generateEmbedding(queryText),
+      })),
+    );
+
     const createdItem = await this.prisma.$transaction(async (tx) => {
       const item = await tx.item.create({
         data: {
           ownerId: userId,
-          name: dto.name.trim(),
-          category: dto.category.trim(),
+          name: trimmedName,
+          category: trimmedCategory,
           condition: prismaCondition,
-          description: dto.description.trim(),
+          description: trimmedDescription,
           estimatedValue: dto.estimatedValue,
           location: resolvedLocation,
           images: resolvedImages,
+          aiTags,
+          embedding: itemEmbedding,
         },
       });
 
-      if (normalizedWants.length > 0) {
+      if (wantsWithEmbeddings.length > 0) {
         await tx.want.createMany({
-          data: normalizedWants.map((queryText) => ({
+          data: wantsWithEmbeddings.map(({ queryText, embedding }) => ({
             userId,
             itemId: item.id,
             queryText,
-            category: dto.category.trim(),
+            category: trimmedCategory,
+            embedding,
           })),
         });
       }
@@ -194,17 +247,22 @@ export class ItemsService {
 
     const updateData: Prisma.ItemUpdateInput = {};
 
+    const nextName = dto.name?.trim() ?? existingItem.name;
+    const nextCategory = dto.category?.trim() ?? existingItem.category;
+    const nextDescription =
+      dto.description?.trim() ?? existingItem.description ?? '';
+
     if (dto.name !== undefined) {
-      updateData.name = dto.name.trim();
+      updateData.name = nextName;
     }
     if (dto.category !== undefined) {
-      updateData.category = dto.category.trim();
+      updateData.category = nextCategory;
     }
     if (dto.condition !== undefined) {
       updateData.condition = toPrismaItemCondition(dto.condition);
     }
     if (dto.description !== undefined) {
-      updateData.description = dto.description.trim();
+      updateData.description = nextDescription;
     }
     if (dto.estimatedValue !== undefined) {
       updateData.estimatedValue = dto.estimatedValue;
@@ -219,20 +277,67 @@ export class ItemsService {
       updateData.status = toPrismaItemStatus(dto.status);
     }
 
+    const shouldRecomputeSemantics =
+      dto.name !== undefined ||
+      dto.category !== undefined ||
+      dto.description !== undefined ||
+      !Array.isArray(existingItem.embedding) ||
+      existingItem.embedding.length === 0;
+
+    if (shouldRecomputeSemantics) {
+      updateData.embedding = await this.aiEmbeddingService.generateEmbedding(
+        `${nextName} ${nextCategory} ${nextDescription}`,
+      );
+      if (dto.aiTags !== undefined) {
+        updateData.aiTags = dto.aiTags
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+      } else if (
+        !Array.isArray(existingItem.aiTags) ||
+        existingItem.aiTags.length === 0 ||
+        dto.name !== undefined ||
+        dto.category !== undefined
+      ) {
+        updateData.aiTags = this.deriveAiTags(
+          nextName,
+          nextCategory,
+          nextDescription,
+        );
+      }
+    } else if (dto.aiTags !== undefined) {
+      updateData.aiTags = dto.aiTags
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+    }
+
+    const wantsWithEmbeddings =
+      dto.wants !== undefined
+        ? await Promise.all(
+            dto.wants.map(async (rawWant) => {
+              const queryText = rawWant.trim();
+              return {
+                queryText,
+                embedding:
+                  await this.aiEmbeddingService.generateEmbedding(queryText),
+              };
+            }),
+          )
+        : undefined;
+
     const updatedItem = await this.prisma.$transaction(async (tx) => {
-      if (dto.wants !== undefined) {
+      if (wantsWithEmbeddings !== undefined) {
         await tx.want.deleteMany({
           where: { itemId },
         });
 
-        const normalizedWants = dto.wants.map((want) => want.trim());
-        if (normalizedWants.length > 0) {
+        if (wantsWithEmbeddings.length > 0) {
           await tx.want.createMany({
-            data: normalizedWants.map((queryText) => ({
+            data: wantsWithEmbeddings.map(({ queryText, embedding }) => ({
               userId,
               itemId,
               queryText,
-              category: dto.category?.trim() ?? existingItem.category,
+              category: nextCategory,
+              embedding,
             })),
           });
         }
@@ -280,6 +385,24 @@ export class ItemsService {
       deleted: true,
       id: itemId,
     };
+  }
+
+  private deriveAiTags(
+    name: string,
+    category: string,
+    description: string,
+  ): string[] {
+    const combined = `${category} ${name} ${description}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ');
+
+    const tokens = combined
+      .split(/\s+/)
+      .filter((token) => token.length >= 3 && !STOP_WORDS.has(token));
+
+    return Array.from(new Set(tokens)).slice(0, 6);
   }
 
   private async resolveImages(
