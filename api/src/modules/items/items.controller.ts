@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -21,6 +23,14 @@ import {
 } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import {
+  AnalyzePhotoDto,
+  analyzePhotoSchema,
+} from '../ai/dto/analyze-photo.dto';
+import {
+  AiVisionService,
+  VisionAnalysisResult,
+} from '../ai/services/ai-vision.service';
 import {
   CreateItemDto,
   createItemSchema,
@@ -43,7 +53,10 @@ import { ItemResponseDto } from './mappers/item.mapper';
 @ApiTags('items')
 @Controller('items')
 export class ItemsController {
-  constructor(private readonly itemsService: ItemsService) {}
+  constructor(
+    private readonly itemsService: ItemsService,
+    private readonly aiVisionService: AiVisionService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List public items with optional search and filters' })
@@ -54,7 +67,7 @@ export class ItemsController {
     return this.itemsService.findAll(query);
   }
 
-  @Get('mine')
+  @Get(['mine', 'me'])
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all items owned by the authenticated user' })
@@ -72,6 +85,26 @@ export class ItemsController {
   @ApiResponse({ status: 404, description: 'Item not found' })
   async findOne(@Param('id') id: string): Promise<ItemResponseDto> {
     return this.itemsService.findByIdOrThrow(id);
+  }
+
+  @Post('analyze-photo')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Analyze an item photo and/or hint text to generate structured catalog metadata',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Structured item classification, valuation, and suggested wants',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async analyzePhoto(
+    @Body(new ZodValidationPipe(analyzePhotoSchema)) dto: AnalyzePhotoDto,
+  ): Promise<VisionAnalysisResult> {
+    return this.aiVisionService.analyzePhoto(dto);
   }
 
   @Post('upload-image')
