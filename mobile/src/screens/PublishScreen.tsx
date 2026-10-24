@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { useApp } from '@/context/AppContext';
 import { itemsService } from '@/services/items/items.service';
+import { aiService } from '@/services/ai/ai.service';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import { ApiError } from '@/services/http/apiClient';
 
@@ -78,10 +80,127 @@ interface FormErrors {
   submit?: string;
 }
 
+const mapAiCategoryToUi = (rawCategory: string): string => {
+  const normalized = rawCategory.trim().toLowerCase();
+  if (!normalized) return 'Otros';
+
+  const exactMatch = CATEGORIES.find((cat) => cat.toLowerCase() === normalized);
+  if (exactMatch) return exactMatch;
+
+  if (
+    normalized.includes('tecno') ||
+    normalized.includes('tech') ||
+    normalized.includes('electr') ||
+    normalized.includes('comput') ||
+    normalized.includes('audio') ||
+    normalized.includes('phone') ||
+    normalized.includes('celular')
+  ) {
+    return 'Tecnología';
+  }
+  if (
+    normalized.includes('deport') ||
+    normalized.includes('sport') ||
+    normalized.includes('bici') ||
+    normalized.includes('fitness')
+  ) {
+    return 'Deportes';
+  }
+  if (
+    normalized.includes('foto') ||
+    normalized.includes('photo') ||
+    normalized.includes('cámara') ||
+    normalized.includes('camara') ||
+    normalized.includes('camera') ||
+    normalized.includes('lente')
+  ) {
+    return 'Fotografía';
+  }
+  if (
+    normalized.includes('juego') ||
+    normalized.includes('game') ||
+    normalized.includes('gaming') ||
+    normalized.includes('consola')
+  ) {
+    return 'Videojuegos';
+  }
+  if (
+    normalized.includes('músic') ||
+    normalized.includes('music') ||
+    normalized.includes('instrument') ||
+    normalized.includes('guitar')
+  ) {
+    return 'Música';
+  }
+  if (
+    normalized.includes('hogar') ||
+    normalized.includes('home') ||
+    normalized.includes('casa') ||
+    normalized.includes('mueble')
+  ) {
+    return 'Hogar';
+  }
+  return 'Otros';
+};
+
+const mapAiConditionToUi = (rawCondition: string): string => {
+  const upper = rawCondition.trim().toUpperCase();
+  if (upper === 'LIKE_NEW' || upper === 'NEW' || upper === 'COMO NUEVO') {
+    return 'Como nuevo';
+  }
+  if (
+    upper === 'EXCELLENT' ||
+    upper === 'EXCELENTE' ||
+    upper === 'EXCELENTE ESTADO'
+  ) {
+    return 'Excelente estado';
+  }
+  if (
+    upper === 'GOOD' ||
+    upper === 'FAIR' ||
+    upper === 'BUENO' ||
+    upper === 'BUEN ESTADO'
+  ) {
+    return 'Buen estado';
+  }
+  if (
+    upper === 'FOR_PARTS' ||
+    upper === 'POOR' ||
+    upper === 'PARA PIEZAS' ||
+    upper === 'PARA REPUESTO'
+  ) {
+    return 'Para repuesto';
+  }
+  return 'Excelente estado';
+};
+
+export const mergeUniqueWants = (
+  existingWants: string[],
+  suggestedWants: string[],
+): string[] => {
+  const seen = new Set(existingWants.map((w) => w.trim().toLowerCase()));
+  const merged = [...existingWants];
+
+  for (const rawSuggestion of suggestedWants) {
+    const trimmed = rawSuggestion.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(trimmed);
+    }
+  }
+
+  return merged.slice(0, 10);
+};
+
 export const PublishScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const { currentUser, createItemReal } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const locale: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   // Wizard step state (1 to 5)
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -104,6 +223,16 @@ export const PublishScreen: React.FC = () => {
   const [wantedItems, setWantedItems] = useState<string[]>(['Cámara', 'iPad']);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // AI Assistant state
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiValueRange, setAiValueRange] = useState<{
+    min: number;
+    max: number;
+    reasoning?: string;
+  } | null>(null);
+  const [aiTags, setAiTags] = useState<string[]>([]);
+
   // Step 4: Publishing loader state
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -112,6 +241,10 @@ export const PublishScreen: React.FC = () => {
 
   // Form errors
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Enable AI button as soon as the user selects a photo OR types at least 3 chars in title
+  const canAutocompleteWithAi =
+    photos.length > 0 || name.trim().length >= 3;
 
   // Animate success checkmark when entering Step 5
   useEffect(() => {
@@ -125,6 +258,107 @@ export const PublishScreen: React.FC = () => {
     }
   }, [currentStep]);
 
+  // Real AI Vision & Valuation Assistant handler
+  const handleAiAutocomplete = async () => {
+    if (!canAutocompleteWithAi || isAnalyzingAi) return;
+
+    setIsAnalyzingAi(true);
+    setAiError(null);
+
+    try {
+      const primaryPhoto = photos[0];
+      const imageBase64 =
+        primaryPhoto && primaryPhoto.startsWith('data:image/')
+          ? primaryPhoto
+          : undefined;
+      const hintText = name.trim().length >= 3 ? name.trim() : undefined;
+
+      const analysis = await aiService.analyzeItemPhoto({
+        imageBase64,
+        hintText,
+        locale,
+      });
+
+      const resolvedName = analysis.name || name.trim();
+      const resolvedCategory = mapAiCategoryToUi(analysis.category);
+      const resolvedCondition = mapAiConditionToUi(analysis.condition);
+      const resolvedDescription = analysis.description || description.trim();
+
+      if (resolvedName) {
+        setName(resolvedName);
+      }
+      setCategory(resolvedCategory);
+      setCondition(resolvedCondition);
+      if (resolvedDescription) {
+        setDescription(resolvedDescription);
+      }
+      if (analysis.estimatedValue > 0) {
+        setEstimatedValue(String(analysis.estimatedValue));
+      }
+
+      let minVal = analysis.minValue;
+      let maxVal = analysis.maxValue;
+      let reasoning: string | undefined;
+
+      // Optionally refine value range via /ai/estimate-value if name & category are available
+      if (resolvedName && resolvedCategory) {
+        try {
+          const valuation = await aiService.estimateItemValue({
+            name: resolvedName,
+            category: resolvedCategory,
+            condition: resolvedCondition,
+            description: resolvedDescription,
+          });
+          if (valuation.estimatedValue > 0 && !analysis.estimatedValue) {
+            setEstimatedValue(String(valuation.estimatedValue));
+          }
+          if (valuation.minValue > 0 && valuation.maxValue > 0) {
+            minVal = valuation.minValue;
+            maxVal = valuation.maxValue;
+          }
+          reasoning = valuation.reasoning;
+        } catch {
+          // Keep range from analyzeItemPhoto if secondary valuation endpoint fails
+        }
+      }
+
+      setAiValueRange({
+        min: minVal,
+        max: maxVal,
+        reasoning,
+      });
+
+      if (analysis.aiTags.length > 0) {
+        setAiTags(analysis.aiTags);
+      }
+
+      if (analysis.suggestedWants.length > 0) {
+        setWantedItems((prev) =>
+          mergeUniqueWants(prev, analysis.suggestedWants),
+        );
+      }
+
+      setErrors({});
+
+      if (currentStep === 1) {
+        setCurrentStep(2);
+      }
+    } catch (err) {
+      const fallbackMsg =
+        locale === 'en'
+          ? 'Could not analyze item with AI right now. You can continue filling out the form manually.'
+          : 'No pudimos analizar el objeto con IA en este momento. Puedes completar el formulario manualmente.';
+
+      if (err instanceof ApiError && err.message) {
+        setAiError(`${fallbackMsg} (${err.message})`);
+      } else {
+        setAiError(fallbackMsg);
+      }
+    } finally {
+      setIsAnalyzingAi(false);
+    }
+  };
+
   // Real Photo selection & HTML5 Canvas compression (1024px max, JPEG 0.82)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -135,7 +369,10 @@ export const PublishScreen: React.FC = () => {
 
     try {
       const compressedUrls: string[] = [];
-      const availableSlots = Math.max(0, 4 - (photos.length === 1 && photos[0] === bikeImg ? 0 : photos.length));
+      const availableSlots = Math.max(
+        0,
+        4 - (photos.length === 1 && photos[0] === bikeImg ? 0 : photos.length),
+      );
 
       for (let i = 0; i < files.length && compressedUrls.length < availableSlots; i++) {
         const compressedDataUrl = await compressImageToDataUrl(files[i], {
@@ -228,11 +465,9 @@ export const PublishScreen: React.FC = () => {
   const handleAddWantedItem = (itemToAdd: string) => {
     const trimmed = itemToAdd.trim();
     if (!trimmed) return;
-    if (!wantedItems.includes(trimmed)) {
-      setWantedItems((prev) => [...prev, trimmed]);
-      if (errors.wantedItems) {
-        setErrors((prev) => ({ ...prev, wantedItems: undefined }));
-      }
+    setWantedItems((prev) => mergeUniqueWants(prev, [trimmed]));
+    if (errors.wantedItems) {
+      setErrors((prev) => ({ ...prev, wantedItems: undefined }));
     }
     setSearchQuery('');
   };
@@ -329,6 +564,105 @@ export const PublishScreen: React.FC = () => {
   const ownerName = currentUser?.name || 'Alex Morales';
   const ownerAvatar = currentUser?.avatarUrl || alexAvatar;
   const ownerRating = (currentUser?.rating ?? 4.9).toFixed(1);
+
+  const renderAiAssistantBanner = () => (
+    <div className="rounded-2xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-3.5 space-y-2.5 transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs">
+            <Icon
+              name={isAnalyzingAi ? 'progress_activity' : 'auto_awesome'}
+              size="sm"
+              className={isAnalyzingAi ? 'animate-spin' : undefined}
+              filled
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="font-label-md text-label-md font-bold text-on-surface truncate">
+              {locale === 'en' ? 'SmartSwap AI Assistant' : 'Asistente IA SmartSwap'}
+            </p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
+              {isAnalyzingAi
+                ? 'Analizando objeto con IA...'
+                : locale === 'en'
+                  ? 'Auto-fill details, value & swap suggestions'
+                  : 'Autocompleta datos, valor y sugerencias de canje'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAiAutocomplete}
+          disabled={!canAutocompleteWithAi || isAnalyzingAi}
+          data-testid="ai-autocomplete-btn"
+          className={clsx(
+            'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-label-md text-label-md font-bold transition-all shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            canAutocompleteWithAi && !isAnalyzingAi
+              ? 'bg-primary text-on-primary hover:opacity-95 active:scale-95 cursor-pointer'
+              : 'bg-surface-container-high text-on-surface-variant/60 cursor-not-allowed',
+          )}
+        >
+          <span>
+            {isAnalyzingAi ? 'Analizando objeto con IA...' : '✨ Autocompletar con IA'}
+          </span>
+        </button>
+      </div>
+
+      {aiError && (
+        <div
+          role="alert"
+          data-testid="ai-error-banner"
+          className="p-2.5 rounded-xl bg-error-container/25 border border-error/40 text-error flex items-start gap-2 font-body-sm text-body-sm"
+        >
+          <Icon name="info" size="xs" className="shrink-0 mt-0.5" />
+          <span>{aiError}</span>
+        </div>
+      )}
+
+      {(aiValueRange || aiTags.length > 0) && (
+        <div className="pt-1 flex flex-col gap-2 border-t border-primary/15">
+          {aiValueRange && (
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span
+                data-testid="ai-value-range-badge"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/15 text-primary font-label-sm text-label-sm font-bold"
+              >
+                <Icon name="payments" size="xs" />
+                <span>
+                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                </span>
+              </span>
+              {aiValueRange.reasoning && (
+                <span className="font-body-sm text-body-sm text-on-surface-variant">
+                  {aiValueRange.reasoning}
+                </span>
+              )}
+            </div>
+          )}
+
+          {aiTags.length > 0 && (
+            <div
+              data-testid="ai-tags-list"
+              className="flex items-center flex-wrap gap-1.5"
+            >
+              <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold mr-1">
+                Tags IA:
+              </span>
+              {aiTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   // STEP 5: Success Screen (Not counted in step indicator)
   if (currentStep === 5) {
@@ -624,6 +958,9 @@ export const PublishScreen: React.FC = () => {
               <p className="font-body-sm text-body-sm text-error mt-1">{errors.photos}</p>
             )}
           </div>
+
+          {/* AI Autocomplete Assistant Banner in Step 1 */}
+          {renderAiAssistantBanner()}
         </div>
       )}
 
@@ -638,6 +975,9 @@ export const PublishScreen: React.FC = () => {
               Completa los detalles para que otros usuarios conozcan tu propuesta.
             </p>
           </div>
+
+          {/* AI Autocomplete Assistant Banner in Step 2 */}
+          {renderAiAssistantBanner()}
 
           {/* Nombre del artículo */}
           <Input
@@ -777,7 +1117,15 @@ export const PublishScreen: React.FC = () => {
               >
                 Valor estimado
               </label>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">Referencial</span>
+              {aiValueRange ? (
+                <span className="font-label-sm text-label-sm text-primary font-bold">
+                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                </span>
+              ) : (
+                <span className="font-body-sm text-body-sm text-on-surface-variant">
+                  Referencial
+                </span>
+              )}
             </div>
             <div
               className={clsx(
