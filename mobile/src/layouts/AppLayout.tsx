@@ -1,9 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
+import { useApp } from '@/context/AppContext';
 
 export const AppLayout = () => {
   const location = useLocation();
+  const { currentUser } = useApp();
   const pathname = location.pathname;
 
   // Determine header configuration based on route
@@ -23,7 +25,12 @@ export const AppLayout = () => {
       case '/trades':
         return { title: 'Canjes', subtitle: 'Tus intercambios', showBack: true };
       case '/profile':
-        return { title: 'Mi Perfil', subtitle: 'Alex Morales', showBack: true, showProfile: false };
+        return {
+          title: 'Mi Perfil',
+          subtitle: currentUser?.name || 'Alex Morales',
+          showBack: true,
+          showProfile: false,
+        };
       case '/swap/configure':
         return { title: 'Configurar Canje', subtitle: 'Tengo y Busco', showBack: true };
       case '/swap/searching':
