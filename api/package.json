@@ -4,7 +4,7 @@
   "description": "SmartSwap Backend API built with NestJS, Prisma and Clean Architecture",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "npx @nestjs/cli build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
