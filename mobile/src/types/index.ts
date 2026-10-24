@@ -7,6 +7,21 @@ export interface User {
   location: string;
   verified: boolean;
   co2SavedKg: number;
+  initials?: string;
+  level?: number;
+  tradesCompleted?: number;
+  createdAt?: string;
+}
+
+export interface ItemOwnerSummary {
+  id: string;
+  name: string;
+  email?: string;
+  avatarUrl?: string;
+  rating: number;
+  location: string;
+  verified?: boolean;
+  co2SavedKg?: number;
 }
 
 export interface Item {
@@ -16,9 +31,15 @@ export interface Item {
   condition: string;
   ownerId: string;
   imageUrl: string;
+  images?: string[];
   wants: string[];
   description?: string;
   estimatedValue?: number;
+  location?: string;
+  status?: string;
+  aiTags?: string[];
+  owner?: ItemOwnerSummary;
+  createdAt?: string;
 }
 
 export interface SwapStep {
