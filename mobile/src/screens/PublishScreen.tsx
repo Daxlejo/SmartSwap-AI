@@ -7,6 +7,10 @@ import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
+import { useApp } from '@/context/AppContext';
+import { itemsService } from '@/services/items/items.service';
+import { compressImageToDataUrl } from '@/utils/imageCompressor';
+import { ApiError } from '@/services/http/apiClient';
 
 import bikeImg from '@/assets/item-bike.svg';
 import alexAvatar from '@/assets/avatar-alex.svg';
@@ -71,19 +75,22 @@ interface FormErrors {
   location?: string;
   photos?: string;
   wantedItems?: string;
+  submit?: string;
 }
 
 export const PublishScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { currentUser, createItemReal } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Wizard step state (1 to 5)
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
-  // Step 1: Photos state (pre-loaded with item-bike.svg in first slot)
+  // Step 1: Photos state
   const [photos, setPhotos] = useState<string[]>([bikeImg]);
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
 
-  // Step 2: Information state (pre-filled defaults)
+  // Step 2: Information state
   const [name, setName] = useState('Bicicleta Trek Marlin 7');
   const [description, setDescription] = useState(
     'Rodado 29" • Talle M • Frenos hidráulicos Shimano. Revisión reciente.',
@@ -91,9 +98,9 @@ export const PublishScreen: React.FC = () => {
   const [category, setCategory] = useState('Deportes');
   const [condition, setCondition] = useState('Excelente estado');
   const [estimatedValue, setEstimatedValue] = useState('780');
-  const [location, setLocation] = useState('Madrid, España');
+  const [location, setLocation] = useState(currentUser?.location || 'Madrid, España');
 
-  // Step 3: Wanted items state (pre-filled defaults)
+  // Step 3: Wanted items state
   const [wantedItems, setWantedItems] = useState<string[]>(['Cámara', 'iPad']);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -118,22 +125,44 @@ export const PublishScreen: React.FC = () => {
     }
   }, [currentStep]);
 
-  // Handle Photo upload simulation / file picker
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Real Photo selection & HTML5 Canvas compression (1024px max, JPEG 0.82)
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      const newUrls: string[] = [];
-      for (let i = 0; i < files.length && photos.length + newUrls.length < 4; i++) {
-        newUrls.push(URL.createObjectURL(files[i]));
+    if (!files || files.length === 0) return;
+
+    setIsCompressingPhoto(true);
+    setErrors((prev) => ({ ...prev, photos: undefined }));
+
+    try {
+      const compressedUrls: string[] = [];
+      const availableSlots = Math.max(0, 4 - (photos.length === 1 && photos[0] === bikeImg ? 0 : photos.length));
+
+      for (let i = 0; i < files.length && compressedUrls.length < availableSlots; i++) {
+        const compressedDataUrl = await compressImageToDataUrl(files[i], {
+          maxDimension: 1024,
+          quality: 0.82,
+          mimeType: 'image/jpeg',
+        });
+        compressedUrls.push(compressedDataUrl);
       }
-      setPhotos((prev) => [...prev, ...newUrls].slice(0, 4));
-      if (errors.photos) {
-        setErrors((prev) => ({ ...prev, photos: undefined }));
+
+      if (compressedUrls.length > 0) {
+        setPhotos((prev) => {
+          // Replace the default SVG placeholder if user uploads their first real photo
+          const baseList = prev.length === 1 && prev[0] === bikeImg ? [] : prev;
+          return [...baseList, ...compressedUrls].slice(0, 4);
+        });
       }
-    }
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    } catch {
+      setErrors((prev) => ({
+        ...prev,
+        photos: 'No se pudo procesar la imagen seleccionada. Intenta con otro archivo.',
+      }));
+    } finally {
+      setIsCompressingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -144,6 +173,7 @@ export const PublishScreen: React.FC = () => {
   // Step Navigation Backwards
   const handlePrevStep = () => {
     if (currentStep > 1 && currentStep <= 4) {
+      setErrors((prev) => ({ ...prev, submit: undefined }));
       setCurrentStep((prev) => (prev - 1) as WizardStep);
     }
   };
@@ -231,17 +261,74 @@ export const PublishScreen: React.FC = () => {
     setCurrentStep(4);
   };
 
-  // Step 4 Publish Action (600ms loading simulation)
-  const handlePublish = () => {
+  // Step 4 Real Publish Action -> POST /api/v1/items
+  const handlePublish = async () => {
+    if (isPublishing) return;
+
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+
+    try {
+      // Upload base64 data URLs if upload-image endpoint is available, or pass directly
+      const uploadedImages: string[] = [];
+      for (const photo of photos) {
+        if (photo.startsWith('data:image/')) {
+          const uploadedUrl = await itemsService.uploadImage(photo);
+          uploadedImages.push(uploadedUrl);
+        } else {
+          uploadedImages.push(photo);
+        }
+      }
+
+      const primaryImage = uploadedImages[0] || bikeImg;
+
+      await createItemReal({
+        name: name.trim(),
+        category,
+        condition,
+        description: description.trim(),
+        estimatedValue: Number(estimatedValue) || 100,
+        location: location.trim(),
+        imageUrl: primaryImage,
+        images: uploadedImages.length > 0 ? uploadedImages : [primaryImage],
+        wants: wantedItems,
+      });
+
       setCurrentStep(5);
-    }, 600);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.statusCode === 401) {
+          setErrors((prev) => ({
+            ...prev,
+            submit: 'Debes iniciar sesión para publicar un artículo en el catálogo.',
+          }));
+        } else {
+          setErrors((prev) => ({
+            ...prev,
+            submit: err.message || 'No se pudo publicar el artículo. Intenta nuevamente.',
+          }));
+        }
+      } else if (err instanceof Error) {
+        setErrors((prev) => ({
+          ...prev,
+          submit: err.message,
+        }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          submit: 'Ocurrió un error al publicar tu artículo.',
+        }));
+      }
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   // Display cover photo
   const coverPhoto = photos[0] || bikeImg;
+  const ownerName = currentUser?.name || 'Alex Morales';
+  const ownerAvatar = currentUser?.avatarUrl || alexAvatar;
+  const ownerRating = (currentUser?.rating ?? 4.9).toFixed(1);
 
   // STEP 5: Success Screen (Not counted in step indicator)
   if (currentStep === 5) {
@@ -339,14 +426,16 @@ export const PublishScreen: React.FC = () => {
   // STEPS 1 - 4 WIZARD VIEW
   return (
     <div className="flex flex-col min-h-full px-margin pt-4 pb-28">
-      {/* Hidden file input for custom uploads */}
+      {/* Hidden file input for camera / gallery selection */}
       <input
         type="file"
         ref={fileInputRef}
         accept="image/*"
+        capture="environment"
         multiple
         onChange={handleFileChange}
         className="hidden"
+        aria-label="Seleccionar foto del artículo"
       />
 
       {/* Top Step Navigation Header */}
@@ -435,7 +524,7 @@ export const PublishScreen: React.FC = () => {
               Agrega fotos de tu artículo
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Hasta 4 fotos. La primera será la portada.
+              Toma una foto con tu cámara o elige de tu galería (compresión automática HD).
             </p>
           </div>
 
@@ -453,14 +542,18 @@ export const PublishScreen: React.FC = () => {
             className="w-full h-48 rounded-2xl border-dashed border-2 border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer flex flex-col items-center justify-center gap-3 p-4 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <div className="w-14 h-14 rounded-full bg-primary-fixed text-primary flex items-center justify-center shadow-xs">
-              <Icon name="add_a_photo" size="xl" />
+              <Icon
+                name={isCompressingPhoto ? 'progress_activity' : 'add_a_photo'}
+                size="xl"
+                className={isCompressingPhoto ? 'animate-spin' : undefined}
+              />
             </div>
             <div className="text-center">
               <span className="font-label-lg text-label-lg font-bold text-primary block">
-                Toca para agregar fotos
+                {isCompressingPhoto ? 'Optimizando imagen...' : 'Toca para agregar fotos'}
               </span>
               <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 block">
-                PNG, JPG o SVG (máx. 4 fotos)
+                Cámara o Galería • Máx. 1024px JPEG (hasta 4 fotos)
               </span>
             </div>
           </div>
@@ -870,6 +963,18 @@ export const PublishScreen: React.FC = () => {
             </p>
           </div>
 
+          {errors.submit && (
+            <div
+              role="alert"
+              className="p-3.5 rounded-2xl bg-error-container/25 border border-error/40 text-error flex items-start gap-2.5"
+            >
+              <Icon name="error" size="sm" className="shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-label-md text-label-md font-bold">{errors.submit}</p>
+              </div>
+            </div>
+          )}
+
           {/* Large ObjectCard Preview */}
           <article className="flex flex-col rounded-2xl bg-surface-container-lowest p-4 shadow-sm space-y-4 border border-surface-container-high/60">
             {/* Large Image (h-56 full width rounded-2xl) */}
@@ -942,18 +1047,18 @@ export const PublishScreen: React.FC = () => {
             {/* Owner Row */}
             <div className="pt-3 border-t border-surface-container-high/60 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar src={alexAvatar} alt="Alex Morales" size="md" verified />
+                <Avatar src={ownerAvatar} alt={ownerName} size="md" verified />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
                     <span className="font-label-lg text-label-lg font-bold text-on-surface">
-                      Alex Morales
+                      {ownerName}
                     </span>
                     <span className="inline-flex items-center text-primary" title="Verificado">
                       <Icon name="verified" size="xs" filled />
                     </span>
                   </div>
                   <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    ★ 4.9 • Dueño verificado
+                    ★ {ownerRating} • Dueño verificado
                   </span>
                 </div>
               </div>
