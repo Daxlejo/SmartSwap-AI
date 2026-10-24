@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCondition, ItemStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { ItemsService } from './items.service';
@@ -12,10 +13,14 @@ describe('ItemsService', () => {
   let supabaseStorageService: jest.Mocked<
     Pick<SupabaseStorageService, 'uploadBase64Image'>
   >;
+  let aiEmbeddingService: jest.Mocked<
+    Pick<AiEmbeddingService, 'generateEmbedding'>
+  >;
 
   const ownerId = '11111111-1111-4111-8111-111111111111';
   const otherUserId = '22222222-2222-4222-8222-222222222222';
   const itemId = '33333333-3333-4333-8333-333333333333';
+  const mockEmbedding = [0.5, 0.5, 0.5, 0.5];
 
   const mockCreatedEntity = {
     id: itemId,
@@ -30,8 +35,8 @@ describe('ItemsService', () => {
     images: [
       'https://smartswap-mock.supabase.co/storage/v1/object/public/item-images/111/photo.jpg',
     ],
-    aiTags: ['audio', 'headphones'],
-    embedding: [],
+    aiTags: ['audio', 'sony', '1000xm5', 'noise', 'cancelling', 'headphones'],
+    embedding: mockEmbedding,
     createdAt: new Date('2026-10-24T12:00:00.000Z'),
     updatedAt: new Date('2026-10-24T12:00:00.000Z'),
     owner: {
@@ -83,6 +88,10 @@ describe('ItemsService', () => {
       }),
     };
 
+    aiEmbeddingService = {
+      generateEmbedding: jest.fn().mockResolvedValue(mockEmbedding),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ItemsService,
@@ -94,6 +103,10 @@ describe('ItemsService', () => {
           provide: SupabaseStorageService,
           useValue: supabaseStorageService,
         },
+        {
+          provide: AiEmbeddingService,
+          useValue: aiEmbeddingService,
+        },
       ],
     }).compile();
 
@@ -101,7 +114,7 @@ describe('ItemsService', () => {
   });
 
   describe('create', () => {
-    it('should create an item, upload base64 images via SupabaseStorageService, and synchronize Want records inside a transaction', async () => {
+    it('should create an item, upload base64 images, generate embeddings & aiTags, and synchronize Want records inside a transaction', async () => {
       const createDto: CreateItemDto = {
         name: 'Sony WH-1000XM5',
         category: 'Audio',
@@ -133,6 +146,15 @@ describe('ItemsService', () => {
         ownerId,
         'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
       );
+      expect(aiEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        'Sony WH-1000XM5 Audio Noise cancelling headphones in mint condition with case.',
+      );
+      expect(aiEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        'iPad Air',
+      );
+      expect(aiEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        'Nintendo Switch OLED',
+      );
       expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
       expect(mockTx.item.create).toHaveBeenCalledWith({
         data: {
@@ -147,6 +169,8 @@ describe('ItemsService', () => {
           images: [
             'https://smartswap-mock.supabase.co/storage/v1/object/public/item-images/111/uploaded.jpg',
           ],
+          aiTags: ['audio', 'sony', '1000xm5', 'noise', 'cancelling', 'headphones'],
+          embedding: mockEmbedding,
         },
       });
       expect(mockTx.want.createMany).toHaveBeenCalledWith({
@@ -156,12 +180,14 @@ describe('ItemsService', () => {
             itemId,
             queryText: 'iPad Air',
             category: 'Audio',
+            embedding: mockEmbedding,
           },
           {
             userId: ownerId,
             itemId,
             queryText: 'Nintendo Switch OLED',
             category: 'Audio',
+            embedding: mockEmbedding,
           },
         ],
       });
@@ -193,7 +219,7 @@ describe('ItemsService', () => {
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
 
-    it('should replace Want records and update the item when called by the owner', async () => {
+    it('should replace Want records with embeddings and update the item when called by the owner', async () => {
       mockPrismaService.item.findUnique.mockResolvedValue(mockCreatedEntity);
       mockTx.want.deleteMany.mockResolvedValue({ count: 2 });
       mockTx.want.createMany.mockResolvedValue({ count: 1 });
@@ -210,6 +236,12 @@ describe('ItemsService', () => {
 
       const result = await itemsService.update(ownerId, itemId, updateDto);
 
+      expect(aiEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        'Sony WH-1000XM5 Black Audio Noise cancelling headphones in mint condition with case.',
+      );
+      expect(aiEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        'MacBook Air M1',
+      );
       expect(mockTx.want.deleteMany).toHaveBeenCalledWith({
         where: { itemId },
       });
@@ -220,6 +252,7 @@ describe('ItemsService', () => {
             itemId,
             queryText: 'MacBook Air M1',
             category: 'Audio',
+            embedding: mockEmbedding,
           },
         ],
       });

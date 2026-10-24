@@ -12,6 +12,7 @@
     "start:prod": "node dist/main",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
+    "db:seed": "npx prisma db seed",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -51,6 +52,9 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "jest": {
     "moduleFileExtensions": [

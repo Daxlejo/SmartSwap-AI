@@ -1,0 +1,5 @@
+
+# TypeScript build info
+*.tsbuildinfo
+api/*.tsbuildinfo
+mobile/*.tsbuildinfo

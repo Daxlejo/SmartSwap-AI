@@ -13,14 +13,19 @@ export type NormalizedItemCondition = (typeof ITEM_CONDITIONS)[number];
 const CONDITION_LOOKUP: Record<string, NormalizedItemCondition> = {
   LIKE_NEW: 'LIKE_NEW',
   'COMO NUEVO': 'LIKE_NEW',
+  NUEVO: 'LIKE_NEW',
   EXCELLENT: 'EXCELLENT',
   EXCELENTE: 'EXCELLENT',
+  'EXCELENTE ESTADO': 'EXCELLENT',
   NEW: 'EXCELLENT',
   GOOD: 'GOOD',
   BUENO: 'GOOD',
+  'BUEN ESTADO': 'GOOD',
+  REGULAR: 'GOOD',
   FAIR: 'GOOD',
   FOR_PARTS: 'FOR_PARTS',
   'PARA PIEZAS': 'FOR_PARTS',
+  'PARA REPUESTO': 'FOR_PARTS',
   POOR: 'FOR_PARTS',
 };
 
@@ -89,6 +94,7 @@ export const createItemSchema = z
       .min(1, 'Location cannot be empty')
       .max(120, 'Location must be at most 120 characters long')
       .optional(),
+    imageUrl: z.string().trim().min(1).optional(),
     images: z
       .array(z.string().trim().min(1, 'Image entry cannot be empty'))
       .min(1, 'At least 1 image is required')
@@ -97,6 +103,7 @@ export const createItemSchema = z
       .array(z.string().trim().min(1, 'Want entry cannot be empty'))
       .min(1, 'At least 1 want is required')
       .max(10, 'At most 10 wants are allowed'),
+    aiTags: z.array(z.string().trim().min(1)).optional(),
   })
   .strict();
 
