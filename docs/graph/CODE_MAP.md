@@ -35,10 +35,12 @@
 | `GET` | `/proposals` | `ProposalsController` | `listMyRoutes` | List all barter proposals where the authenticated user is initiator or participant |
 | `POST` | `/proposals` | `ProposalsController` | `proposeRoute` | Create exchange proposal, lock involved items, and notify participants |
 | `GET` | `/proposals/:id` | `ProposalsController` | `getRouteById` | Get a single proposal by route ID or human-readable SW-XXXX code |
+| `POST` | `/proposals/:id/cancel` | `ProposalsController` | `cancelRoute` | Cancel a pending swap route proposal (initiator only) and unlock its items |
 | `POST` | `/proposals/:id/complete` | `ProposalsController` | `completeRoute` | Confirm delivery and finalize a confirmed circular swap route proposal |
 | `POST` | `/proposals/:id/respond` | `ProposalsController` | `respondToRoute` | Accept or reject a proposed swap route step with distributed consensus transitions |
 | `GET` | `/routes` | `RoutesController` | `listMyRoutes` | List all persisted swap routes where the authenticated user is initiator or participant |
 | `GET` | `/routes/:id` | `RoutesController` | `getRouteById` | Get a single persisted swap route by ID or code |
+| `POST` | `/routes/:id/cancel` | `RoutesController` | `cancelRoute` | Cancel a pending swap route proposal (initiator only) and unlock its items |
 | `POST` | `/routes/:id/complete` | `RoutesController` | `completeRoute` | Confirm delivery and finalize a confirmed circular swap route, updating items and eco metrics |
 | `POST` | `/routes/:id/propose` | `RoutesController` | `proposeRouteById` | OpenAPI path-compatible endpoint to propose a discovered circular swap route |
 | `POST` | `/routes/:id/respond` | `RoutesController` | `respondToRoute` | Accept or reject a proposed swap route step with distributed consensus transitions |

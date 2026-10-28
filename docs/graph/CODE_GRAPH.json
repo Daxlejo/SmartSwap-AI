@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-28T20:09:55.932Z",
+  "generatedAt": "2026-10-28T20:27:32.034Z",
   "stats": {
-    "totalFiles": 113,
+    "totalFiles": 118,
     "apiFiles": 55,
-    "mobileFiles": 58,
-    "endpointsCount": 37
+    "mobileFiles": 63,
+    "endpointsCount": 39
   },
   "endpoints": [
     {
@@ -201,6 +201,14 @@
     },
     {
       "method": "POST",
+      "path": "/proposals/:id/cancel",
+      "controller": "ProposalsController",
+      "handler": "cancelRoute",
+      "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "POST",
       "path": "/proposals/:id/complete",
       "controller": "ProposalsController",
       "handler": "completeRoute",
@@ -229,6 +237,14 @@
       "controller": "RoutesController",
       "handler": "getRouteById",
       "summary": "Get a single persisted swap route by ID or code",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/cancel",
+      "controller": "RoutesController",
+      "handler": "cancelRoute",
+      "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
       "file": "api/src/modules/routes/routes.controller.ts"
     },
     {
@@ -389,10 +405,12 @@
     ],
     "mobile/components": [
       "mobile/src/components/BottomNav.tsx",
+      "mobile/src/components/DemoAccountSwitcher.tsx",
       "mobile/src/components/ObjectCard.tsx",
       "mobile/src/components/ProposalCard.tsx",
       "mobile/src/components/RouteCard.tsx",
       "mobile/src/components/RouteStep.tsx",
+      "mobile/src/components/ServerStatusBanner.tsx",
       "mobile/src/components/TopBar.tsx",
       "mobile/src/components/ui/Avatar.tsx",
       "mobile/src/components/ui/Badge.tsx",
@@ -405,6 +423,7 @@
       "mobile/src/components/ui/ThemeToggle.tsx"
     ],
     "mobile/config": [
+      "mobile/src/config/demoAccounts.ts",
       "mobile/src/config/env.ts"
     ],
     "mobile/context": [
@@ -415,6 +434,7 @@
       "mobile/src/data/mockData.ts"
     ],
     "mobile/hooks": [
+      "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
       "mobile/src/hooks/useTranslation.ts"
     ],
@@ -457,6 +477,7 @@
     "mobile/services": [
       "mobile/src/services/ai/ai.service.ts",
       "mobile/src/services/auth/auth.service.ts",
+      "mobile/src/services/health/health.service.ts",
       "mobile/src/services/http/apiClient.ts",
       "mobile/src/services/items/items.service.ts",
       "mobile/src/services/notifications/notifications.service.ts",
@@ -1319,6 +1340,14 @@
         },
         {
           "method": "POST",
+          "path": "/proposals/:id/cancel",
+          "controller": "ProposalsController",
+          "handler": "cancelRoute",
+          "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        },
+        {
+          "method": "POST",
           "path": "/proposals/:id/complete",
           "controller": "ProposalsController",
           "handler": "completeRoute",
@@ -1399,6 +1428,14 @@
           "controller": "RoutesController",
           "handler": "respondToRoute",
           "summary": "Accept or reject a proposed swap route step with distributed consensus transitions",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/cancel",
+          "controller": "RoutesController",
+          "handler": "cancelRoute",
+          "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
           "file": "api/src/modules/routes/routes.controller.ts"
         },
         {
@@ -1593,6 +1630,23 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/components/DemoAccountSwitcher.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "DemoAccountSwitcher"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/config/demoAccounts",
+        "@/config/env",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "clsx",
+        "react",
+        "react-router-dom"
+      ]
+    },
     "mobile/src/components/ObjectCard.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -1650,6 +1704,18 @@
         "@/hooks/useTranslation",
         "@/types",
         "react"
+      ]
+    },
+    "mobile/src/components/ServerStatusBanner.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ServerStatusBanner"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/hooks/useServerStatus",
+        "@/hooks/useTranslation",
+        "clsx"
       ]
     },
     "mobile/src/components/TopBar.tsx": {
@@ -1776,6 +1842,14 @@
         "clsx"
       ]
     },
+    "mobile/src/config/demoAccounts.ts": {
+      "module": "mobile/config",
+      "exports": [
+        "DEMO_ACCOUNTS",
+        "DemoAccount"
+      ],
+      "imports": []
+    },
     "mobile/src/config/env.ts": {
       "module": "mobile/config",
       "exports": [
@@ -1850,6 +1924,19 @@
         "@/types"
       ]
     },
+    "mobile/src/hooks/useServerStatus.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "RETRY_INTERVAL_MS",
+        "SLOW_RESPONSE_MS",
+        "ServerStatus",
+        "useServerStatus"
+      ],
+      "imports": [
+        "@/services/health/health.service",
+        "react"
+      ]
+    },
     "mobile/src/hooks/useTheme.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -1909,8 +1996,10 @@
       ],
       "imports": [
         "@/components/BottomNav",
+        "@/components/ServerStatusBanner",
         "@/components/TopBar",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "react-router-dom"
       ]
     },
@@ -1920,6 +2009,7 @@
         "AuthLayout"
       ],
       "imports": [
+        "@/components/ServerStatusBanner",
         "react-router-dom"
       ]
     },
@@ -2055,6 +2145,7 @@
       ],
       "imports": [
         "@/assets/logo.svg",
+        "@/components/DemoAccountSwitcher",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
@@ -2092,6 +2183,7 @@
       ],
       "imports": [
         "@/assets/avatar-alex.svg",
+        "@/components/DemoAccountSwitcher",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
@@ -2123,6 +2215,7 @@
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
+        "@/services/http/apiClient",
         "@/types",
         "react",
         "react-router-dom"
@@ -2269,10 +2362,13 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
+        "@/components/ui/EmptyState",
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/utils/relativeTime",
         "react",
         "react-router-dom"
       ]
@@ -2307,6 +2403,15 @@
         "@/services/http/apiClient",
         "@/services/storage/tokenStorage",
         "@/types"
+      ]
+    },
+    "mobile/src/services/health/health.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "healthService"
+      ],
+      "imports": [
+        "@/services/http/apiClient"
       ]
     },
     "mobile/src/services/http/apiClient.ts": {
