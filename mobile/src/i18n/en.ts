@@ -1,4 +1,6 @@
-export const en = {
+import type { TranslationSchema } from './es';
+
+export const en: TranslationSchema = {
   nav: {
     home: 'Home',
     explore: 'Explore',

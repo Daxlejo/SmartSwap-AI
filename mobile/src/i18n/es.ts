@@ -148,3 +148,10 @@ export const es = {
 };
 
 export default es;
+
+type TranslationTree<T> = {
+  [K in keyof T]: T[K] extends string ? string : TranslationTree<T[K]>;
+};
+
+/** Shape every locale must implement; derived from the Spanish (default) resources. */
+export type TranslationSchema = TranslationTree<typeof es>;
