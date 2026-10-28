@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ApiError } from '@/services/http/apiClient';
 import alexAvatar from '@/assets/avatar-alex.svg';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CategoryOption {
   id: string;
@@ -56,6 +57,7 @@ const SORT_OPTIONS = [
 
 export const ExploreScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { items, currentUser, isItemsLoading, refreshItems, deleteItemReal } = useApp();
 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -69,6 +71,8 @@ export const ExploreScreen = () => {
 
   const selectedCondition = CONDITION_OPTIONS[conditionIndex];
   const selectedSort = SORT_OPTIONS[sortIndex];
+  const conditionLabel = t(`catalog.conditions.${selectedCondition}`);
+  const sortLabel = t(`explore.sortOptions.${selectedSort}`);
 
   useEffect(() => {
     refreshItems().catch(() => {});
@@ -102,7 +106,7 @@ export const ExploreScreen = () => {
       if (err instanceof ApiError) {
         setActionError(err.message);
       } else {
-        setActionError('No se pudo eliminar el artículo.');
+        setActionError(t('explore.deleteError'));
       }
     } finally {
       setIsDeletingId(null);
@@ -220,15 +224,15 @@ export const ExploreScreen = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar artículos para canje..."
-              aria-label="Buscar artículos para canje"
+              placeholder={t('explore.searchPlaceholder')}
+              aria-label={t('explore.searchAria')}
               className="w-full h-12 pl-11 pr-11 rounded-2xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md border border-surface-container-high/60 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all"
             />
             {searchQuery.length > 0 && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                aria-label="Limpiar búsqueda"
+                aria-label={t('explore.clearSearch')}
                 className="absolute right-3 w-7 h-7 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all"
               >
                 <Icon name="close" size="xs" />
@@ -239,8 +243,8 @@ export const ExploreScreen = () => {
           <div className="flex items-center justify-between px-1">
             <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
               {showSkeleton
-                ? 'Cargando catálogo...'
-                : `${filteredItems.length} ${filteredItems.length === 1 ? 'artículo encontrado' : 'artículos encontrados'}`}
+                ? t('explore.loadingCatalog')
+                : t('explore.itemsFound', { count: filteredItems.length })}
             </span>
 
             <div className="flex items-center gap-3">
@@ -251,7 +255,7 @@ export const ExploreScreen = () => {
                   className="font-label-sm text-label-sm text-primary font-bold hover:underline flex items-center gap-0.5"
                 >
                   <Icon name="restart_alt" size="xs" />
-                  <span>Limpiar filtros</span>
+                  <span>{t('explore.clearFilters')}</span>
                 </button>
               )}
 
@@ -259,7 +263,7 @@ export const ExploreScreen = () => {
                 type="button"
                 onClick={handleManualRefresh}
                 disabled={isRefreshing || isItemsLoading}
-                aria-label="Actualizar catálogo"
+                aria-label={t('explore.refreshAria')}
                 className="font-label-sm text-label-sm text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
               >
                 <Icon
@@ -267,7 +271,7 @@ export const ExploreScreen = () => {
                   size="xs"
                   className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined}
                 />
-                <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
+                <span>{isRefreshing ? t('explore.refreshing') : t('explore.refresh')}</span>
               </button>
             </div>
           </div>
@@ -276,7 +280,7 @@ export const ExploreScreen = () => {
         {/* Section 2: Category Chips (Horizontal scroll, no scrollbar) */}
         <div
           role="tablist"
-          aria-label="Categorías de artículos"
+          aria-label={t('explore.categoriesAria')}
           className="flex items-center gap-space-xs overflow-x-auto -mx-margin px-margin py-0.5 [scrollbar-width:none] [-ms-overflow-style:none]"
         >
           {CATEGORIES.map((category) => {
@@ -292,7 +296,7 @@ export const ExploreScreen = () => {
                 onClick={() => setSelectedCategory(category.id)}
                 className="shrink-0"
               >
-                {category.label}
+                {t(`catalog.categories.${category.id}`, { defaultValue: category.label })}
               </Chip>
             );
           })}
@@ -306,7 +310,7 @@ export const ExploreScreen = () => {
           <button
             type="button"
             onClick={handleCycleCondition}
-            aria-label={`Filtrar por estado: ${selectedCondition}`}
+            aria-label={t('explore.filterByCondition', { value: conditionLabel })}
             className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full font-label-sm text-label-sm transition-all active:scale-95 shrink-0 border ${
               selectedCondition !== 'Todos'
                 ? 'bg-secondary-fixed text-on-secondary-fixed border-secondary/30 font-bold'
@@ -314,7 +318,7 @@ export const ExploreScreen = () => {
             }`}
           >
             <Icon name="tune" size="xs" />
-            <span>Estado: {selectedCondition}</span>
+            <span>{t('explore.condition', { value: conditionLabel })}</span>
             <Icon name="expand_more" size="xs" />
           </button>
 
@@ -322,7 +326,7 @@ export const ExploreScreen = () => {
           <button
             type="button"
             onClick={handleCycleSort}
-            aria-label={`Ordenar por: ${selectedSort}`}
+            aria-label={t('explore.sortBy', { value: sortLabel })}
             className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full font-label-sm text-label-sm transition-all active:scale-95 shrink-0 border ${
               selectedSort !== 'Relevancia'
                 ? 'bg-tertiary-fixed text-on-tertiary-fixed border-tertiary/30 font-bold'
@@ -330,13 +334,13 @@ export const ExploreScreen = () => {
             }`}
           >
             <Icon name="swap_vert" size="xs" />
-            <span>Ordenar: {selectedSort}</span>
+            <span>{t('explore.sort', { value: sortLabel })}</span>
             <Icon name="expand_more" size="xs" />
           </button>
         </div>
 
         <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold shrink-0">
-          {filteredItems.length} artículos
+          {t('explore.itemsCount', { count: filteredItems.length })}
         </span>
       </div>
 
@@ -350,7 +354,7 @@ export const ExploreScreen = () => {
             <button
               type="button"
               onClick={() => setActionError(null)}
-              aria-label="Cerrar error"
+              aria-label={t('explore.closeError')}
               className="p-1"
             >
               <Icon name="close" size="xs" />
@@ -362,7 +366,7 @@ export const ExploreScreen = () => {
       {/* Section 4: Results */}
       <div className="flex-1 flex flex-col px-margin pt-2">
         {showSkeleton ? (
-          <div className="flex flex-col space-y-3" aria-label="Cargando artículos">
+          <div className="flex flex-col space-y-3" aria-label={t('explore.loadingItems')}>
             {[1, 2, 3, 4].map((skeletonId) => (
               <div
                 key={skeletonId}
@@ -383,8 +387,8 @@ export const ExploreScreen = () => {
           <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[45vh]">
             <EmptyState
               iconName="search_off"
-              title="Sin resultados"
-              description="Prueba con otros términos o cambia el filtro."
+              title={t('explore.emptyTitle')}
+              description={t('explore.emptyDescription')}
               action={
                 hasActiveFilters ? (
                   <Button
@@ -393,7 +397,7 @@ export const ExploreScreen = () => {
                     leftIcon="restart_alt"
                     onClick={handleResetFilters}
                   >
-                    Restablecer filtros
+                    {t('explore.resetFilters')}
                   </Button>
                 ) : undefined
               }
@@ -409,7 +413,7 @@ export const ExploreScreen = () => {
                   key={item.id}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Ver detalles de ${item.name}`}
+                  aria-label={t('explore.viewDetails', { name: item.name })}
                   onClick={(e) => {
                     // If user clicked the "Proponer" button inside ObjectCard, let onOfferSwap handle navigation
                     if ((e.target as HTMLElement).closest('button')) {
@@ -438,7 +442,7 @@ export const ExploreScreen = () => {
                   {/* Estimated Value Overlay Pill on Item Thumbnail */}
                   {item.estimatedValue !== undefined && (
                     <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-[10px] text-inverse-on-surface font-bold shadow-xs">
-                      ${item.estimatedValue} est.
+                      {t('explore.estimatedShort', { value: item.estimatedValue })}
                     </span>
                   )}
                 </div>
@@ -452,7 +456,7 @@ export const ExploreScreen = () => {
       <BottomSheet
         isOpen={Boolean(selectedItem)}
         onClose={() => setSelectedItem(null)}
-        title="Detalle del artículo"
+        title={t('explore.detailTitle')}
       >
         {selectedItem && (
           <div className="flex flex-col space-y-4">
@@ -465,16 +469,16 @@ export const ExploreScreen = () => {
               />
               <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
                 <Badge variant="primary" icon="category">
-                  {selectedItem.category}
+                  {t(`catalog.categories.${selectedItem.category}`, { defaultValue: selectedItem.category })}
                 </Badge>
                 <Badge variant="surface" icon="verified">
-                  {selectedItem.condition}
+                  {t(`catalog.conditions.${selectedItem.condition}`, { defaultValue: selectedItem.condition })}
                 </Badge>
               </div>
               {selectedItem.estimatedValue !== undefined && (
                 <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md border border-surface-container-high shadow-xs">
                   <span className="font-label-md text-label-md text-primary font-bold">
-                    Valor est. ${selectedItem.estimatedValue}
+                    {t('explore.estimatedValue', { value: selectedItem.estimatedValue })}
                   </span>
                 </div>
               )}
@@ -489,7 +493,7 @@ export const ExploreScreen = () => {
               </div>
               <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
                 {selectedItem.description ||
-                  'Artículo verificado disponible para intercambio directo o mediante cadena colaborativa sin dinero.'}
+                  t('explore.defaultDescription')}
               </p>
             </div>
 
@@ -522,7 +526,7 @@ export const ExploreScreen = () => {
                     </span>
                   </div>
                   <span className="font-label-sm text-[10px] text-primary font-semibold mt-1">
-                    {selectedItemOwner.co2SavedKg} kg CO₂ ahorrados
+                    {t('explore.co2Saved', { kg: selectedItemOwner.co2SavedKg })}
                   </span>
                 </div>
               </div>
@@ -533,11 +537,11 @@ export const ExploreScreen = () => {
               <div className="flex items-center gap-2 text-primary">
                 <Icon name="eco" size="sm" filled />
                 <span className="font-label-sm text-label-sm font-bold">
-                  Canje 100% libre de efectivo
+                  {t('explore.cashFree')}
                 </span>
               </div>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
-                Custodia protegida
+                {t('explore.protectedCustody')}
               </span>
             </div>
 
@@ -552,7 +556,7 @@ export const ExploreScreen = () => {
                 onClick={() => handleDeleteOwnItem(selectedItem.id)}
                 className="text-error border-error/40 hover:bg-error-container/20"
               >
-                Eliminar mi publicación
+                {t('explore.deleteMine')}
               </Button>
             ) : (
               <Button
@@ -567,7 +571,7 @@ export const ExploreScreen = () => {
                   setSelectedItem(null);
                 }}
               >
-                Proponer canje
+                {t('explore.proposeSwap')}
               </Button>
             )}
           </div>
