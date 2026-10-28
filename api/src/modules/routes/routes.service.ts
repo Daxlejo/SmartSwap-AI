@@ -630,6 +630,68 @@ export class RoutesService {
     return this.routeMapper.toDto(finalizedRoute as SwapRouteWithRelations);
   }
 
+  /**
+   * Lets the initiator withdraw a pending proposal: the route becomes `CANCELLED`, every locked item
+   * returns to `AVAILABLE`, and the other participants are notified.
+   */
+  async cancelRoute(userId: string, routeId: string): Promise<SwapRouteDto> {
+    const cancelledRoute = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
+      const route = await tx.swapRoute.findUnique({
+        where: { id: routeId.trim() },
+        include: ROUTE_RELATIONS_INCLUDE,
+      });
+
+      if (!route) {
+        throw new NotFoundException(`SwapRoute "${routeId}" not found`);
+      }
+
+      if (route.initiatorId !== userId) {
+        throw new ForbiddenException(
+          'Only the route initiator can cancel this proposal',
+        );
+      }
+
+      if (!this.isRouteInProposedState(route.status)) {
+        throw new ConflictException(
+          `Cannot cancel a swap route with status "${RouteMapper.mapRouteStatus(route.status)}"`,
+        );
+      }
+
+      const updated = await tx.swapRoute.update({
+        where: { id: route.id },
+        data: { status: RouteStatus.CANCELLED },
+        include: ROUTE_RELATIONS_INCLUDE,
+      });
+
+      await tx.item.updateMany({
+        where: { id: { in: this.collectUniqueItemIds(route.steps) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+
+      const recipients = Array.from(
+        new Set(route.steps.map((step) => step.userId)),
+      ).filter((uid) => uid !== userId);
+
+      if (recipients.length > 0) {
+        await tx.notification.createMany({
+          data: recipients.map((uid) => ({
+            userId: uid,
+            type: 'ROUTE_CANCELLED',
+            badge: 'Ruta cancelada',
+            title: `Ruta ${route.code} cancelada`,
+            body: `El iniciador retiró la propuesta ${route.code}. Tus artículos han vuelto a estar activos en el catálogo.`,
+            routeId: route.id,
+          })),
+        });
+      }
+
+      return updated;
+    });
+
+    return this.routeMapper.toDto(cancelledRoute as SwapRouteWithRelations);
+  }
+
   private toGraphItemNode(item: CatalogItemRow): GraphItemNode {
     const mergedWants = this.mergeItemAndOwnerWants(
       item.id,
