@@ -273,6 +273,7 @@ export const es = {
     propose: 'Proponer intercambio',
   },
   proposalConfirm: {
+    sendFailed: 'No se pudo enviar la propuesta. Intenta de nuevo.',
     title: 'Confirmar Propuesta',
     subtitle: 'Revisa los detalles de tu intercambio circular antes de enviarlo.',
     iOffer: 'Yo ofrezco',

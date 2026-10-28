@@ -275,6 +275,7 @@ export const en: TranslationSchema = {
     propose: 'Propose swap',
   },
   proposalConfirm: {
+    sendFailed: 'The proposal could not be sent. Please try again.',
     title: 'Confirm proposal',
     subtitle: 'Review your circular swap details before sending it.',
     iOffer: 'I offer',
