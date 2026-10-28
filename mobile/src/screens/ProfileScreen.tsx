@@ -13,6 +13,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/hooks/useTranslation';
 import { ApiError } from '@/services/http/apiClient';
 
 const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
@@ -36,6 +37,7 @@ const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
 export const ProfileScreen = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { language, changeLanguage } = useTranslation();
   const {
     currentUser: appUser,
     myItems,
@@ -51,7 +53,6 @@ export const ProfileScreen = () => {
 
   const [activeTab, setActiveTab] = useState<'activos' | 'pausados' | 'historial'>('activos');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<'es' | 'en'>('es');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -420,7 +421,7 @@ export const ProfileScreen = () => {
             </div>
             <ToggleSwitch
               enabled={language === 'en'}
-              onToggle={() => setLanguage((prev) => (prev === 'es' ? 'en' : 'es'))}
+              onToggle={() => void changeLanguage(language === 'es' ? 'en' : 'es')}
             />
           </div>
 
