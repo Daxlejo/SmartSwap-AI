@@ -328,7 +328,7 @@ export class RoutesService {
   /**
    * Retrieves a single persisted swap route by ID (or human-readable `SW-XXXX` code).
    */
-  async getRouteById(routeId: string): Promise<SwapRouteDto> {
+  async getRouteById(userId: string, routeId: string): Promise<SwapRouteDto> {
     const trimmedId = routeId.trim();
     let route = await this.prisma.swapRoute.findUnique({
       where: { id: trimmedId },
@@ -342,7 +342,12 @@ export class RoutesService {
       });
     }
 
-    if (!route) {
+    const isParticipant =
+      route !== null &&
+      (route.initiatorId === userId ||
+        route.steps.some((step) => step.userId === userId));
+
+    if (!route || !isParticipant) {
       throw new NotFoundException(`SwapRoute "${routeId}" not found`);
     }
 

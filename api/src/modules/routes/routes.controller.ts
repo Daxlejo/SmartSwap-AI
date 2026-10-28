@@ -149,8 +149,11 @@ export class RoutesController {
   @ApiResponse({ status: 200, description: 'Swap route detail' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Swap route not found' })
-  async getRouteById(@Param('id') id: string): Promise<SwapRouteDto> {
-    return this.routesService.getRouteById(id);
+  async getRouteById(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Param('id') id: string,
+  ): Promise<SwapRouteDto> {
+    return this.routesService.getRouteById(currentUser.sub, id);
   }
 
   @Post(':id/respond')

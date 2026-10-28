@@ -752,9 +752,19 @@ describe('RoutesService', () => {
     it('throws NotFoundException in getRouteById when route does not exist', async () => {
       mockPrismaService.swapRoute.findUnique.mockResolvedValue(null);
 
-      await expect(routesService.getRouteById('missing-route')).rejects.toThrow(
-        NotFoundException,
+      await expect(
+        routesService.getRouteById(userAId, 'missing-route'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('hides a route from users who are not participants', async () => {
+      mockPrismaService.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute(),
       );
+
+      await expect(
+        routesService.getRouteById('outsider-user', 'route-id'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
