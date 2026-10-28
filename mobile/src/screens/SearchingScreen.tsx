@@ -11,14 +11,9 @@ import bikeImg from '@/assets/item-bike.svg';
 import ballImg from '@/assets/item-ball.svg';
 import headphonesImg from '@/assets/item-headphones.svg';
 import cameraImg from '@/assets/item-camera.svg';
+import { useTranslation } from '@/hooks/useTranslation';
 
-const MESSAGES = [
-  'Analizando inventarios...',
-  'Buscando coincidencias cruzadas...',
-  'Calculando rutas óptimas...',
-  'Verificando valores estimados...',
-  '¡Ruta encontrada!',
-];
+const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values', 'found'] as const;
 
 const FLOW_STEPS = [
   { user: 'Tú', itemImg: bikeImg, itemName: 'Bicicleta' },
@@ -38,6 +33,7 @@ interface SearchingLocationState {
 
 export const SearchingScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const location = useLocation();
   const { searchRoutesReal } = useApp();
   const [searchParams] = useSearchParams();
@@ -191,8 +187,9 @@ export const SearchingScreen: React.FC = () => {
       ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
           user:
             idx === 0
-              ? 'Tú'
-              : topRoute.participants[idx]?.name?.split(' ')[0] || `Paso ${idx + 1}`,
+              ? t('searching.you')
+              : topRoute.participants[idx]?.name?.split(' ')[0] ||
+                t('searching.step', { count: idx + 1 }),
           itemImg: item.imageUrl || bikeImg,
           itemName: item.name,
         }))
@@ -254,14 +251,14 @@ export const SearchingScreen: React.FC = () => {
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high mb-2 shadow-2xs">
           <Icon name="cyclone" size="xs" filled className="text-primary animate-spin-slow" />
           <span className="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">
-            Algoritmo Circular SmartSwap
+            {t('searching.badge')}
           </span>
         </div>
         <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
-          Analizando Rutas de Canje...
+          {t('searching.title')}
         </h1>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 max-w-[280px]">
-          Conectando usuarios para cerrar el circuito sin dinero
+          {t('searching.subtitle')}
         </p>
       </div>
 
@@ -328,7 +325,7 @@ export const SearchingScreen: React.FC = () => {
             />
           </div>
           <span className="font-label-sm text-[10px] font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
-            {isPhase3 ? '¡Conectado!' : 'SmartSwap'}
+            {isPhase3 ? t('searching.connected') : 'SmartSwap'}
           </span>
         </div>
 
@@ -349,7 +346,7 @@ export const SearchingScreen: React.FC = () => {
               </span>
             </div>
             <span className="font-label-sm text-[11px] text-on-surface font-bold mt-2 truncate max-w-[76px] text-center">
-              Tú (Alex)
+              {t('searching.you')}
             </span>
           </div>
         </div>
@@ -373,7 +370,7 @@ export const SearchingScreen: React.FC = () => {
               </span>
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              Carlos V.
+              {activeFlowSteps[1]?.user ?? FLOW_STEPS[1].user}
             </span>
           </div>
         </div>
@@ -397,7 +394,7 @@ export const SearchingScreen: React.FC = () => {
               </span>
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              Laura G.
+              {activeFlowSteps[2]?.user ?? FLOW_STEPS[2].user}
             </span>
           </div>
         </div>
@@ -421,7 +418,7 @@ export const SearchingScreen: React.FC = () => {
               </span>
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              Sofía C.
+              {activeFlowSteps[3]?.user ?? FLOW_STEPS[3].user}
             </span>
           </div>
         </div>
@@ -436,13 +433,13 @@ export const SearchingScreen: React.FC = () => {
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a7a4a]/12 border border-[#1a7a4a]/30 text-[#1a7a4a] shadow-2xs">
                 <Icon name="verified" size="xs" filled />
                 <span className="font-label-sm text-label-sm font-bold">
-                  ¡Ruta Circular Encontrada! #{topRoute?.code || 'SR-8492'}
+                  {t('searching.routeFound', { code: topRoute?.code || 'SR-8492' })}
                 </span>
               </div>
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary">
                 <Icon name="auto_awesome" size="xs" />
                 <span className="font-label-sm text-label-sm font-bold">
-                  {matchPercent}% coincidencia
+                  {t('searching.matchPercent', { percent: matchPercent })}
                 </span>
               </div>
             </div>
@@ -477,7 +474,7 @@ export const SearchingScreen: React.FC = () => {
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[44px]">
             <p className="font-body-md text-body-md text-on-surface-variant font-medium animate-pulse">
-              {MESSAGES[messageIndex]}
+              {t(`searching.messages.${MESSAGE_KEYS[messageIndex]}`)}
             </p>
           </div>
         )}
@@ -506,7 +503,7 @@ export const SearchingScreen: React.FC = () => {
           <div className="h-[52px] flex items-center justify-center">
             <span className="font-body-sm text-body-sm text-on-surface-variant text-[12px] flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
-              Sincronizando con 1,420 inventarios activos...
+              {t('searching.syncing')}
             </span>
           </div>
         )}
