@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Item, User, SwapRoute } from '@/types';
+import { useApp } from '@/context/AppContext';
 import { getCurrentUser, getItems, getRecommendedRoutes } from '@/services/swapService';
 import { mockSwapRoute } from '@/data/mockData';
 import { Button } from '@/components/ui/Button';
@@ -11,8 +12,14 @@ import { ObjectCard } from '@/components/ObjectCard';
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
+  const {
+    currentUser: contextUser,
+    items: contextItems,
+    myItems,
+    routes,
+  } = useApp();
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [localUser, setLocalUser] = useState<User | null>(null);
   const [recommendedRoute, setRecommendedRoute] = useState<SwapRoute | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,9 +42,8 @@ export const HomeScreen = () => {
         ]);
 
         if (isMounted) {
-          setCurrentUser(userData);
-          // Show items that are not owned by the current user
-          setItems(itemsData.filter((i) => i.ownerId !== userData.id));
+          setLocalUser(userData);
+          setItems(itemsData);
           if (routesData.length > 0) {
             setRecommendedRoute(routesData[0]);
           }
@@ -60,10 +66,19 @@ export const HomeScreen = () => {
     };
   }, []);
 
-  const displayedItems =
-    filterMode === 'wishlist'
-      ? items.filter((item) => ['Fotografía', 'Tecnología'].includes(item.category))
-      : items;
+  const currentUser = contextUser || localUser;
+  const activeRoute = routes.length > 0 ? routes[0] : recommendedRoute || mockSwapRoute;
+  const activeRoutesCount = routes.length > 0 ? routes.length : 3;
+  const activeUserItemsCount = myItems.length;
+
+  const allItems = contextItems.length > 0 ? contextItems : items;
+  const otherItems = allItems.filter((i) => i.ownerId !== currentUser?.id);
+
+  const displayedItems = useMemo(() => {
+    return filterMode === 'wishlist'
+      ? otherItems.filter((item) => ['Fotografía', 'Tecnología'].includes(item.category))
+      : otherItems;
+  }, [filterMode, otherItems]);
 
   return (
     <div className="flex flex-col w-full px-margin pt-4 pb-8 space-y-5">
@@ -80,11 +95,19 @@ export const HomeScreen = () => {
             Encuentra tu próximo canje sin dinero
           </p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-xs shrink-0">
-          <Icon name="eco" size="sm" filled className="text-primary" />
-          <span className="font-label-sm text-label-sm text-primary font-bold">
-            {currentUser?.co2SavedKg ?? 14.2} kg CO₂ Ahorrados
-          </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-xs">
+            <Icon name="eco" size="sm" filled className="text-primary" />
+            <span className="font-label-sm text-label-sm text-primary font-bold">
+              {currentUser?.co2SavedKg ?? 14.2} kg CO₂ Ahorrados
+            </span>
+          </div>
+          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10">
+            <Icon name="swap_horiz" size="xs" className="text-primary" />
+            <span className="font-label-sm text-[11px] text-primary font-bold">
+              {currentUser?.tradesCompleted ?? 23} canjes completados
+            </span>
+          </div>
         </div>
       </section>
 
@@ -151,7 +174,7 @@ export const HomeScreen = () => {
           </div>
         </div>
 
-        {/* Card 2: Publish Item */}
+        {/* Card 2: Publish Item / Live Active User Items */}
         <button
           type="button"
           onClick={() => navigate('/publish')}
@@ -161,15 +184,21 @@ export const HomeScreen = () => {
             <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
               <Icon name="add_a_photo" size="md" />
             </div>
-            <span className="font-label-sm text-label-sm text-outline">Rápido</span>
+            <span className="font-label-sm text-label-sm text-outline font-semibold">
+              {activeUserItemsCount > 0 ? `${activeUserItemsCount} activos` : 'Rápido'}
+            </span>
           </div>
           <div className="mt-3">
             <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">Publicar</h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">En 60 segundos</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              {activeUserItemsCount > 0
+                ? `${activeUserItemsCount} ${activeUserItemsCount === 1 ? 'artículo en canje' : 'artículos en canje'}`
+                : 'En 60 segundos'}
+            </p>
           </div>
         </button>
 
-        {/* Card 3: Active Swaps */}
+        {/* Card 3: Active Swaps / Live Route Counts */}
         <button
           type="button"
           onClick={() => navigate('/swaps')}
@@ -180,18 +209,20 @@ export const HomeScreen = () => {
               <Icon name="sync_alt" size="md" />
             </div>
             <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold animate-pulse">
-              3 nuevas
+              {activeRoutesCount} {activeRoutesCount === 1 ? 'activa' : 'nuevas'}
             </span>
           </div>
           <div className="mt-3">
             <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">Rutas Activas</h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">3 circuitos</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+              {activeRoutesCount} {activeRoutesCount === 1 ? 'circuito' : 'circuitos'}
+            </p>
           </div>
         </button>
       </section>
 
       {/* Signature Section: Recommended Circular Chain */}
-      {recommendedRoute && (
+      {activeRoute && (
         <section aria-label="Ruta encontrada para ti" className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -203,8 +234,8 @@ export const HomeScreen = () => {
             <button
               type="button"
               onClick={() =>
-                navigate('/swap/route/SR-8492', {
-                  state: { route: recommendedRoute || mockSwapRoute },
+                navigate(`/swap/route/${activeRoute.code || activeRoute.id || 'SR-8492'}`, {
+                  state: { route: activeRoute },
                 })
               }
               className="font-label-sm text-label-sm text-primary font-bold flex items-center gap-0.5 hover:underline"
@@ -219,7 +250,7 @@ export const HomeScreen = () => {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <Badge variant="secondary-subtle" icon="auto_mode">
-                Circuito Colaborativo ({recommendedRoute.stepsCount} Pasos)
+                Circuito Colaborativo ({activeRoute.stepsCount} Pasos)
               </Badge>
               <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
                 <Icon name="verified" size="xs" />
@@ -244,7 +275,7 @@ export const HomeScreen = () => {
                   $0 gastados
                 </span>
                 <p className="font-label-sm text-label-sm text-on-surface-variant">
-                  {recommendedRoute.participants.length} personas en el circuito
+                  {activeRoute.participants?.length || 0} personas en el circuito
                 </p>
               </div>
             </div>
@@ -259,9 +290,9 @@ export const HomeScreen = () => {
 
               {/* Chain Steps */}
               <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
-                {recommendedRoute.chainItems.map((item, index) => {
+                {activeRoute.chainItems?.map((item, index) => {
                   const isFirst = index === 0;
-                  const isLast = index === recommendedRoute.chainItems.length - 1;
+                  const isLast = index === activeRoute.chainItems.length - 1;
 
                   return (
                     <div key={item.id} className="flex items-center shrink-0">
@@ -317,8 +348,8 @@ export const HomeScreen = () => {
                 size="md"
                 rightIcon="explore"
                 onClick={() =>
-                  navigate('/swap/route/SR-8492', {
-                    state: { route: recommendedRoute || mockSwapRoute },
+                  navigate(`/swap/route/${activeRoute.code || activeRoute.id || 'SR-8492'}`, {
+                    state: { route: activeRoute },
                   })
                 }
               >
