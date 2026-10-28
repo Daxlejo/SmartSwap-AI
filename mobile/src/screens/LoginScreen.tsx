@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useApp } from '@/context/AppContext';
 import { ApiError } from '@/services/http/apiClient';
 import { useTranslation } from '@/hooks/useTranslation';
+import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 
 type AuthMode = 'login' | 'register';
 
@@ -330,6 +331,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="mb-space-md">
+        <DemoAccountSwitcher />
       </div>
 
       {/* Legal Footer */}

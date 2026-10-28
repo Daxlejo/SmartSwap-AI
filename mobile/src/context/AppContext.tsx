@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { User, Item, SwapRoute, Proposal } from '@/types';
 import { tokenStorage } from '@/services/storage/tokenStorage';
-import { setOnUnauthorizedHandler } from '@/services/http/apiClient';
+import { ApiError, setOnUnauthorizedHandler } from '@/services/http/apiClient';
 import { authService, type RegisterPayload, type UpdateProfilePayload } from '@/services/auth/auth.service';
 import { itemsService, type CreateItemPayload } from '@/services/items/items.service';
 import {
@@ -44,6 +44,7 @@ export interface AppContextValue {
     comment?: string,
   ) => Promise<SwapRoute>;
   completeSwapReal: (routeId: string) => Promise<SwapRoute>;
+  cancelRouteReal: (routeId: string) => Promise<SwapRoute>;
   refreshRoutesReal: () => Promise<SwapRoute[]>;
   markNotificationReadReal: (id: string) => Promise<void>;
   markAllNotificationsReadReal: () => Promise<void>;
@@ -134,6 +135,13 @@ const defaultNotifications: AppNotification[] = [
     badgeVariant: 'surface',
   },
 ];
+
+/**
+ * Demo/offline mode: fall back to local data only without a session or without network,
+ * never to mask a real API rejection (409 expired route, 403 not a participant, ...).
+ */
+const canUseOfflineFallback = (error: unknown): boolean =>
+  !tokenStorage.hasToken() || !(error instanceof ApiError) || error.statusCode === 0;
 
 const isSwapRouteObject = (val: SwapRoute | ProposeRoutePayload): val is SwapRoute => {
   return (
@@ -458,12 +466,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await loadMarketplaceAndUserItems(hasActiveToken);
   }, [loadMarketplaceAndUserItems]);
 
+  // Loads the routes of the user who just signed in so nothing from a previous session lingers
+  const loadSessionRoutes = useCallback(async (userId: string): Promise<void> => {
+    try {
+      const userRoutes = await routesService.listMyRoutes();
+      setRoutes(userRoutes.length > 0 ? userRoutes : [mockSwapRoute]);
+      setProposals(userRoutes.map((route) => mapRouteToProposal(route, userId)));
+    } catch {
+      setRoutes([mockSwapRoute]);
+      setProposals([]);
+    }
+  }, []);
+
   const loginWithEmail = useCallback(
     async (email: string, password: string): Promise<User> => {
       const session = await authService.login(email, password);
       setCurrentUser(session.user);
       setIsAuthenticated(true);
-      await loadMarketplaceAndUserItems(true);
+      await Promise.all([
+        loadMarketplaceAndUserItems(true),
+        loadSessionRoutes(session.user.id),
+      ]);
       try {
         const notifs = await notificationsService.listNotifications();
         setNotifications(notifs);
@@ -472,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return session.user;
     },
-    [loadMarketplaceAndUserItems],
+    [loadMarketplaceAndUserItems, loadSessionRoutes],
   );
 
   const registerWithEmail = useCallback(
@@ -480,7 +503,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const session = await authService.register(payload);
       setCurrentUser(session.user);
       setIsAuthenticated(true);
-      await loadMarketplaceAndUserItems(true);
+      await Promise.all([
+        loadMarketplaceAndUserItems(true),
+        loadSessionRoutes(session.user.id),
+      ]);
       try {
         const notifs = await notificationsService.listNotifications();
         setNotifications(notifs);
@@ -489,7 +515,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return session.user;
     },
-    [loadMarketplaceAndUserItems],
+    [loadMarketplaceAndUserItems, loadSessionRoutes],
   );
 
   const logout = useCallback(() => {
@@ -498,6 +524,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setMyItems([]);
     setNotifications([]);
+    setRoutes([mockSwapRoute]);
+    setProposals(mockProposals);
   }, []);
 
   const createItemReal = useCallback(async (payload: CreateItemPayload): Promise<Item> => {
@@ -533,7 +561,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         proposedRoute = await routesService.proposeRoute(payload);
-      } catch {
+      } catch (error) {
+        if (!canUseOfflineFallback(error)) throw error;
         // Offline / unit test fallback
         const baseRoute = isSwapRouteObject(routeOrPayload) ? routeOrPayload : mockSwapRoute;
         proposedRoute = {
@@ -572,7 +601,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         updatedRoute = await routesService.respondToRoute(routeId, decision, comment);
-      } catch {
+      } catch (error) {
+        if (!canUseOfflineFallback(error)) throw error;
         // Offline / mock fallback
         const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
         const stepAcceptance = decision === 'ACCEPTED' ? 'ACCEPTED' : 'DECLINED';
@@ -616,7 +646,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         completedRoute = await routesService.completeRoute(routeId);
-      } catch {
+      } catch (error) {
+        if (!canUseOfflineFallback(error)) throw error;
         const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
         completedRoute = {
           ...existing,
@@ -651,6 +682,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [routes],
   );
 
+  const cancelRouteReal = useCallback(
+    async (routeId: string): Promise<SwapRoute> => {
+      let cancelledRoute: SwapRoute;
+
+      try {
+        cancelledRoute = await routesService.cancelRoute(routeId);
+      } catch (error) {
+        if (!canUseOfflineFallback(error)) throw error;
+        const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
+        cancelledRoute = { ...existing, id: routeId, status: 'CANCELLED' };
+      }
+
+      setRoutes((prev) =>
+        prev.map((r) => (r.id === cancelledRoute.id || r.id === routeId ? cancelledRoute : r)),
+      );
+      setProposals((prev) =>
+        prev.map((p) =>
+          p.id === routeId || p.id === cancelledRoute.id ? { ...p, status: 'declined' } : p,
+        ),
+      );
+
+      return cancelledRoute;
+    },
+    [routes],
+  );
+
   const value = useMemo<AppContextValue>(
     () => ({
       currentUser,
@@ -675,6 +732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       proposeRouteReal,
       respondToProposalReal,
       completeSwapReal,
+      cancelRouteReal,
       refreshRoutesReal,
       markNotificationReadReal,
       markAllNotificationsReadReal,
@@ -703,6 +761,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       proposeRouteReal,
       respondToProposalReal,
       completeSwapReal,
+      cancelRouteReal,
       refreshRoutesReal,
       markNotificationReadReal,
       markAllNotificationsReadReal,
@@ -746,6 +805,7 @@ const fallbackContextValue: AppContextValue = {
   respondToProposalReal: async (routeId, decision, comment) =>
     routesService.respondToRoute(routeId, decision, comment),
   completeSwapReal: async (routeId) => routesService.completeRoute(routeId),
+  cancelRouteReal: async (routeId) => routesService.cancelRoute(routeId),
   refreshRoutesReal: async () => routesService.listMyRoutes(),
   markNotificationReadReal: async (id: string) => {
     await notificationsService.markAsRead(id);

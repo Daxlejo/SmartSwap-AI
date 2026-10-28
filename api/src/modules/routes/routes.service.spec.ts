@@ -336,7 +336,7 @@ describe('RoutesService', () => {
       findMany: jest.fn(),
     },
     swapRoute: {
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
     },
     $transaction: jest.fn(
@@ -712,6 +712,109 @@ describe('RoutesService', () => {
           decision: 'ACCEPTED',
         }),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('lazy route expiry', () => {
+    it('expires overdue pending routes, unlocks items and notifies participants before listing', async () => {
+      mockPrismaService.swapRoute.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'route-overdue',
+            code: 'SW-1111',
+            steps: [
+              { userId: userAId, givesItemId: itemAId, receivesItemId: itemCId },
+              { userId: userBId, givesItemId: itemBId, receivesItemId: itemAId },
+            ],
+          },
+        ])
+        .mockResolvedValueOnce([]);
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.notification.createMany.mockResolvedValue({ count: 2 });
+
+      await routesService.listMyRoutes(userAId);
+
+      expect(mockTx.swapRoute.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'route-overdue',
+          status: { in: [RouteStatus.ACTIVE, RouteStatus.SUGGESTED] },
+        },
+        data: { status: RouteStatus.EXPIRED },
+      });
+      expect(mockTx.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+      expect(mockTx.notification.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ userId: userBId, type: 'ROUTE_EXPIRED' }),
+        ]),
+      });
+    });
+
+    it('skips routes another request already expired', async () => {
+      mockPrismaService.swapRoute.findMany
+        .mockResolvedValueOnce([{ id: 'route-overdue', code: 'SW-1111', steps: [] }])
+        .mockResolvedValueOnce([]);
+      mockTx.swapRoute.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      await routesService.listMyRoutes(userAId);
+
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.notification.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelRoute', () => {
+    it('cancels a pending route, unlocks its items and notifies the other participants', async () => {
+      const pendingRoute = buildPersisted3HopRoute();
+      mockTx.swapRoute.findUnique.mockResolvedValue(pendingRoute);
+      mockTx.swapRoute.update.mockResolvedValue(
+        buildPersisted3HopRoute({
+          status: RouteStatus.CANCELLED,
+          itemStatus: ItemStatus.AVAILABLE,
+        }),
+      );
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.notification.createMany.mockResolvedValue({ count: 2 });
+
+      const result = await routesService.cancelRoute(userAId, pendingRoute.id);
+
+      expect(mockTx.swapRoute.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: pendingRoute.id },
+          data: { status: RouteStatus.CANCELLED },
+        }),
+      );
+      expect(mockTx.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+      const notified = mockTx.notification.createMany.mock.calls[0][0].data.map(
+        (n: { userId: string }) => n.userId,
+      );
+      expect(notified.sort()).toEqual([userBId, userCId].sort());
+      expect(result.status).toBe('CANCELLED');
+    });
+
+    it('rejects cancellation by a participant who is not the initiator', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(buildPersisted3HopRoute());
+
+      await expect(
+        routesService.cancelRoute(userBId, 'route-id'),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTx.swapRoute.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects cancellation of a route that is no longer pending', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED }),
+      );
+
+      await expect(
+        routesService.cancelRoute(userAId, 'route-id'),
+      ).rejects.toThrow(ConflictException);
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
     });
   });
 

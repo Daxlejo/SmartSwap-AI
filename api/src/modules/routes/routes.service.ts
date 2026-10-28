@@ -315,6 +315,7 @@ export class RoutesService {
    * ordered by `updatedAt DESC`.
    */
   async listMyRoutes(userId: string): Promise<SwapRouteDto[]> {
+    await this.expireOverdueRoutes(userId);
     const routes = await this.prisma.swapRoute.findMany({
       where: {
         OR: [{ initiatorId: userId }, { steps: { some: { userId } } }],
@@ -332,6 +333,7 @@ export class RoutesService {
    * Retrieves a single persisted swap route by ID (or human-readable `SW-XXXX` code).
    */
   async getRouteById(userId: string, routeId: string): Promise<SwapRouteDto> {
+    await this.expireOverdueRoutes(userId);
     const trimmedId = routeId.trim();
     let route = await this.prisma.swapRoute.findUnique({
       where: { id: trimmedId },
@@ -628,6 +630,121 @@ export class RoutesService {
     });
 
     return this.routeMapper.toDto(finalizedRoute as SwapRouteWithRelations);
+  }
+
+  /**
+   * Lets the initiator withdraw a pending proposal: the route becomes `CANCELLED`, every locked item
+   * returns to `AVAILABLE`, and the other participants are notified.
+   */
+  async cancelRoute(userId: string, routeId: string): Promise<SwapRouteDto> {
+    const cancelledRoute = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
+      const route = await tx.swapRoute.findUnique({
+        where: { id: routeId.trim() },
+        include: ROUTE_RELATIONS_INCLUDE,
+      });
+
+      if (!route) {
+        throw new NotFoundException(`SwapRoute "${routeId}" not found`);
+      }
+
+      if (route.initiatorId !== userId) {
+        throw new ForbiddenException(
+          'Only the route initiator can cancel this proposal',
+        );
+      }
+
+      if (!this.isRouteInProposedState(route.status)) {
+        throw new ConflictException(
+          `Cannot cancel a swap route with status "${RouteMapper.mapRouteStatus(route.status)}"`,
+        );
+      }
+
+      const updated = await tx.swapRoute.update({
+        where: { id: route.id },
+        data: { status: RouteStatus.CANCELLED },
+        include: ROUTE_RELATIONS_INCLUDE,
+      });
+
+      await tx.item.updateMany({
+        where: { id: { in: this.collectUniqueItemIds(route.steps) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+
+      const recipients = Array.from(
+        new Set(route.steps.map((step) => step.userId)),
+      ).filter((uid) => uid !== userId);
+
+      if (recipients.length > 0) {
+        await tx.notification.createMany({
+          data: recipients.map((uid) => ({
+            userId: uid,
+            type: 'ROUTE_CANCELLED',
+            badge: 'Ruta cancelada',
+            title: `Ruta ${route.code} cancelada`,
+            body: `El iniciador retiró la propuesta ${route.code}. Tus artículos han vuelto a estar activos en el catálogo.`,
+            routeId: route.id,
+          })),
+        });
+      }
+
+      return updated;
+    });
+
+    return this.routeMapper.toDto(cancelledRoute as SwapRouteWithRelations);
+  }
+
+  /**
+   * Lazily expires the user's pending routes whose `expiresAt` has passed (no cron needed on the free
+   * Render plan): each route becomes `EXPIRED`, its items return to `AVAILABLE` and participants are notified.
+   */
+  private async expireOverdueRoutes(userId: string): Promise<void> {
+    const pendingStatuses = [RouteStatus.ACTIVE, RouteStatus.SUGGESTED];
+    const overdueRoutes = await this.prisma.swapRoute.findMany({
+      where: {
+        status: { in: pendingStatuses },
+        expiresAt: { lt: new Date() },
+        OR: [{ initiatorId: userId }, { steps: { some: { userId } } }],
+      },
+      select: {
+        id: true,
+        code: true,
+        steps: {
+          select: { userId: true, givesItemId: true, receivesItemId: true },
+        },
+      },
+    });
+
+    for (const route of overdueRoutes) {
+      await this.prisma.$transaction(async (tx) => {
+        // Conditional claim: a concurrent request that already expired the route makes this a no-op.
+        const claimed = await tx.swapRoute.updateMany({
+          where: { id: route.id, status: { in: pendingStatuses } },
+          data: { status: RouteStatus.EXPIRED },
+        });
+        if (claimed.count === 0) {
+          return;
+        }
+
+        await tx.item.updateMany({
+          where: { id: { in: this.collectUniqueItemIds(route.steps) } },
+          data: { status: ItemStatus.AVAILABLE },
+        });
+
+        await tx.notification.createMany({
+          data: Array.from(new Set(route.steps.map((step) => step.userId))).map(
+            (uid) => ({
+              userId: uid,
+              type: 'ROUTE_EXPIRED',
+              badge: 'Ruta expirada',
+              title: `Ruta ${route.code} expirada`,
+              body: `La propuesta ${route.code} venció sin la respuesta de todos los participantes. Tus artículos han vuelto a estar activos en el catálogo.`,
+              routeId: route.id,
+            }),
+          ),
+        });
+      });
+    }
   }
 
   private toGraphItemNode(item: CatalogItemRow): GraphItemNode {

@@ -20,6 +20,7 @@ describe('notificationsService & mapApiNotificationToUi', () => {
       expect(normalizeNotificationType('ROUTE_CONFIRMED')).toBe('proposal_accepted');
       expect(normalizeNotificationType('ROUTE_CANCELLED')).toBe('proposal_declined');
       expect(normalizeNotificationType('ROUTE_COMPLETED')).toBe('swap_completed');
+      expect(normalizeNotificationType('ROUTE_EXPIRED')).toBe('proposal_expired');
       expect(normalizeNotificationType('SYSTEM_WELCOME')).toBe('system');
       expect(normalizeNotificationType(undefined)).toBe('system');
       expect(isSystemNotification(normalizeNotificationType('SYSTEM_WELCOME'))).toBe(true);

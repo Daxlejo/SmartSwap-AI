@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ApiError } from '@/services/http/apiClient';
@@ -447,6 +448,8 @@ export const ProfileScreen = () => {
           </div>
         </div>
       </section>
+
+      <DemoAccountSwitcher />
 
       {/* Section 4: Cuenta */}
       <section className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md">

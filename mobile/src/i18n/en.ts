@@ -20,6 +20,61 @@ export const en: TranslationSchema = {
     verifiedUser: 'Verified user',
     inputAction: 'Field action',
   },
+  demo: {
+    title: 'Demo accounts',
+    description: 'Sign in with one tap as any circuit participant to show a live swap.',
+    signInAs: 'Sign in as {{name}}',
+    failed: 'Could not switch accounts. Make sure the seeder has run.',
+  },
+  serverStatus: {
+    waking: 'Waking up the server… the first load can take up to a minute.',
+    offline: 'Cannot reach the server. Retrying…',
+  },
+  headers: {
+    routeDetail: {
+      title: 'Route details',
+      subtitle: 'Step by step',
+    },
+    explore: {
+      title: 'Explore',
+      subtitle: 'P2P catalog',
+    },
+    publish: {
+      title: 'Publish',
+      subtitle: 'New item',
+    },
+    swaps: {
+      title: 'Swaps',
+      subtitle: 'Your trades',
+    },
+    profile: {
+      title: 'My profile',
+    },
+    configure: {
+      title: 'Configure swap',
+      subtitle: 'I have & I want',
+    },
+    searching: {
+      title: 'Searching routes',
+      subtitle: 'SmartSwap network',
+    },
+    results: {
+      title: 'Routes found',
+      subtitle: 'Circular chains',
+    },
+    confirm: {
+      title: 'Confirm swap',
+      subtitle: 'Final review',
+    },
+    sent: {
+      title: 'Proposal sent',
+      subtitle: 'In custody',
+    },
+    notifications: {
+      title: 'Notifications',
+      subtitle: 'Notification center',
+    },
+  },
   auth: {
     errors: {
       missingCredentials: 'Please enter your email and password.',
@@ -197,6 +252,11 @@ export const en: TranslationSchema = {
         title: 'Route {{code}} cancelled',
         body: 'A participant declined proposal {{code}}. Your items are active again.',
       },
+      proposal_expired: {
+        badge: 'Route expired',
+        title: 'Route {{code}} expired',
+        body: 'Proposal {{code}} expired before every participant replied. Your items are active again.',
+      },
       swap_completed: {
         badge: 'Swap completed',
         title: 'Swap {{code}} completed successfully!',
@@ -270,6 +330,7 @@ export const en: TranslationSchema = {
     propose: 'Propose swap',
   },
   proposalConfirm: {
+    sendFailed: 'The proposal could not be sent. Please try again.',
     title: 'Confirm proposal',
     subtitle: 'Review your circular swap details before sending it.',
     iOffer: 'I offer',
@@ -426,8 +487,16 @@ export const en: TranslationSchema = {
     custodyGuarantee: 'Custody deposit guarantee on every route',
   },
   trades: {
+    actionFailed: 'The action could not be completed. Please try again.',
+    dismissError: 'Dismiss error',
+    sentEmptyTitle: 'You haven\'t sent any proposals yet',
+    sentEmptyDescription: 'Find a circular route and propose a swap to see it here.',
+    findSwap: 'Find a swap',
+    expired: 'Expired',
+    sentAt: 'Sent {{time}}',
+    participants: '{{count}} participants',
+    cancelling: 'Cancelling...',
     justReceived: 'Just received',
-    cancelledComment: 'Proposal cancelled',
     you: 'You',
     step: 'Step {{count}}',
     title: 'My swaps',
@@ -449,10 +518,7 @@ export const en: TranslationSchema = {
     decline: 'Decline',
     accept: 'Accept',
     cancelledTitle: 'Proposal cancelled',
-    cancelledDescription: 'Your item is available again for other circular proposals.',
-    undo: 'Undo',
     offerTo: 'Your offer to {{name}}',
-    sentAgo: 'Sent 1 hour ago',
     inReview: 'In review',
     youOffer: 'You offer',
     inExchange: 'In exchange',

@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ApiError } from '@/services/http/apiClient';
+import { formatRelativeTime } from '@/utils/relativeTime';
 
 // Mock avatars
 import mateoAvatar from '@/assets/avatar-mateo.svg';
@@ -68,12 +71,13 @@ const DEFAULT_RECEIVED_PROPOSALS: ReceivedProposal[] = [
 
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const {
     routes,
     currentUser,
     respondToProposalReal,
     completeSwapReal,
+    cancelRouteReal,
     refreshRoutesReal,
   } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('recibidas');
@@ -84,8 +88,7 @@ export const TradesScreen: React.FC = () => {
   );
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Enviadas state
-  const [sentCancelled, setSentCancelled] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // En Curso state
   const [completedRouteIds, setCompletedRouteIds] = useState<Record<string, boolean>>({});
@@ -99,7 +102,7 @@ export const TradesScreen: React.FC = () => {
     if (!routes || routes.length === 0) return;
 
     const apiProposals: ReceivedProposal[] = routes
-      .filter((r) => r.id !== mockSwapRoute.id)
+      .filter((r) => r.id !== mockSwapRoute.id && r.initiatorId !== currentUser?.id)
       .map((r) => {
         const initiator = r.participants[0];
         const offered = r.chainItems[0];
@@ -141,52 +144,60 @@ export const TradesScreen: React.FC = () => {
     }
   }, [routes, currentUser?.id, t]);
 
-  const handleAcceptProposal = async (id: string) => {
+  const describeError = (error: unknown): string =>
+    error instanceof ApiError && error.message ? error.message : t('trades.actionFailed');
+
+  const handleRespond = async (id: string, decision: 'ACCEPTED' | 'REJECTED') => {
+    const previous = receivedProposals.find((p) => p.id === id)?.status ?? 'pending';
+    const optimistic = decision === 'ACCEPTED' ? 'accepted' : 'declined';
+    setActionError(null);
     setProcessingId(id);
     setReceivedProposals((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'accepted' as const } : p)),
+      prev.map((p) => (p.id === id ? { ...p, status: optimistic } : p)),
     );
     try {
-      await respondToProposalReal(id, 'ACCEPTED');
-    } catch {
-      // Optimistic UI update preserved on offline fallback
+      await respondToProposalReal(id, decision);
+    } catch (error) {
+      setReceivedProposals((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: previous } : p)),
+      );
+      setActionError(describeError(error));
     } finally {
       setProcessingId(null);
     }
   };
 
-  const handleDeclineProposal = async (id: string) => {
-    setProcessingId(id);
-    setReceivedProposals((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'declined' as const } : p)),
-    );
-    try {
-      await respondToProposalReal(id, 'REJECTED');
-    } catch {
-      // Optimistic UI update preserved on offline fallback
-    } finally {
-      setProcessingId(null);
-    }
-  };
+  const handleAcceptProposal = (id: string) => handleRespond(id, 'ACCEPTED');
+  const handleDeclineProposal = (id: string) => handleRespond(id, 'REJECTED');
 
   const primaryActiveRoute = routes[0] || mockSwapRoute;
 
-  const handleCancelSentProposal = async () => {
-    setSentCancelled(true);
+  // Enviadas: real proposals the current user initiated
+  const sentRoutes = routes.filter(
+    (r) => r.id !== mockSwapRoute.id && r.initiatorId === currentUser?.id,
+  );
+
+  const handleCancelSentRoute = async (routeId: string) => {
+    setActionError(null);
+    setProcessingId(routeId);
     try {
-      await respondToProposalReal(primaryActiveRoute.id, 'REJECTED', t('trades.cancelledComment'));
-    } catch {
-      // Keep local cancelled state
+      await cancelRouteReal(routeId);
+    } catch (error) {
+      setActionError(describeError(error));
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleCompleteRoute = async (routeId: string) => {
+    setActionError(null);
     setProcessingId(routeId);
     setCompletedRouteIds((prev) => ({ ...prev, [routeId]: true }));
     try {
       await completeSwapReal(routeId);
-    } catch {
-      // Keep local completed state
+    } catch (error) {
+      setCompletedRouteIds((prev) => ({ ...prev, [routeId]: false }));
+      setActionError(describeError(error));
     } finally {
       setProcessingId(null);
     }
@@ -277,7 +288,7 @@ export const TradesScreen: React.FC = () => {
                 : 'bg-surface-container-high text-on-surface-variant'
             }`}
           >
-            1
+            {sentRoutes.length}
           </span>
         </button>
 
@@ -302,6 +313,23 @@ export const TradesScreen: React.FC = () => {
           </span>
         </button>
       </div>
+
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-2 p-3 rounded-xl bg-error-container/40 text-on-error-container font-body-sm text-body-sm"
+        >
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            aria-label={t('trades.dismissError')}
+            className="shrink-0"
+          >
+            <Icon name="close" size="xs" />
+          </button>
+        </div>
+      )}
 
       {/* Tab: Recibidas */}
       {activeTab === 'recibidas' && (
@@ -433,98 +461,122 @@ export const TradesScreen: React.FC = () => {
       {/* Tab: Enviadas */}
       {activeTab === 'enviadas' && (
         <div className="flex flex-col gap-3.5">
-          {sentCancelled ? (
-            <div className="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container-high/60 text-center">
-              <Icon name="check_circle" size="lg" className="text-primary mb-2" />
-              <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                {t('trades.cancelledTitle')}
-              </p>
-              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                {t('trades.cancelledDescription')}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3"
-                onClick={() => setSentCancelled(false)}
-              >
-                {t('trades.undo')}
-              </Button>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Avatar
-                    src={carlosAvatar}
-                    alt="Carlos V."
-                    size="md"
-                    verified
-                  />
-                  <div>
-                    <h2 className="font-headline-sm text-[15px] font-bold text-on-surface">
-                      {t('trades.offerTo', { name: 'Carlos V.' })}
-                    </h2>
-                    <span className="font-body-sm text-[11px] text-on-surface-variant">
-                      {t('trades.sentAgo')}
-                    </span>
-                  </div>
-                </div>
-
-                <Badge variant="warning">{t('trades.inReview')}</Badge>
-              </div>
-
-              {/* Trade exchange flow: Bicicleta Trek -> Balón FIFA */}
-              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <img
-                    src={bikeImg}
-                    alt="Bicicleta Trek"
-                    className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
-                      {t('trades.youOffer')}
-                    </span>
-                    <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
-                      Bicicleta Trek
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center px-1 text-primary">
-                  <Icon name="arrow_forward" size="sm" />
-                </div>
-
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <img
-                    src={ballImg}
-                    alt="Balón FIFA"
-                    className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
-                      {t('trades.inExchange')}
-                    </span>
-                    <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
-                      Balón FIFA
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cancel Button */}
-              <div className="flex justify-end pt-1 border-t border-surface-container-low">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancelSentProposal}
-                  className="text-error hover:bg-error-container/20"
-                >
-                  {t('trades.cancelProposal')}
+          {sentRoutes.length === 0 ? (
+            <EmptyState
+              iconName="outbox"
+              title={t('trades.sentEmptyTitle')}
+              description={t('trades.sentEmptyDescription')}
+              action={
+                <Button variant="primary" size="sm" onClick={() => navigate('/swap/configure')}>
+                  {t('trades.findSwap')}
                 </Button>
-              </div>
-            </div>
+              }
+            />
+          ) : (
+            sentRoutes.map((route) => {
+              const recipient = route.participants[1] ?? route.participants[0];
+              const offered = route.chainItems[0];
+              const target = route.chainItems[route.chainItems.length - 1];
+              const upperStatus = (route.status || 'ACTIVE').toUpperCase();
+              const isPending = upperStatus === 'ACTIVE' || upperStatus === 'SUGGESTED';
+              const isBusy = processingId === route.id;
+              const statusBadge = isPending
+                ? { variant: 'warning' as const, label: t('trades.inReview') }
+                : upperStatus === 'CONFIRMED' || upperStatus === 'COMPLETED'
+                  ? { variant: 'success' as const, label: t('trades.status.accepted') }
+                  : upperStatus === 'EXPIRED'
+                    ? { variant: 'surface' as const, label: t('trades.expired') }
+                    : { variant: 'error' as const, label: t('trades.cancelledTitle') };
+
+              return (
+                <div
+                  key={route.id}
+                  className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar
+                        src={recipient?.avatarUrl}
+                        alt={recipient?.name ?? ''}
+                        size="md"
+                        verified={recipient?.verified}
+                      />
+                      <div className="min-w-0">
+                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface truncate">
+                          {t('trades.offerTo', { name: recipient?.name ?? '' })}
+                        </h2>
+                        <span className="font-body-sm text-[11px] text-on-surface-variant">
+                          {route.code ? `${route.code} • ` : ''}
+                          {route.createdAt
+                            ? t('trades.sentAt', { time: formatRelativeTime(route.createdAt, language) })
+                            : t('trades.participants', { count: route.participants.length })}
+                        </span>
+                      </div>
+                    </div>
+                    <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <img
+                        src={offered?.imageUrl || bikeImg}
+                        alt={offered?.name ?? ''}
+                        className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                          {t('trades.youOffer')}
+                        </span>
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
+                          {offered?.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center px-1 text-primary">
+                      <Icon name="arrow_forward" size="sm" />
+                    </div>
+
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <img
+                        src={target?.imageUrl || cameraImg}
+                        alt={target?.name ?? ''}
+                        className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                          {t('trades.inExchange')}
+                        </span>
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
+                          {target?.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-surface-container-low">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/swap/route/${route.id}`, { state: { route } })}
+                    >
+                      {t('trades.viewDetails')}
+                    </Button>
+                    {isPending && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={isBusy}
+                        onClick={() => handleCancelSentRoute(route.id)}
+                        className="text-error hover:bg-error-container/20"
+                      >
+                        {isBusy ? t('trades.cancelling') : t('trades.cancelProposal')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}

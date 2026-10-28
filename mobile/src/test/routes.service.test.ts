@@ -268,6 +268,18 @@ describe('routesService & mapApiRouteToUiRoute', () => {
       expect(completed.status).toBe('COMPLETED');
     });
 
+    it('calls POST /routes/:routeId/cancel', async () => {
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        ...sampleApiRoute,
+        status: 'CANCELLED',
+      });
+
+      const cancelled = await routesService.cancelRoute('route-cycle-301');
+
+      expect(postSpy).toHaveBeenCalledWith('/routes/route-cycle-301/cancel');
+      expect(cancelled.status).toBe('CANCELLED');
+    });
+
     it('calls GET /routes and GET /routes/:id', async () => {
       const getSpy = vi
         .spyOn(apiClient, 'get')

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ApiError } from '@/services/http/apiClient';
 
 export const ProposalConfirmScreen: React.FC = () => {
   const location = useLocation();
@@ -18,6 +19,7 @@ export const ProposalConfirmScreen: React.FC = () => {
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // First item in chain (offered by current user: item-bike / Bicicleta Trek)
   const offeredItem = route.chainItems[0] || mockSwapRoute.chainItems[0];
@@ -32,11 +34,14 @@ export const ProposalConfirmScreen: React.FC = () => {
   const handleSendProposal = async () => {
     if (!acceptedTerms || isSubmitting) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const proposedRoute = await proposeRouteReal(route);
       navigate('/swap/proposal/sent', { state: { route: proposedRoute } });
-    } catch {
-      navigate('/swap/proposal/sent', { state: { route } });
+    } catch (error) {
+      setSubmitError(
+        error instanceof ApiError && error.message ? error.message : t('proposalConfirm.sendFailed'),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -203,6 +208,15 @@ export const ProposalConfirmScreen: React.FC = () => {
             </div>
           </div>
         </section>
+      )}
+
+      {submitError && (
+        <div
+          role="alert"
+          className="p-3 rounded-xl bg-error-container/40 text-on-error-container font-body-sm text-body-sm"
+        >
+          {submitError}
+        </div>
       )}
 
       {/* Terms Checkbox */}

@@ -18,6 +18,61 @@ export const es = {
     verifiedUser: 'Usuario verificado',
     inputAction: 'Acción del campo',
   },
+  demo: {
+    title: 'Cuentas demo',
+    description: 'Entra con un toque como cualquier participante del circuito para mostrar un trueque en vivo.',
+    signInAs: 'Entrar como {{name}}',
+    failed: 'No se pudo cambiar de cuenta. Verifica que el seeder se haya ejecutado.',
+  },
+  serverStatus: {
+    waking: 'Despertando el servidor… la primera carga puede tardar hasta 1 minuto.',
+    offline: 'Sin conexión con el servidor. Reintentando…',
+  },
+  headers: {
+    routeDetail: {
+      title: 'Detalle de Ruta',
+      subtitle: 'Paso a Paso',
+    },
+    explore: {
+      title: 'Explorar',
+      subtitle: 'Catálogo P2P',
+    },
+    publish: {
+      title: 'Publicar',
+      subtitle: 'Nuevo artículo',
+    },
+    swaps: {
+      title: 'Canjes',
+      subtitle: 'Tus intercambios',
+    },
+    profile: {
+      title: 'Mi Perfil',
+    },
+    configure: {
+      title: 'Configurar Canje',
+      subtitle: 'Tengo y Busco',
+    },
+    searching: {
+      title: 'Buscando Rutas',
+      subtitle: 'Red SmartSwap',
+    },
+    results: {
+      title: 'Rutas Encontradas',
+      subtitle: 'Cadenas Circulares',
+    },
+    confirm: {
+      title: 'Confirmar Canje',
+      subtitle: 'Revisión Final',
+    },
+    sent: {
+      title: 'Propuesta Enviada',
+      subtitle: 'En Custodia',
+    },
+    notifications: {
+      title: 'Notificaciones',
+      subtitle: 'Centro de Avisos',
+    },
+  },
   auth: {
     errors: {
       missingCredentials: 'Por favor ingresa tu correo electrónico y contraseña.',
@@ -195,6 +250,11 @@ export const es = {
         title: 'Ruta {{code}} cancelada',
         body: 'Un participante rechazó la propuesta {{code}}. Tus artículos vuelven a estar activos.',
       },
+      proposal_expired: {
+        badge: 'Ruta expirada',
+        title: 'Ruta {{code}} expirada',
+        body: 'La propuesta {{code}} venció sin la respuesta de todos los participantes. Tus artículos vuelven a estar activos.',
+      },
       swap_completed: {
         badge: 'Trueque completado',
         title: '¡Trueque {{code}} finalizado con éxito!',
@@ -268,6 +328,7 @@ export const es = {
     propose: 'Proponer intercambio',
   },
   proposalConfirm: {
+    sendFailed: 'No se pudo enviar la propuesta. Intenta de nuevo.',
     title: 'Confirmar Propuesta',
     subtitle: 'Revisa los detalles de tu intercambio circular antes de enviarlo.',
     iOffer: 'Yo ofrezco',
@@ -424,8 +485,16 @@ export const es = {
     custodyGuarantee: 'Garantía de Depósito en Custodia en todas las rutas',
   },
   trades: {
+    actionFailed: 'No se pudo completar la acción. Intenta de nuevo.',
+    dismissError: 'Cerrar error',
+    sentEmptyTitle: 'Aún no has enviado propuestas',
+    sentEmptyDescription: 'Busca una ruta circular y propón un canje para verlo aquí.',
+    findSwap: 'Buscar canje',
+    expired: 'Expirada',
+    sentAt: 'Enviada {{time}}',
+    participants: '{{count}} participantes',
+    cancelling: 'Cancelando...',
     justReceived: 'Recién recibida',
-    cancelledComment: 'Propuesta cancelada',
     you: 'Tú',
     step: 'Paso {{count}}',
     title: 'Mis Canjes',
@@ -447,10 +516,7 @@ export const es = {
     decline: 'Rechazar',
     accept: 'Aceptar',
     cancelledTitle: 'Propuesta cancelada',
-    cancelledDescription: 'Tu artículo ha vuelto a estar disponible para otras propuestas circulares.',
-    undo: 'Deshacer',
     offerTo: 'Tu oferta a {{name}}',
-    sentAgo: 'Enviada hace 1 hora',
     inReview: 'En revisión',
     youOffer: 'Ofreces',
     inExchange: 'A cambio',

@@ -14,6 +14,9 @@ export interface EnvConfig {
   readonly appEnv: 'development' | 'production' | 'test' | string;
   readonly isProduction: boolean;
   readonly isDevelopment: boolean;
+  /** Shared password of the seeded demo accounts; enables the demo account switcher when set. */
+  readonly demoPassword: string | undefined;
+  readonly isDemoMode: boolean;
 }
 
 export const env: EnvConfig = {
@@ -21,6 +24,8 @@ export const env: EnvConfig = {
   appEnv: import.meta.env.VITE_APP_ENV || 'development',
   isProduction: (import.meta.env.VITE_APP_ENV || 'development') === 'production',
   isDevelopment: (import.meta.env.VITE_APP_ENV || 'development') === 'development',
+  demoPassword: import.meta.env.VITE_DEMO_PASSWORD || undefined,
+  isDemoMode: Boolean(import.meta.env.VITE_DEMO_PASSWORD),
 };
 
 export default env;

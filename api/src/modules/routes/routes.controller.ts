@@ -180,6 +180,24 @@ export class RoutesController {
     return this.routesService.respondToRoute(currentUser.sub, id, dto);
   }
 
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Cancel a pending swap route proposal (initiator only) and unlock its items',
+  })
+  @ApiResponse({ status: 200, description: 'Cancelled swap route' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Not the route initiator' })
+  @ApiResponse({ status: 404, description: 'Swap route not found' })
+  @ApiResponse({ status: 409, description: 'Route is no longer pending' })
+  async cancelRoute(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Param('id') id: string,
+  ): Promise<SwapRouteDto> {
+    return this.routesService.cancelRoute(currentUser.sub, id);
+  }
+
   @Post(':id/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
