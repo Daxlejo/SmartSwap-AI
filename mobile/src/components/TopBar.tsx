@@ -24,7 +24,7 @@ export const TopBar = ({
   showProfile = true,
 }: TopBarProps) => {
   const navigate = useNavigate();
-  const { currentUser } = useApp();
+  const { currentUser, unreadNotificationsCount } = useApp();
 
   const handleBack = () => {
     if (onBack) {
@@ -100,7 +100,12 @@ export const TopBar = ({
               className="relative w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon name="notifications" size="lg" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary-container ring-2 ring-surface" />
+              {unreadNotificationsCount > 0 && (
+                <span
+                  aria-label={`${unreadNotificationsCount} sin leer`}
+                  className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface"
+                />
+              )}
             </button>
           )}
 
