@@ -263,14 +263,22 @@ export class RoutesService {
         include: ROUTE_RELATIONS_INCLUDE,
       });
 
-      await tx.item.updateMany({
+      // Conditional lock: a concurrent proposal that already locked any item makes the count fall short.
+      const lockResult = await tx.item.updateMany({
         where: {
           id: { in: uniqueItemIds },
+          status: ItemStatus.AVAILABLE,
         },
         data: {
           status: ItemStatus.PENDING_SWAP,
         },
       });
+
+      if (lockResult.count !== uniqueItemIds.length) {
+        throw new ConflictException(
+          'One or more items were locked by another proposal at the same time',
+        );
+      }
 
       const nonInitiatorUserIds = Array.from(
         new Set(

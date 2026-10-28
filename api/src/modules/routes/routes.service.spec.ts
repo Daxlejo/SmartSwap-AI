@@ -492,6 +492,7 @@ describe('RoutesService', () => {
       expect(mockTx.item.updateMany).toHaveBeenCalledWith({
         where: {
           id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) },
+          status: ItemStatus.AVAILABLE,
         },
         data: {
           status: ItemStatus.PENDING_SWAP,
@@ -532,6 +533,18 @@ describe('RoutesService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(mockTx.swapRoute.create).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when a concurrent proposal locks an item first', async () => {
+      mockTx.item.findMany.mockResolvedValue(buildCatalogRows());
+      mockTx.swapRoute.findUnique.mockResolvedValue(null);
+      mockTx.swapRoute.create.mockResolvedValue(buildPersisted3HopRoute());
+      mockTx.item.updateMany.mockResolvedValue({ count: 2 });
+
+      await expect(
+        routesService.proposeRoute(userAId, proposeDto),
+      ).rejects.toThrow(ConflictException);
+      expect(mockTx.notification.createMany).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException when steps do not form a closed cycle', async () => {
