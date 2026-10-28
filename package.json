@@ -12,6 +12,7 @@
     "dev:api": "npm --workspace=api run start:dev",
     "build:api": "npm --workspace=api run build",
     "test:api": "npm --workspace=api run test",
+    "test:e2e": "npm --workspace=api run test:e2e",
     "typecheck": "npm --workspace=mobile run typecheck && npm --workspace=api run typecheck",
     "graphify": "node scripts/graphify.mjs"
   }
