@@ -4,6 +4,8 @@ import type { Item, User, SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { getCurrentUser, getItems, getRecommendedRoutes } from '@/services/swapService';
 import { mockSwapRoute } from '@/data/mockData';
+import { formatMatchScore } from '@/services/routes/routes.service';
+import { formatRelativeTime } from '@/utils/relativeTime';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
@@ -17,6 +19,7 @@ export const HomeScreen = () => {
     items: contextItems,
     myItems,
     routes,
+    notifications,
   } = useApp();
 
   const [localUser, setLocalUser] = useState<User | null>(null);
@@ -68,7 +71,12 @@ export const HomeScreen = () => {
 
   const currentUser = contextUser || localUser;
   const activeRoute = routes.length > 0 ? routes[0] : recommendedRoute || mockSwapRoute;
-  const activeRoutesCount = routes.length > 0 ? routes.length : 3;
+  const activeRoutesCount = routes.length;
+  const latestNotification = notifications[0];
+  const activeRouteTarget = activeRoute.chainItems[activeRoute.chainItems.length - 1];
+  const activeRouteChain = activeRoute.chainItems
+    .map((item) => item.name.split(' ')[0])
+    .join(' → ');
   const activeUserItemsCount = myItems.length;
 
   const allItems = contextItems.length > 0 ? contextItems : items;
@@ -99,38 +107,43 @@ export const HomeScreen = () => {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-xs">
             <Icon name="eco" size="sm" filled className="text-primary" />
             <span className="font-label-sm text-label-sm text-primary font-bold">
-              {currentUser?.co2SavedKg ?? 14.2} kg CO₂ Ahorrados
+              {currentUser?.co2SavedKg ?? 0} kg CO₂ Ahorrados
             </span>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10">
             <Icon name="swap_horiz" size="xs" className="text-primary" />
             <span className="font-label-sm text-[11px] text-primary font-bold">
-              {currentUser?.tradesCompleted ?? 23} canjes completados
+              {currentUser?.tradesCompleted ?? 0} canjes completados
             </span>
           </div>
         </div>
       </section>
 
-      {/* Live Swap Ticker */}
-      <section
-        aria-label="Actividad en vivo"
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-surface-container-low shadow-xs border border-surface-container-high/60 overflow-hidden"
-      >
-        <div className="relative flex items-center justify-center shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-primary">
-          <Icon name="electric_bolt" size="xs" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface" />
-        </div>
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider shrink-0">
-            Canje en vivo
+      {/* Live Swap Ticker: latest real notification */}
+      {latestNotification && (
+        <section
+          aria-label="Actividad en vivo"
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-surface-container-low shadow-xs border border-surface-container-high/60 overflow-hidden"
+        >
+          <div className="relative flex items-center justify-center shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-primary">
+            <Icon name="electric_bolt" size="xs" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface" />
+          </div>
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider shrink-0">
+              Canje en vivo
+            </span>
+            <span className="font-body-sm text-body-sm text-on-surface truncate">
+              {latestNotification.title}
+            </span>
+          </div>
+          <span className="font-label-sm text-label-sm text-outline shrink-0">
+            {latestNotification.createdAt
+              ? formatRelativeTime(latestNotification.createdAt, 'es')
+              : latestNotification.time}
           </span>
-          <span className="font-body-sm text-body-sm text-on-surface truncate">
-            Carlos aceptó intercambio por{' '}
-            <strong className="font-semibold text-on-surface">Keychron Q1 Pro</strong>
-          </span>
-        </div>
-        <span className="font-label-sm text-label-sm text-outline shrink-0">hace 5m</span>
-      </section>
+        </section>
+      )}
 
       {/* Quick Action Bento Grid */}
       <section aria-label="Acciones rápidas" className="grid grid-cols-2 gap-space-sm">
@@ -168,7 +181,7 @@ export const HomeScreen = () => {
                 Encontrar canje
               </Button>
               <span className="font-label-sm text-label-sm text-primary-fixed/90 font-medium">
-                98% coincidencia
+                Rutas de 2 a 4 saltos
               </span>
             </div>
           </div>
@@ -213,7 +226,9 @@ export const HomeScreen = () => {
             </span>
           </div>
           <div className="mt-3">
-            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">Rutas Activas</h3>
+            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">
+              Rutas Activas
+            </h3>
             <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
               {activeRoutesCount} {activeRoutesCount === 1 ? 'circuito' : 'circuitos'}
             </p>
@@ -255,7 +270,7 @@ export const HomeScreen = () => {
               <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
                 <Icon name="verified" size="xs" />
                 <span className="font-label-sm text-label-sm font-bold">
-                  Coincidencia: 100%
+                  Coincidencia: {formatMatchScore(activeRoute.matchScore)}%
                 </span>
               </div>
             </div>
@@ -267,7 +282,7 @@ export const HomeScreen = () => {
                   Objetivo Deseado
                 </span>
                 <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
-                  Cámara Fujifilm X-T30 II
+                  {activeRouteTarget?.name}
                 </span>
               </div>
               <div className="text-right shrink-0">
@@ -365,10 +380,8 @@ export const HomeScreen = () => {
                   <span>Dinámica del Intercambio Colaborativo</span>
                 </div>
                 <p>
-                  Alex entrega su bicicleta Trek a Carlos; Carlos entrega el balón a Laura; Laura
-                  entrega sus auriculares Sony a Diego; Diego entrega su MacBook a Sofía; y Sofía
-                  entrega la cámara Fujifilm a Alex. Todos reciben el artículo que buscaban sin dinero
-                  directo de por medio.
+                  {activeRoute.aiExplanation ||
+                    `Cada participante entrega su artículo al siguiente del circuito (${activeRouteChain}) y todos reciben lo que buscaban sin dinero de por medio.`}
                 </p>
               </div>
             )}
