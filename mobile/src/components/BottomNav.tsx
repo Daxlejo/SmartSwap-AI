@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
 import { Icon } from './ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const BottomNav = () => {
+  const { t } = useTranslation();
   return (
     <nav
-      aria-label="Navegación principal"
+      aria-label={t('nav.mainNavigation')}
       className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/40 shadow-[0_-4px_20px_rgba(15,23,42,0.05)] max-w-[390px] mx-auto"
     >
       <div className="flex items-center justify-around h-20 px-space-xs max-w-md mx-auto">
@@ -30,7 +32,7 @@ export const BottomNav = () => {
                   isActive ? 'text-primary font-bold' : 'text-on-surface-variant font-medium',
                 )}
               >
-                Inicio
+                {t('nav.home')}
               </span>
             </>
           )}
@@ -57,7 +59,7 @@ export const BottomNav = () => {
                   isActive ? 'text-primary font-bold' : 'text-on-surface-variant font-medium',
                 )}
               >
-                Explorar
+                {t('nav.explore')}
               </span>
             </>
           )}
@@ -67,14 +69,14 @@ export const BottomNav = () => {
         <div className="relative flex flex-col items-center justify-center flex-1 h-full">
           <NavLink
             to="/publish"
-            aria-label="Publicar artículo para canje"
+            aria-label={t('nav.publishItem')}
             className="absolute -top-4 flex flex-col items-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
           >
             <div className="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all">
               <Icon name="add" size="xl" />
             </div>
             <span className="font-label-sm text-label-sm text-on-surface-variant mt-1 font-bold group-hover:text-primary transition-colors">
-              Publicar
+              {t('nav.publish')}
             </span>
           </NavLink>
         </div>
@@ -105,7 +107,7 @@ export const BottomNav = () => {
                   isActive ? 'text-primary font-bold' : 'text-on-surface-variant font-medium',
                 )}
               >
-                Canjes
+                {t('nav.swaps')}
               </span>
             </>
           )}
@@ -132,7 +134,7 @@ export const BottomNav = () => {
                   isActive ? 'text-primary font-bold' : 'text-on-surface-variant font-medium',
                 )}
               >
-                Perfil
+                {t('nav.profile')}
               </span>
             </>
           )}

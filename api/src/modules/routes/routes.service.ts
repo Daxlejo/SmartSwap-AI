@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
+import { AiLocale } from '../ai/dto/ai-locale.dto';
 import { AiExplainerService } from '../ai/services/ai-explainer.service';
 import { ProposeRouteDto } from './dto/propose-route.dto';
 import { RespondRouteDto } from './dto/respond-route.dto';
@@ -113,7 +114,7 @@ export class RoutesService {
 
   /**
    * Discovers multi-hop circular barter routes starting from `userId` and enriches
-   * the top 3 ranked cycles with concise Spanish AI explanations.
+   * the top 3 ranked cycles with concise AI explanations in the requested locale.
    */
   async searchRoutes(
     userId: string,
@@ -165,7 +166,9 @@ export class RoutesService {
 
     const topCycles = discoveredCycles.slice(0, TOP_EXPLAINED_CYCLES);
     const explanations = await Promise.all(
-      topCycles.map(async (cycle) => this.generateCycleExplanationSafe(cycle)),
+      topCycles.map(async (cycle) =>
+        this.generateCycleExplanationSafe(cycle, dto.locale),
+      ),
     );
 
     return discoveredCycles.map((cycle, idx) => {
@@ -697,9 +700,11 @@ export class RoutesService {
 
   private async generateCycleExplanationSafe(
     cycle: SwapCycleCandidate,
+    locale: AiLocale,
   ): Promise<string | null> {
     try {
       const explanationResult = await this.aiExplainerService.explainSwapRoute({
+        locale,
         objectiveText: cycle.objectiveText || 'Trueque circular SmartSwap',
         steps: cycle.steps.map((step) => ({
           userName: step.userName,

@@ -1,6 +1,10 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react';
+import {
+  preferencesStorage,
+  type ThemePreference,
+} from '@/services/storage/preferencesStorage';
 
-export type Theme = 'light' | 'dark';
+export type Theme = ThemePreference;
 
 export interface ThemeContextValue {
   theme: Theme;
@@ -9,33 +13,11 @@ export interface ThemeContextValue {
   setTheme: (theme: Theme) => void;
 }
 
-const STORAGE_KEY = 'smartswap-theme';
-
 // eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const getSystemTheme = (): Theme => {
-  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
-};
-
-const getInitialTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'light';
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'dark' || saved === 'light') {
-      return saved;
-    }
-  } catch (error) {
-    console.error('Error reading theme from localStorage:', error);
-  }
-  return getSystemTheme();
-};
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const [theme, setThemeState] = useState<Theme>(() => preferencesStorage.getTheme());
 
   const applyTheme = useCallback((newTheme: Theme) => {
     const root = document.documentElement;
@@ -49,11 +31,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setTheme = useCallback(
     (newTheme: Theme) => {
       setThemeState(newTheme);
-      try {
-        localStorage.setItem(STORAGE_KEY, newTheme);
-      } catch (error) {
-        console.error('Error saving theme to localStorage:', error);
-      }
+      preferencesStorage.setTheme(newTheme);
       applyTheme(newTheme);
     },
     [applyTheme],
@@ -67,30 +45,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     applyTheme(theme);
   }, [theme, applyTheme]);
-
-  // Sync with OS preference if user has not explicitly persisted a preference
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
-          const systemTheme: Theme = e.matches ? 'dark' : 'light';
-          setThemeState(systemTheme);
-          applyTheme(systemTheme);
-        }
-      } catch {
-        // Fallback for restricted storage access
-      }
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, [applyTheme]);
 
   const value: ThemeContextValue = {
     theme,

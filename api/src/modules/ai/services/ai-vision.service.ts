@@ -1,4 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AI_LOCALE_PROMPT_NAME,
+  AiLocale,
+  DEFAULT_AI_LOCALE,
+} from '../dto/ai-locale.dto';
 import { AnalyzePhotoDto } from '../dto/analyze-photo.dto';
 import {
   EstimateValueDto,
@@ -66,6 +71,8 @@ interface ArchetypeTemplate {
   baseValue: number;
   aiTags: string[];
   suggestedWants: string[];
+  /** English copy used by the fallback when the requested locale is `en`. */
+  en: Pick<ArchetypeTemplate, 'name' | 'description' | 'suggestedWants'>;
 }
 
 const ARCHETYPES: ArchetypeTemplate[] = [
@@ -79,6 +86,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 240,
     aiTags: ['musica', 'instrumento', 'audio', 'estudio', 'creatividad'],
     suggestedWants: ['Interfaz de audio USB', 'Monitores de estudio', 'Tablet o iPad'],
+    en: {
+      name: 'Acoustic / Electric Musical Instrument',
+      description:
+        'Musical instrument in excellent condition, tuned and ready for studio work or live shows.',
+      suggestedWants: ['USB audio interface', 'Studio monitors', 'Tablet or iPad'],
+    },
   },
   {
     keywords: ['macbook', 'laptop', 'portatil', 'thinkpad', 'dell', 'asus', 'computador', 'pc'],
@@ -90,6 +103,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 520,
     aiTags: ['tecnologia', 'laptop', 'computacion', 'productividad', 'universidad'],
     suggestedWants: ['Monitor 4K UltraWide', 'Bicicleta urbana', 'Cámara Mirrorless'],
+    en: {
+      name: 'High-Performance Laptop',
+      description:
+        'Laptop ideal for software development, design and academic work, with the battery in great shape.',
+      suggestedWants: ['4K UltraWide monitor', 'City bike', 'Mirrorless camera'],
+    },
   },
   {
     keywords: ['monitor', 'pantalla', 'lg', 'samsung', 'ultrawide', '4k', 'display'],
@@ -101,6 +120,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 310,
     aiTags: ['monitor', 'setup', 'productividad', 'tecnologia', 'diseno'],
     suggestedWants: ['Silla ergonómica', 'Teclado mecánico inalámbrico', 'Audífonos ANC'],
+    en: {
+      name: 'Professional UltraHD IPS Monitor',
+      description:
+        'High-resolution IPS monitor with excellent color accuracy and an adjustable ergonomic stand.',
+      suggestedWants: ['Ergonomic chair', 'Wireless mechanical keyboard', 'ANC headphones'],
+    },
   },
   {
     keywords: ['camara', 'sony', 'canon', 'nikon', 'fujifilm', 'lente', 'fotografia'],
@@ -112,6 +137,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 460,
     aiTags: ['fotografia', 'camara', 'video', 'creacion-contenido', 'optica'],
     suggestedWants: ['Laptop ligera', 'Estabilizador Gimbal', 'Drone compacto'],
+    en: {
+      name: 'Mirrorless Digital Camera with Lens',
+      description:
+        'Compact interchangeable-lens camera with a high-sensitivity sensor, great for photography and 4K video.',
+      suggestedWants: ['Lightweight laptop', 'Gimbal stabilizer', 'Compact drone'],
+    },
   },
   {
     keywords: ['bici', 'bicicleta', 'trek', 'specialized', 'mtb', 'ruta', 'scooter', 'patineta'],
@@ -123,6 +154,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 290,
     aiTags: ['deportes', 'ciclismo', 'movilidad', 'outdoor', 'ecologico'],
     suggestedWants: ['Reloj GPS deportivo', 'Cámara de acción', 'Audífonos inalámbricos'],
+    en: {
+      name: 'Aluminum City / MTB Bike',
+      description:
+        'Bike with a lightweight aluminum frame, disc brakes and a freshly tuned drivetrain for sustainable mobility.',
+      suggestedWants: ['GPS sports watch', 'Action camera', 'Wireless headphones'],
+    },
   },
   {
     keywords: ['audifonos', 'airpods', 'sony wh', 'bose', 'auriculares', 'headset', 'parlante'],
@@ -134,6 +171,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 185,
     aiTags: ['audio', 'bluetooth', 'anc', 'musica', 'portatil'],
     suggestedWants: ['Teclado mecánico', 'Kindle Paperwhite', 'Mochila impermeable'],
+    en: {
+      name: 'Wireless Noise-Cancelling Headphones',
+      description:
+        'High-fidelity Bluetooth headphones with active noise cancellation (ANC) and the original carrying case.',
+      suggestedWants: ['Mechanical keyboard', 'Kindle Paperwhite', 'Waterproof backpack'],
+    },
   },
   {
     keywords: ['nintendo', 'switch', 'ps5', 'playstation', 'xbox', 'consola', 'videojuego', 'steam'],
@@ -145,6 +188,12 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     baseValue: 270,
     aiTags: ['gaming', 'consola', 'entretenimiento', 'videojuegos'],
     suggestedWants: ['Monitor Gaming 144Hz', 'Audífonos inalámbricos', 'Tablet'],
+    en: {
+      name: 'Hybrid / Home Video Game Console',
+      description:
+        'Video game console with original controllers and complete accessories in excellent working condition.',
+      suggestedWants: ['144Hz gaming monitor', 'Wireless headphones', 'Tablet'],
+    },
   },
 ];
 
@@ -157,25 +206,28 @@ export class AiVisionService {
    * returning structured catalog metadata with deterministic fallback.
    */
   async analyzePhoto(dto: AnalyzePhotoDto): Promise<VisionAnalysisResult> {
+    const locale = dto.locale ?? DEFAULT_AI_LOCALE;
+    const language = AI_LOCALE_PROMPT_NAME[locale];
     const fallbackFactory = (): VisionAnalysisResult =>
-      this.buildFallbackVisionResult(dto.hintText, dto.imageBase64);
+      this.buildFallbackVisionResult(dto.hintText, dto.imageBase64, locale);
 
     const systemPrompt = [
       'Eres el motor de visión artificial y tasación circular de SmartSwap.',
       'Analiza el artículo de la imagen y/o descripción proporcionada y devuelve ÚNICAMENTE un objeto JSON estricto con estas claves exactas:',
       '{',
-      '  "name": "Nombre comercial conciso en español (máx 60 caracteres)",',
+      `  "name": "Nombre comercial conciso en ${language} (máx 60 caracteres)",`,
       '  "category": "Tecnología | Música | Fotografía | Deportes | Audio | Gaming | Libros | Hogar | Otros",',
       '  "condition": "LIKE_NEW | EXCELLENT | GOOD | FOR_PARTS",',
       '  "conditionLabel": "Como nuevo | Excelente | Bueno | Para piezas",',
-      '  "description": "Descripción atractiva y honesta en español de 1 a 2 oraciones destacando su estado y utilidad.",',
+      `  "description": "Descripción atractiva y honesta en ${language} de 1 a 2 oraciones destacando su estado y utilidad.",`,
       '  "estimatedValue": numero_entero_en_USD,',
       '  "minValue": numero_entero_en_USD,',
       '  "maxValue": numero_entero_en_USD,',
       '  "aiTags": ["5 etiquetas semánticas en minúsculas"],',
-      '  "suggestedWants": ["3 artículos sugeridos de valor similar para trueque"],',
+      `  "suggestedWants": ["3 artículos sugeridos en ${language} de valor similar para trueque"],`,
       '  "confidence": numero_entre_0_y_1',
       '}',
+      'Los valores de "category" y "conditionLabel" deben quedar exactamente como se listan (en español).',
     ].join('\n');
 
     const userParts: OpenAiContentPart[] = [
@@ -327,7 +379,11 @@ export class AiVisionService {
   private buildFallbackVisionResult(
     hintText?: string,
     imageBase64?: string,
+    locale: AiLocale = DEFAULT_AI_LOCALE,
   ): VisionAnalysisResult {
+    const copyFor = (arch: ArchetypeTemplate) =>
+      locale === 'en' ? arch.en : arch;
+
     const normalizedHint = (hintText ?? '').toLowerCase();
     const matched = ARCHETYPES.find((arch) =>
       arch.keywords.some((kw) => normalizedHint.includes(kw)),
@@ -337,19 +393,19 @@ export class AiVisionService {
       const displayName =
         hintText && hintText.trim().length >= 3
           ? hintText.trim()
-          : matched.name;
+          : copyFor(matched).name;
       const estimatedValue = matched.baseValue;
       return {
         name: displayName,
         category: matched.category,
         condition: matched.condition,
         conditionLabel: CONDITION_LABELS[matched.condition],
-        description: matched.description,
+        description: copyFor(matched).description,
         estimatedValue,
         minValue: Math.round(estimatedValue * 0.85),
         maxValue: Math.round(estimatedValue * 1.15),
         aiTags: matched.aiTags,
-        suggestedWants: matched.suggestedWants,
+        suggestedWants: copyFor(matched).suggestedWants,
         confidence: 0.86,
         source: 'fallback',
       };
@@ -366,7 +422,7 @@ export class AiVisionService {
     const displayName =
       hintText && hintText.trim().length >= 3
         ? hintText.trim()
-        : selected.name;
+        : copyFor(selected).name;
     const estimatedValue = selected.baseValue;
 
     return {
@@ -374,12 +430,12 @@ export class AiVisionService {
       category: selected.category,
       condition: selected.condition,
       conditionLabel: CONDITION_LABELS[selected.condition],
-      description: selected.description,
+      description: copyFor(selected).description,
       estimatedValue,
       minValue: Math.round(estimatedValue * 0.85),
       maxValue: Math.round(estimatedValue * 1.15),
       aiTags: selected.aiTags,
-      suggestedWants: selected.suggestedWants,
+      suggestedWants: copyFor(selected).suggestedWants,
       confidence: 0.82,
       source: 'fallback',
     };

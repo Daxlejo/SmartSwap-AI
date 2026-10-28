@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface TargetPreset {
   id: string;
@@ -28,6 +29,7 @@ const itemIdMap: Record<string, string> = {
 
 export const ConfigureSwapScreen = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const location = useLocation();
   const { searchRoutesReal } = useApp();
   const preselectedWant = location.state as { wantItemId?: string; wantItemName?: string } | null;
@@ -82,10 +84,10 @@ export const ConfigureSwapScreen = () => {
                 id: matchedTag || matchedItem.id,
                 name: matchedItem.name,
                 title: matchedItem.name,
-                matchRate: '96% Coincidencia',
+                matchRate: t('configure.matchRate', { percent: 96 }),
                 details:
                   matchedItem.description ||
-                  `Rango estimado: $${matchedItem.estimatedValue ?? 500} USD • Coincidencia directa`,
+                  t('configure.details.estimatedRange', { value: matchedItem.estimatedValue ?? 500 }),
                 imageUrl: matchedItem.imageUrl,
                 co2Saved: '38 kg',
                 routesCount: 6,
@@ -96,8 +98,8 @@ export const ConfigureSwapScreen = () => {
                 id: preselectedWant.wantItemId || 'custom',
                 name: preselectedWant.wantItemName,
                 title: preselectedWant.wantItemName,
-                matchRate: '90% Coincidencia',
-                details: 'Búsqueda personalizada • Coincidencia de valor',
+                matchRate: t('configure.matchRate', { percent: 90 }),
+                details: t('configure.details.customSearch'),
                 imageUrl: allItems[0]?.imageUrl || '',
                 co2Saved: '35 kg',
                 routesCount: 4,
@@ -110,8 +112,8 @@ export const ConfigureSwapScreen = () => {
                 id: 'fujifilm',
                 name: 'Cámara Fujifilm X-T30 II',
                 title: cameraItem.name + ' + 15-45mm',
-                matchRate: '98% Coincidencia',
-                details: 'Rango: $750 - $820 USD • Calce de valor equilibrado',
+                matchRate: t('configure.matchRate', { percent: 98 }),
+                details: t('configure.details.cameraRange'),
                 imageUrl: cameraItem.imageUrl,
                 co2Saved: '42 kg',
                 routesCount: 7,
@@ -131,7 +133,7 @@ export const ConfigureSwapScreen = () => {
     return () => {
       isMounted = false;
     };
-  }, [preselectedWant]);
+  }, [preselectedWant, t]);
 
   const handleSelectTag = async (key: string, name: string) => {
     setActiveTag(key);
@@ -146,8 +148,8 @@ export const ConfigureSwapScreen = () => {
         id: key,
         name: foundItem.name,
         title: foundItem.name,
-        matchRate: key === 'fujifilm' ? '98% Coincidencia' : '92% Coincidencia',
-        details: foundItem.description || 'Calce de valor adecuado',
+        matchRate: t('configure.matchRate', { percent: key === 'fujifilm' ? 98 : 92 }),
+        details: foundItem.description || t('configure.details.adequateFit'),
         imageUrl: foundItem.imageUrl,
         co2Saved: '38 kg',
         routesCount: key === 'fujifilm' ? 7 : 4,
@@ -169,7 +171,7 @@ export const ConfigureSwapScreen = () => {
         <div className="flex items-center gap-space-xs bg-surface-container-high px-3 py-1.5 rounded-full">
           <Icon name="hub" size="sm" filled className="text-primary" />
           <span className="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">
-            Red Inteligente SmartSwap
+            {t('configure.badge')}
           </span>
         </div>
         <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5">
@@ -193,7 +195,7 @@ export const ConfigureSwapScreen = () => {
                   1
                 </span>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  Lo que ofreces
+                  {t('configure.youOffer')}
                 </h2>
               </div>
               {myItems.length > 1 && (
@@ -202,7 +204,7 @@ export const ConfigureSwapScreen = () => {
                   onClick={handleToggleOfferItem}
                   className="text-primary font-label-md text-label-md flex items-center gap-0.5 hover:opacity-80 active:scale-95 transition-all"
                 >
-                  <span>Cambiar</span>
+                  <span>{t('configure.change')}</span>
                   <Icon name="swap_horiz" size="sm" />
                 </button>
               )}
@@ -219,7 +221,7 @@ export const ConfigureSwapScreen = () => {
                     />
                     <span className="absolute bottom-1.5 left-1.5 bg-surface/90 backdrop-blur-md px-1.5 py-0.5 rounded-md font-label-sm text-[10px] text-primary font-bold flex items-center gap-0.5">
                       <Icon name="verified" size="xs" filled />
-                      Verificado
+                      {t('configure.verified')}
                     </span>
                   </div>
 
@@ -227,7 +229,7 @@ export const ConfigureSwapScreen = () => {
                     <div>
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                         <span className="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-[11px]">
-                          En tu inventario
+                          {t('configure.inInventory')}
                         </span>
                         <span className="bg-primary-container/15 text-primary px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold">
                           {selectedOfferItem.condition}
@@ -245,7 +247,7 @@ export const ConfigureSwapScreen = () => {
                       <div className="flex items-center gap-1.5">
                         <Icon name="currency_exchange" size="sm" className="text-primary" />
                         <span className="font-body-sm text-body-sm text-on-surface-variant">
-                          Valor estimado:
+                          {t('configure.estimatedValue')}
                         </span>
                         <span className="font-label-lg text-label-lg text-on-surface font-bold">
                           ${selectedOfferItem.estimatedValue ?? 780} USD
@@ -263,8 +265,8 @@ export const ConfigureSwapScreen = () => {
                   <Icon name={hasSecondaryItem ? 'remove_circle' : 'add_circle'} size="sm" />
                   <span>
                     {hasSecondaryItem
-                      ? 'Artículo secundario añadido (+ Garmin Forerunner)'
-                      : 'Añadir artículo secundario para compensar valor'}
+                      ? t('configure.secondaryAdded')
+                      : t('configure.addSecondary')}
                   </span>
                 </button>
               </div>
@@ -282,10 +284,10 @@ export const ConfigureSwapScreen = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider">
-                  Intercambio Inteligente
+                  {t('configure.smartSwap')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px]">
-                  Sin dinero directo de por medio
+                  {t('configure.noMoney')}
                 </span>
               </div>
             </div>
@@ -299,12 +301,12 @@ export const ConfigureSwapScreen = () => {
                   2
                 </span>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  Lo que deseas recibir
+                  {t('configure.youWant')}
                 </h2>
               </div>
               <span className="font-body-sm text-body-sm text-secondary font-semibold flex items-center gap-0.5">
                 <Icon name="auto_awesome" size="xs" />
-                Sugerencias
+                {t('configure.suggestions')}
               </span>
             </div>
 
@@ -318,14 +320,14 @@ export const ConfigureSwapScreen = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Ej. Cámara Mirrorless, Laptop..."
+                  placeholder={t('configure.searchPlaceholder')}
                   className="w-full h-12 pl-12 pr-11 py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    aria-label="Limpiar búsqueda"
+                    aria-label={t('configure.clearSearch')}
                     className="absolute right-3.5 w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface active:scale-90 transition-all"
                   >
                     <Icon name="close" size="xs" />
@@ -336,7 +338,7 @@ export const ConfigureSwapScreen = () => {
               {/* Wishlist quick tags */}
               <div className="flex flex-col gap-1.5 mt-1">
                 <span className="font-label-sm text-label-sm text-on-surface-variant">
-                  O elige de tus artículos deseados guardados:
+                  {t('configure.savedWants')}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   <Chip
@@ -404,11 +406,11 @@ export const ConfigureSwapScreen = () => {
               <div className="flex items-center gap-2">
                 <Icon name="near_me" size="sm" className="text-primary" />
                 <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  Radio de intercambio
+                  {t('configure.radius')}
                 </h3>
               </div>
               <span className="font-label-sm text-label-sm text-on-surface-variant">
-                {geoMode === 'local' ? 'Madrid Central (15 km)' : 'Toda la península'}
+                {geoMode === 'local' ? t('configure.localArea') : t('configure.nationwideArea')}
               </span>
             </div>
 
@@ -441,10 +443,10 @@ export const ConfigureSwapScreen = () => {
                     geoMode === 'local' ? 'text-primary' : 'text-on-surface'
                   }`}
                 >
-                  En mi ciudad
+                  {t('configure.inMyCity')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                  Hasta 15 km de distancia
+                  {t('configure.upTo15km')}
                 </span>
               </button>
 
@@ -478,10 +480,10 @@ export const ConfigureSwapScreen = () => {
                     geoMode === 'nationwide' ? 'text-primary' : 'text-on-surface'
                   }`}
                 >
-                  Todo el país
+                  {t('configure.nationwide')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                  Con Envío Seguro SmartSwap
+                  {t('configure.secureShipping')}
                 </span>
               </button>
             </div>
@@ -493,7 +495,7 @@ export const ConfigureSwapScreen = () => {
               <div className="flex items-center gap-2">
                 <Icon name="alt_route" size="sm" className="text-secondary" />
                 <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  Modalidad de coincidencia
+                  {t('configure.matchMode')}
                 </h3>
               </div>
             </div>
@@ -523,23 +525,23 @@ export const ConfigureSwapScreen = () => {
                 <div className="flex flex-col flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                      Rutas Circulares Multiusuario
+                      {t('configure.circularTitle')}
                     </span>
                     <Badge variant="secondary" className="text-[10px] py-0">
-                      Recomendado
+                      {t('configure.recommended')}
                     </Badge>
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">
-                    Conecta a 3 o más personas en un circuito cerrado.
+                    {t('configure.circularDescription')}
                     <strong className="text-secondary font-semibold ml-1">
-                      94% más probabilidades
+                      {t('configure.moreLikely')}
                     </strong>{' '}
                     de concretar tu canje hoy.
                   </p>
 
                   <div className="flex items-center gap-1.5 mt-2.5 pt-2 bg-surface-container-lowest/90 p-2 rounded-xl border border-surface-container-high/40">
                     <div className="w-6 h-6 rounded-full bg-primary/20 text-primary font-label-sm text-[10px] flex items-center justify-center font-bold">
-                      Tú
+                      {t('configure.you')}
                     </div>
                     <Icon name="arrow_forward" size="xs" className="text-on-surface-variant" />
                     <div className="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] flex items-center justify-center font-bold">
@@ -581,11 +583,11 @@ export const ConfigureSwapScreen = () => {
                 <div className="flex flex-col flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-label-lg text-label-lg text-on-surface font-semibold">
-                      Intercambio Directo 1 a 1
+                      {t('configure.directTitle')}
                     </span>
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-snug">
-                    Solo personas que tengan exactamente lo que buscas y deseen tu artículo actual.
+                    {t('configure.directDescription')}
                   </p>
                 </div>
               </div>
@@ -599,11 +601,10 @@ export const ConfigureSwapScreen = () => {
             </div>
             <div className="flex flex-col flex-1">
               <span className="font-label-md text-label-md text-on-surface font-bold">
-                Impacto Circular Estimado
+                {t('configure.impactTitle')}
               </span>
               <span className="font-body-sm text-body-sm text-on-surface-variant">
-                Evitarás ~{targetPreset?.co2Saved || '42 kg'} de CO₂ al extender la vida útil de
-                estos artículos.
+                {t('configure.impactDescription', { kg: targetPreset?.co2Saved || '42 kg' })}
               </span>
             </div>
           </div>
@@ -655,13 +656,13 @@ export const ConfigureSwapScreen = () => {
             });
           }}
         >
-          <span>Buscar Rutas Inteligentes</span>
+          <span>{t('configure.searchRoutes')}</span>
           <span className="w-5 h-5 rounded-full bg-on-primary/20 text-on-primary font-label-sm text-label-sm flex items-center justify-center ml-1">
             {targetPreset?.routesCount ?? 7}
           </span>
         </Button>
         <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
-          Garantía de Depósito en Custodia en todas las rutas
+          {t('configure.custodyGuarantee')}
         </p>
       </div>
     </div>

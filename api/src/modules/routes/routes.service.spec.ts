@@ -393,6 +393,7 @@ describe('RoutesService', () => {
         objectiveText: 'Monitor Ultrawide LG',
         maxSteps: 4,
         valueTolerancePct: 45,
+        locale: 'es',
       });
 
       expect(mockPrismaService.item.findMany).toHaveBeenCalledWith(
@@ -417,6 +418,21 @@ describe('RoutesService', () => {
       expect(discovered.steps[0].acceptance).toBe('ACCEPTED');
       expect(discovered.steps[1].acceptance).toBe('PENDING');
       expect(discovered.steps[0].givesItem.condition).toBe('EXCELLENT');
+    });
+
+    it('requests route explanations in the locale of the search', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue(buildCatalogRows());
+
+      await routesService.searchRoutes(userAId, {
+        objectiveText: 'Monitor Ultrawide LG',
+        maxSteps: 4,
+        valueTolerancePct: 45,
+        locale: 'en',
+      });
+
+      expect(aiExplainerService.explainSwapRoute).toHaveBeenCalledWith(
+        expect.objectContaining({ locale: 'en' }),
+      );
     });
   });
 

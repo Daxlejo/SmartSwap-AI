@@ -129,6 +129,18 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.suggestedWants.length).toBeGreaterThan(0);
     });
 
+    it('writes the fallback name, description and wants in English while keeping Spanish categories', async () => {
+      const result = await visionService.analyzePhoto({
+        hintText: 'Guitarra Fender FA-125',
+        locale: 'en',
+      });
+
+      expect(result.source).toBe('fallback');
+      expect(result.category).toBe('Música');
+      expect(result.description).toContain('Musical instrument');
+      expect(result.suggestedWants).toContain('USB audio interface');
+    });
+
     it('estimates item value based on condition multiplier', async () => {
       const likeNewEstimate = await visionService.estimateValue({
         name: 'MacBook Air M1',
@@ -188,6 +200,34 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.explanation).toContain('CO₂');
       expect(result.fairnessScore).toBeGreaterThanOrEqual(85);
       expect(result.fairnessScore).toBeLessThanOrEqual(100);
+    });
+
+    it('generates the explanation in English when locale is en', async () => {
+      const result = await explainerService.explainSwapRoute({
+        objectiveText: 'Mirrorless camera',
+        locale: 'en',
+        steps: [
+          {
+            userName: 'Alex',
+            givesItemName: 'Trek bike',
+            givesItemValue: 450,
+            receivesItemName: 'Fujifilm camera',
+            receivesItemValue: 470,
+          },
+          {
+            userName: 'Valeria',
+            givesItemName: 'Fujifilm camera',
+            givesItemValue: 470,
+            receivesItemName: 'Trek bike',
+            receivesItemValue: 450,
+          },
+        ],
+      });
+
+      expect(result.source).toBe('fallback');
+      expect(result.explanation).toContain('circular route');
+      expect(result.explanation).toContain('CO₂ emissions');
+      expect(result.explanation).not.toContain('Esta ruta');
     });
   });
 });

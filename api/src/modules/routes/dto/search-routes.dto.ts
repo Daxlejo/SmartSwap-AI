@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { aiLocaleSchema, DEFAULT_AI_LOCALE } from '../../ai/dto/ai-locale.dto';
 
 export const searchRoutesSchema = z
   .object({
@@ -29,6 +30,7 @@ export const searchRoutesSchema = z
       .min(10, 'valueTolerancePct must be at least 10')
       .max(70, 'valueTolerancePct must be at most 70')
       .default(45),
+    locale: aiLocaleSchema.default(DEFAULT_AI_LOCALE),
   })
   .strict();
 

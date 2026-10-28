@@ -13,6 +13,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from '@/hooks/useTranslation';
 import { ApiError } from '@/services/http/apiClient';
 
 const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
@@ -36,6 +37,7 @@ const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
 export const ProfileScreen = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  const { t, language, changeLanguage } = useTranslation();
   const {
     currentUser: appUser,
     myItems,
@@ -51,7 +53,6 @@ export const ProfileScreen = () => {
 
   const [activeTab, setActiveTab] = useState<'activos' | 'pausados' | 'historial'>('activos');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<'es' | 'en'>('es');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,7 +95,7 @@ export const ProfileScreen = () => {
       if (err instanceof ApiError) {
         setErrorBanner(err.message);
       } else {
-        setErrorBanner('No se pudo eliminar el artículo.');
+        setErrorBanner(t('profile.deleteError'));
       }
     } finally {
       setDeletingItemId(null);
@@ -116,7 +117,7 @@ export const ProfileScreen = () => {
       if (err instanceof ApiError) {
         setErrorBanner(err.message);
       } else {
-        setErrorBanner('No se pudo actualizar tu perfil.');
+        setErrorBanner(t('profile.updateError'));
       }
     } finally {
       setIsSavingProfile(false);
@@ -156,7 +157,7 @@ export const ProfileScreen = () => {
           </p>
         )}
         <Badge variant="secondary" icon="star" iconFilled className="mb-4">
-          Nivel Oro
+          {t('profile.level', { level: currentUser?.level ?? 1 })}
         </Badge>
 
         {/* Stats row (3 columns) */}
@@ -166,7 +167,7 @@ export const ProfileScreen = () => {
               {tradesCompleted}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              Canjes completados
+              {t('profile.tradesCompleted')}
             </span>
           </div>
           <div className="flex flex-col items-center justify-center text-center px-1">
@@ -174,7 +175,7 @@ export const ProfileScreen = () => {
               {userRating} ★
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              Calificación
+              {t('profile.rating')}
             </span>
           </div>
           <div className="flex flex-col items-center justify-center text-center px-1">
@@ -182,7 +183,7 @@ export const ProfileScreen = () => {
               {co2SavedKg} kg
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              CO₂ ahorrado
+              {t('profile.co2Saved')}
             </span>
           </div>
         </div>
@@ -197,7 +198,7 @@ export const ProfileScreen = () => {
           <button
             type="button"
             onClick={() => setErrorBanner(null)}
-            aria-label="Cerrar error"
+            aria-label={t('profile.closeError')}
             className="p-1"
           >
             <Icon name="close" size="xs" />
@@ -209,14 +210,14 @@ export const ProfileScreen = () => {
       <section>
         <div className="flex items-center justify-between mb-space-sm">
           <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-            Mis artículos ({myItems.length})
+            {t('profile.myItems', { count: myItems.length })}
           </h2>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleRefreshMyItems}
               disabled={isRefreshing || isItemsLoading}
-              aria-label="Actualizar mis artículos"
+              aria-label={t('profile.refreshAria')}
               className="font-label-sm text-label-sm text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
             >
               <Icon
@@ -224,7 +225,7 @@ export const ProfileScreen = () => {
                 size="xs"
                 className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined}
               />
-              <span>Actualizar</span>
+              <span>{t('profile.refresh')}</span>
             </button>
 
             <button
@@ -232,7 +233,7 @@ export const ProfileScreen = () => {
               onClick={() => navigate('/explore')}
               className="font-label-md text-label-md text-primary font-bold hover:underline transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
             >
-              Ver todos
+              {t('profile.seeAll')}
             </button>
           </div>
         </div>
@@ -243,19 +244,19 @@ export const ProfileScreen = () => {
             active={activeTab === 'activos'}
             onClick={() => setActiveTab('activos')}
           >
-            Activos
+            {t('profile.tabs.active')}
           </Chip>
           <Chip
             active={activeTab === 'pausados'}
             onClick={() => setActiveTab('pausados')}
           >
-            Pausados
+            {t('profile.tabs.paused')}
           </Chip>
           <Chip
             active={activeTab === 'historial'}
             onClick={() => setActiveTab('historial')}
           >
-            Historial
+            {t('profile.tabs.history')}
           </Chip>
         </div>
 
@@ -265,8 +266,8 @@ export const ProfileScreen = () => {
             {myItems.length === 0 ? (
               <EmptyState
                 iconName="inventory_2"
-                title="Sin artículos publicados"
-                description="Publica tu primer artículo para comenzar a recibir propuestas de intercambio."
+                title={t('profile.emptyActiveTitle')}
+                description={t('profile.emptyActiveDescription')}
                 action={
                   <Button
                     variant="primary"
@@ -274,7 +275,7 @@ export const ProfileScreen = () => {
                     leftIcon="add_a_photo"
                     onClick={() => navigate('/publish')}
                   >
-                    Publicar artículo
+                    {t('profile.publishItem')}
                   </Button>
                 }
               />
@@ -297,7 +298,7 @@ export const ProfileScreen = () => {
                         </h3>
                         <button
                           type="button"
-                          aria-label={`Opciones de ${item.name}`}
+                          aria-label={t('profile.itemOptions', { name: item.name })}
                           onClick={() =>
                             setActiveMenuId((prev) => (prev === item.id ? null : item.id))
                           }
@@ -309,16 +310,16 @@ export const ProfileScreen = () => {
 
                       <div className="flex items-center gap-1.5 mt-1">
                         <Badge variant="surface" className="text-[10px]">
-                          {item.category}
+                          {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">
-                          {item.condition}
+                          {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
                         </Badge>
                       </div>
 
                       {item.estimatedValue !== undefined && (
                         <p className="font-label-md text-label-md font-bold text-primary mt-2">
-                          Valor est. {item.estimatedValue} €
+                          {t('profile.estimatedValue', { value: item.estimatedValue })}
                         </p>
                       )}
                     </div>
@@ -336,7 +337,7 @@ export const ProfileScreen = () => {
                         className="px-2.5 py-1 font-label-sm text-label-sm text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors font-bold"
                       >
                         <Icon name="sync_alt" size="xs" />
-                        <span>Buscar canje</span>
+                        <span>{t('profile.findSwap')}</span>
                       </button>
                       <span className="text-surface-container-high text-xs">•</span>
                       <button
@@ -351,7 +352,7 @@ export const ProfileScreen = () => {
                           className={deletingItemId === item.id ? 'animate-spin' : undefined}
                         />
                         <span>
-                          {deletingItemId === item.id ? 'Eliminando...' : 'Eliminar'}
+                          {deletingItemId === item.id ? t('profile.deleting') : t('profile.delete')}
                         </span>
                       </button>
                     </div>
@@ -365,16 +366,16 @@ export const ProfileScreen = () => {
         {activeTab === 'pausados' && (
           <EmptyState
             iconName="pause_circle"
-            title="Sin artículos pausados"
-            description="Los artículos que pauses temporalmente aparecerán aquí."
+            title={t('profile.emptyPausedTitle')}
+            description={t('profile.emptyPausedDescription')}
           />
         )}
 
         {activeTab === 'historial' && (
           <EmptyState
             iconName="history"
-            title="Sin historial"
-            description="Aquí verás los artículos que hayas intercambiado con éxito."
+            title={t('profile.emptyHistoryTitle')}
+            description={t('profile.emptyHistoryDescription')}
           />
         )}
       </section>
@@ -382,7 +383,7 @@ export const ProfileScreen = () => {
       {/* Section 3: Preferencias */}
       <section className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md">
         <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-sm">
-          Preferencias
+          {t('profile.preferences')}
         </h2>
         <div className="divide-y divide-surface-container-high/40">
           {/* Row 1: Tema de la app */}
@@ -393,10 +394,10 @@ export const ProfileScreen = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-body-md text-body-md font-medium text-on-surface">
-                  Tema de la app
+                  {t('profile.appTheme')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {isDark ? 'Oscuro' : 'Claro'}
+                  {isDark ? t('profile.dark') : t('profile.light')}
                 </span>
               </div>
             </div>
@@ -411,7 +412,7 @@ export const ProfileScreen = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-body-md text-body-md font-medium text-on-surface">
-                  Idioma
+                  {t('profile.language')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
                   {language === 'es' ? 'Español' : 'English'}
@@ -420,7 +421,7 @@ export const ProfileScreen = () => {
             </div>
             <ToggleSwitch
               enabled={language === 'en'}
-              onToggle={() => setLanguage((prev) => (prev === 'es' ? 'en' : 'es'))}
+              onToggle={() => void changeLanguage(language === 'es' ? 'en' : 'es')}
             />
           </div>
 
@@ -432,10 +433,10 @@ export const ProfileScreen = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-body-md text-body-md font-medium text-on-surface">
-                  Notificaciones
+                  {t('profile.notifications')}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {notificationsEnabled ? 'Activadas' : 'Desactivadas'}
+                  {notificationsEnabled ? t('profile.enabled') : t('profile.disabled')}
                 </span>
               </div>
             </div>
@@ -450,7 +451,7 @@ export const ProfileScreen = () => {
       {/* Section 4: Cuenta */}
       <section className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md">
         <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-sm">
-          Cuenta
+          {t('profile.account')}
         </h2>
         <div className="divide-y divide-surface-container-high/40">
           {/* Editar perfil */}
@@ -468,7 +469,7 @@ export const ProfileScreen = () => {
                 <Icon name="person" size="sm" />
               </div>
               <span className="font-body-md text-body-md font-medium text-on-surface">
-                Editar perfil
+                {t('profile.editProfile')}
               </span>
             </div>
             <Icon
@@ -485,11 +486,11 @@ export const ProfileScreen = () => {
                 <Icon name="verified_user" size="sm" />
               </div>
               <span className="font-body-md text-body-md font-medium text-on-surface">
-                Verificación de identidad
+                {t('profile.identityVerification')}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success">Verificado</Badge>
+              <Badge variant="success">{t('profile.verified')}</Badge>
               <Icon name="chevron_right" size="sm" className="text-on-surface-variant" />
             </div>
           </div>
@@ -505,7 +506,7 @@ export const ProfileScreen = () => {
                 <Icon name="swap_horiz" size="sm" />
               </div>
               <span className="font-body-md text-body-md font-medium text-on-surface">
-                Historial de canjes
+                {t('profile.swapHistory')}
               </span>
             </div>
             <Icon
@@ -526,7 +527,7 @@ export const ProfileScreen = () => {
                 <Icon name="add_a_photo" size="sm" />
               </div>
               <span className="font-body-md text-body-md font-medium text-on-surface">
-                Publicar nuevo artículo
+                {t('profile.publishNewItem')}
               </span>
             </div>
             <Icon
@@ -547,10 +548,10 @@ export const ProfileScreen = () => {
           leftIcon="logout"
           onClick={handleLogout}
         >
-          Cerrar sesión
+          {t('profile.logout')}
         </Button>
         <p className="font-body-sm text-body-sm text-on-surface-variant text-center mt-3">
-          SmartSwap v2.4 • Intercambio circular P2P
+          {t('profile.version')}
         </p>
       </section>
 
@@ -558,18 +559,18 @@ export const ProfileScreen = () => {
       <BottomSheet
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
-        title="Editar perfil"
+        title={t('profile.editProfile')}
       >
         <form onSubmit={handleSaveProfile} className="flex flex-col space-y-4">
           <Input
-            label="Nombre completo"
+            label={t('profile.fullName')}
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             leftIcon="person"
             required
           />
           <Input
-            label="Ciudad / Ubicación"
+            label={t('profile.location')}
             value={editLocation}
             onChange={(e) => setEditLocation(e.target.value)}
             leftIcon="location_on"
@@ -582,7 +583,7 @@ export const ProfileScreen = () => {
               className="flex-1"
               onClick={() => setIsEditOpen(false)}
             >
-              Cancelar
+              {t('profile.cancel')}
             </Button>
             <Button
               type="submit"
@@ -591,7 +592,7 @@ export const ProfileScreen = () => {
               className="flex-1"
               isLoading={isSavingProfile}
             >
-              Guardar cambios
+              {t('profile.saveChanges')}
             </Button>
           </div>
         </form>

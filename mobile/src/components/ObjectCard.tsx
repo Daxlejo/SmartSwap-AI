@@ -2,6 +2,7 @@ import type { Item, User } from '@/types';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface ObjectCardProps {
   item: Item;
@@ -16,6 +17,7 @@ export const ObjectCard = ({
   onOfferSwap,
   className,
 }: ObjectCardProps) => {
+  const { t } = useTranslation();
   return (
     <article
       className={`flex flex-col rounded-2xl bg-surface-container-lowest p-3.5 shadow-sm space-y-3 hover:shadow-md transition-shadow border border-surface-container-high/60 ${className ?? ''}`}
@@ -29,7 +31,7 @@ export const ObjectCard = ({
             className="w-full h-full object-cover"
           />
           <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm font-label-sm text-[10px] text-primary font-bold">
-            {item.category}
+            {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
           </span>
         </div>
 
@@ -41,7 +43,7 @@ export const ObjectCard = ({
                 {item.name}
               </h3>
               <Badge variant="surface" className="text-[10px] py-0 shrink-0">
-                {item.condition}
+                {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
               </Badge>
             </div>
 
@@ -63,7 +65,7 @@ export const ObjectCard = ({
           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low">
             <Icon name="swap_horizontal_circle" size="xs" className="text-secondary shrink-0" />
             <span className="font-label-sm text-[11px] text-on-surface truncate">
-              {item.description || 'Abierto a propuestas circulares'}
+              {item.description || t('cards.openToCircularOffers')}
             </span>
           </div>
         </div>
@@ -74,7 +76,7 @@ export const ObjectCard = ({
         <div className="flex items-center gap-1 text-primary">
           <Icon name="verified_user" size="xs" />
           <span className="font-label-sm text-label-sm font-semibold">
-            Intercambio verificado
+            {t('cards.verifiedSwap')}
           </span>
         </div>
         <Button
@@ -83,7 +85,7 @@ export const ObjectCard = ({
           rightIcon="send"
           onClick={() => onOfferSwap?.(item)}
         >
-          Proponer
+          {t('cards.propose')}
         </Button>
       </div>
     </article>

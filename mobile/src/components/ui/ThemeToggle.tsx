@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useTheme } from '@/hooks/useTheme';
 import { Icon } from './Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface ThemeToggleProps {
   variant?: 'icon' | 'switch';
@@ -14,8 +15,9 @@ export const ThemeToggle = ({
   ariaLabel,
 }: ThemeToggleProps) => {
   const { isDark, toggleTheme } = useTheme();
+  const { t } = useTranslation();
 
-  const label = ariaLabel ?? (isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+  const label = ariaLabel ?? (isDark ? t('nav.switchToLight') : t('nav.switchToDark'));
 
   if (variant === 'switch') {
     return (

@@ -3,6 +3,7 @@ import type { SwapRoute } from '@/types';
 import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface RouteCardProps {
   route: SwapRoute;
@@ -23,6 +24,7 @@ const getShortItemLabel = (name: string): string => {
 };
 
 export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
+  const { t } = useTranslation();
   const targetItem = route.chainItems[route.chainItems.length - 1];
   const receiverSource = route.participants[route.participants.length - 1];
 
@@ -84,13 +86,13 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
           />
           <div className="flex flex-col min-w-0">
             <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
-              Objetivo Deseado
+              {t('cards.desiredTarget')}
             </span>
             <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
               {targetItem.name}
             </h4>
             <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
-              Recibes de {receiverSource?.name ?? 'Usuario verificado'}
+              {t('cards.receiveFrom', { name: receiverSource?.name ?? t('cards.verifiedUser') })}
             </p>
           </div>
         </div>
@@ -98,7 +100,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
           <span className="font-headline-sm text-headline-sm text-primary font-bold">
             $0
           </span>
-          <p className="font-label-sm text-label-sm text-on-surface-variant">Sin dinero</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">{t('cards.noMoney')}</p>
         </div>
       </div>
 
@@ -106,7 +108,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
       <div className="flex flex-col space-y-2.5 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/60">
         <div className="flex items-center justify-between gap-2">
           <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold">
-            Cadena de canje:
+            {t('cards.swapChain')}
           </span>
           <span className="font-label-sm text-label-sm text-primary font-bold truncate">
             {chainPreviewText}
@@ -134,7 +136,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
                     />
                     {isFirst && (
                       <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
-                        Tú
+                        {t('cards.you')}
                       </span>
                     )}
                   </div>
@@ -161,7 +163,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
       {/* Footer CTA */}
       <div className="flex items-center justify-between pt-1">
         <span className="font-body-sm text-body-sm text-on-surface-variant">
-          Custodia protegida SmartSwap
+          {t('cards.protectedCustody')}
         </span>
         <Button
           variant="primary"
@@ -172,7 +174,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
             onClick();
           }}
         >
-          Ver ruta
+          {t('cards.viewRoute')}
         </Button>
       </div>
     </div>

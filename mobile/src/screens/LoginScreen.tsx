@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useApp } from '@/context/AppContext';
 import { ApiError } from '@/services/http/apiClient';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type AuthMode = 'login' | 'register';
 
@@ -17,6 +18,7 @@ export interface LoginScreenProps {
 export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' }) => {
   const navigate = useNavigate();
   const { loginWithEmail, registerWithEmail } = useApp();
+  const { t } = useTranslation();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
 
@@ -50,17 +52,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
     const trimmedLocation = location.trim();
 
     if (!trimmedEmail || !password) {
-      setErrorMessage('Por favor ingresa tu correo electrónico y contraseña.');
+      setErrorMessage(t('auth.errors.missingCredentials'));
       return;
     }
 
     if (mode === 'register') {
       if (trimmedName.length < 2) {
-        setErrorMessage('Por favor ingresa tu nombre completo (mínimo 2 caracteres).');
+        setErrorMessage(t('auth.errors.nameTooShort'));
         return;
       }
       if (password.length < 8) {
-        setErrorMessage('La contraseña debe tener al menos 8 caracteres.');
+        setErrorMessage(t('auth.errors.passwordTooShort'));
         return;
       }
     }
@@ -74,20 +76,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           name: trimmedName,
           email: trimmedEmail,
           password,
-          location: trimmedLocation || 'Madrid, España',
+          location: trimmedLocation || t('auth.defaultLocation'),
         });
       }
       navigate('/home', { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.statusCode === 401) {
-          setErrorMessage('Credenciales inválidas. Verifica tu correo y contraseña.');
+          setErrorMessage(t('auth.errors.invalidCredentials'));
         } else if (err.statusCode === 409) {
-          setErrorMessage('Este correo electrónico ya está registrado.');
+          setErrorMessage(t('auth.errors.emailTaken'));
         } else if (err.statusCode === 0) {
-          setErrorMessage(
-            'No se pudo conectar con el servidor. Verifica que la API esté activa.',
-          );
+          setErrorMessage(t('auth.errors.serverUnreachable'));
         } else {
           setErrorMessage(err.message);
         }
@@ -97,7 +97,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
       } else if (err instanceof Error) {
         setErrorMessage(err.message);
       } else {
-        setErrorMessage('Ocurrió un error inesperado al autenticar tu cuenta.');
+        setErrorMessage(t('auth.errors.unexpected'));
       }
     } finally {
       setIsLoading(false);
@@ -113,7 +113,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-secondary-container/10" />
             <img
               src={logoImg}
-              alt="Logotipo de SmartSwap"
+              alt={t('auth.logoAlt')}
               className="w-12 h-12 object-contain relative z-10"
             />
           </div>
@@ -124,23 +124,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
         </div>
 
         <Badge variant="surface" icon="verified_user" iconFilled className="mb-space-sm">
-          Red de Canje P2P Segura
+          {t('auth.badgeNetwork')}
         </Badge>
 
         <h1 className="font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight mb-space-xs font-bold">
-          {mode === 'login' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
+          {mode === 'login' ? t('auth.welcomeTitle') : t('auth.registerTitle')}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">
           {mode === 'login'
-            ? 'Descubre intercambios circulares inteligentes y continúa tus canjes activos.'
-            : 'Únete a la red colaborativa de intercambio circular sin efectivo.'}
+            ? t('auth.welcomeSubtitle')
+            : t('auth.registerSubtitle')}
         </p>
       </div>
 
       {/* Mode Toggle: Iniciar sesión / Crear cuenta */}
       <div
         role="tablist"
-        aria-label="Modo de autenticación"
+        aria-label={t('auth.modeAria')}
         className="grid grid-cols-2 p-1 rounded-2xl bg-surface-container-low border border-surface-container-high/60 mb-space-md"
       >
         <button
@@ -155,7 +155,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           }`}
         >
           <Icon name="login" size="xs" />
-          <span>Iniciar sesión</span>
+          <span>{t('auth.login')}</span>
         </button>
         <button
           type="button"
@@ -169,7 +169,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           }`}
         >
           <Icon name="person_add" size="xs" />
-          <span>Crear cuenta</span>
+          <span>{t('auth.register')}</span>
         </button>
       </div>
 
@@ -197,7 +197,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
               setErrorMessage(null);
               setErrorDetails([]);
             }}
-            aria-label="Cerrar mensaje de error"
+            aria-label={t('auth.errors.dismiss')}
             className="text-error/80 hover:text-error p-0.5 rounded-full"
           >
             <Icon name="close" size="xs" />
@@ -210,10 +210,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
         <form onSubmit={handleSubmit} className="flex flex-col gap-space-md" noValidate>
           {mode === 'register' && (
             <Input
-              label="Nombre completo"
+              label={t('auth.fullName')}
               id="auth-name"
               type="text"
-              placeholder="Ej. Alex Morales"
+              placeholder={t('auth.fullNamePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               leftIcon="person"
@@ -224,10 +224,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
 
           {/* Email */}
           <Input
-            label="Correo Electrónico"
+            label={t('auth.email')}
             id="auth-email"
             type="email"
-            placeholder="tu.correo@ejemplo.com"
+            placeholder={t('auth.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon="mail"
@@ -237,10 +237,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
 
           {/* Password */}
           <Input
-            label="Contraseña"
+            label={t('auth.password')}
             id="auth-password"
             type={showPassword ? 'text' : 'password'}
-            placeholder={mode === 'register' ? 'Mínimo 8 caracteres' : 'Ingresa tu contraseña'}
+            placeholder={mode === 'register' ? t('auth.passwordPlaceholderRegister') : t('auth.passwordPlaceholderLogin')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             leftIcon="lock"
@@ -250,17 +250,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             helperText={
               mode === 'register'
-                ? 'Debe contener al menos 8 caracteres'
+                ? t('auth.passwordHelper')
                 : undefined
             }
           />
 
           {mode === 'register' && (
             <Input
-              label="Ciudad / Ubicación"
+              label={t('auth.location')}
               id="auth-location"
               type="text"
-              placeholder="Ej. Madrid, España"
+              placeholder={t('auth.locationPlaceholder')}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               leftIcon="location_on"
@@ -279,7 +279,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
               rightIcon={mode === 'login' ? 'login' : 'arrow_forward'}
               isLoading={isLoading}
             >
-              {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+              {mode === 'login' ? t('auth.login') : t('auth.register')}
             </Button>
           </div>
         </form>
@@ -288,13 +288,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
       {/* Mode Switch Link */}
       <div className="text-center mb-space-md">
         <p className="font-body-sm text-body-sm text-on-surface-variant">
-          {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes una cuenta?'}{' '}
+          {mode === 'login' ? t('auth.noAccount') : t('auth.haveAccount')}{' '}
           <button
             type="button"
             onClick={() => handleModeSwitch(mode === 'login' ? 'register' : 'login')}
             className="text-primary font-bold hover:underline inline-flex items-center gap-0.5"
           >
-            {mode === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
+            {mode === 'login' ? t('auth.register') : t('auth.login')}
           </button>
         </p>
       </div>
@@ -305,28 +305,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           <div className="flex flex-col items-center">
             <Icon name="sync_saved_locally" size="md" className="text-primary mb-1" />
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              Depósito Seguro
+              {t('auth.secureDeposit')}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              100% Protegido
+              {t('auth.protected')}
             </span>
           </div>
           <div className="flex flex-col items-center">
             <Icon name="verified" size="md" className="text-primary mb-1" />
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              Identidad
+              {t('auth.identity')}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              Verificada
+              {t('auth.verified')}
             </span>
           </div>
           <div className="flex flex-col items-center">
             <Icon name="eco" size="md" className="text-primary mb-1" />
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              CO₂ Neutral
+              {t('auth.co2Neutral')}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              Huella Cero
+              {t('auth.zeroFootprint')}
             </span>
           </div>
         </div>
@@ -335,8 +335,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
       {/* Legal Footer */}
       <footer className="text-center px-space-md pb-safe">
         <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
-          Al continuar, aceptas nuestros Términos de Intercambio Circular y las Políticas de
-          Depósito en Custodia.
+          {t('auth.termsNotice')}
         </p>
       </footer>
     </div>

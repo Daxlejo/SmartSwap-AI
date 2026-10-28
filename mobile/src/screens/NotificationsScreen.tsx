@@ -10,17 +10,45 @@ import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { formatRelativeTime } from '@/utils/relativeTime';
+import { useTranslation } from '@/hooks/useTranslation';
 
-type FilterTab = 'Todas' | 'Canjes' | 'Sistema';
+type FilterTab = 'all' | 'swaps' | 'system';
+
+const FILTER_TABS: readonly FilterTab[] = ['all', 'swaps', 'system'];
+
+const ROUTE_CODE_PATTERN = /S[WR]-[0-9]+/i;
+
+/** API notification types with a localized template; Spanish keeps the richer stored text. */
+const LOCALIZED_TYPES = new Set([
+  'proposal_received',
+  'proposal_accepted',
+  'proposal_declined',
+  'swap_completed',
+  'system',
+]);
 
 export const NotificationsScreen = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<FilterTab>('Todas');
+  const { t, language } = useTranslation();
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const {
     notifications,
     markNotificationReadReal,
     markAllNotificationsReadReal,
   } = useApp();
+
+  const localize = (notif: AppNotification) => {
+    if (language === 'es' || !notif.createdAt || !LOCALIZED_TYPES.has(notif.type)) {
+      return { title: notif.title, body: notif.body, badge: notif.badge };
+    }
+    const code = notif.title.match(ROUTE_CODE_PATTERN)?.[0] ?? '';
+    return {
+      title: t(`notifications.types.${notif.type}.title`, { code }),
+      body: t(`notifications.types.${notif.type}.body`, { code }),
+      badge: t(`notifications.types.${notif.type}.badge`),
+    };
+  };
 
   const handleMarkAllAsRead = async () => {
     await markAllNotificationsReadReal();
@@ -40,13 +68,13 @@ export const NotificationsScreen = () => {
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notif) => {
-      if (activeTab === 'Canjes') {
+      if (activeTab === 'swaps') {
         return !isSystemNotification(notif.type);
       }
-      if (activeTab === 'Sistema') {
+      if (activeTab === 'system') {
         return isSystemNotification(notif.type);
       }
-      return true; // 'Todas'
+      return true; // 'all'
     });
   }, [notifications, activeTab]);
 
@@ -56,10 +84,10 @@ export const NotificationsScreen = () => {
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex flex-col">
           <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-            Notificaciones
+            {t('notifications.title')}
           </h1>
           <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Últimas actualizaciones de tus canjes
+            {t('notifications.subtitle')}
           </p>
         </div>
         <button
@@ -67,19 +95,19 @@ export const NotificationsScreen = () => {
           onClick={handleMarkAllAsRead}
           className="font-label-sm text-label-sm font-bold text-primary hover:underline transition-colors shrink-0 pt-1"
         >
-          Marcar todas como leídas
+          {t('notifications.markAllAsRead')}
         </button>
       </div>
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 mb-4">
-        {(['Todas', 'Canjes', 'Sistema'] as const).map((tab) => (
+        {FILTER_TABS.map((tab) => (
           <Chip
             key={tab}
             active={activeTab === tab}
             onClick={() => setActiveTab(tab)}
           >
-            {tab}
+            {t(`notifications.tabs.${tab}`)}
           </Chip>
         ))}
       </div>
@@ -88,12 +116,14 @@ export const NotificationsScreen = () => {
       {filteredNotifications.length === 0 ? (
         <EmptyState
           iconName="notifications_off"
-          title="Sin notificaciones"
-          description="Aquí aparecerán tus actualizaciones de canjes y rutas."
+          title={t('notifications.emptyTitle')}
+          description={t('notifications.emptyDescription')}
         />
       ) : (
         <div className="flex flex-col gap-3">
-          {filteredNotifications.map((notif) => (
+          {filteredNotifications.map((notif) => {
+            const text = localize(notif);
+            return (
             <div
               key={notif.id}
               role="button"
@@ -126,30 +156,31 @@ export const NotificationsScreen = () => {
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
-                      {notif.title}
+                      {text.title}
                     </h2>
                     {notif.unread && (
                       <span
                         className="w-2 h-2 rounded-full bg-primary shrink-0"
-                        aria-label="No leída"
+                        aria-label={t('notifications.unread')}
                       />
                     )}
                   </div>
                   <Badge variant={notif.badgeVariant} className="shrink-0 text-[10px]">
-                    {notif.badge}
+                    {text.badge}
                   </Badge>
                 </div>
 
                 <p className="font-body-sm text-body-sm text-on-surface-variant mb-2 leading-relaxed">
-                  {notif.body}
+                  {text.body}
                 </p>
 
                 <span className="font-label-sm text-label-sm text-outline block">
-                  {notif.time}
+                  {notif.createdAt ? formatRelativeTime(notif.createdAt, language) : notif.time}
                 </span>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

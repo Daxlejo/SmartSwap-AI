@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/hooks/useTranslation';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -196,11 +196,10 @@ export const mergeUniqueWants = (
 
 export const PublishScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, language: locale } = useTranslation();
   const { currentUser, createItemReal } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const locale: 'es' | 'en' = i18n.language?.startsWith('en') ? 'en' : 'es';
 
   // Wizard step state (1 to 5)
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -217,7 +216,7 @@ export const PublishScreen: React.FC = () => {
   const [category, setCategory] = useState('Deportes');
   const [condition, setCondition] = useState('Excelente estado');
   const [estimatedValue, setEstimatedValue] = useState('780');
-  const [location, setLocation] = useState(currentUser?.location || 'Madrid, España');
+  const [location, setLocation] = useState(currentUser?.location || t('publish.defaultLocation'));
 
   // Step 3: Wanted items state
   const [wantedItems, setWantedItems] = useState<string[]>(['Cámara', 'iPad']);
@@ -344,10 +343,7 @@ export const PublishScreen: React.FC = () => {
         setCurrentStep(2);
       }
     } catch (err) {
-      const fallbackMsg =
-        locale === 'en'
-          ? 'Could not analyze item with AI right now. You can continue filling out the form manually.'
-          : 'No pudimos analizar el objeto con IA en este momento. Puedes completar el formulario manualmente.';
+      const fallbackMsg = t('publish.ai.failed');
 
       if (err instanceof ApiError && err.message) {
         setAiError(`${fallbackMsg} (${err.message})`);
@@ -393,7 +389,7 @@ export const PublishScreen: React.FC = () => {
     } catch {
       setErrors((prev) => ({
         ...prev,
-        photos: 'No se pudo procesar la imagen seleccionada. Intenta con otro archivo.',
+        photos: t('publish.errors.photoProcessing'),
       }));
     } finally {
       setIsCompressingPhoto(false);
@@ -420,7 +416,7 @@ export const PublishScreen: React.FC = () => {
     if (photos.length === 0) {
       setErrors((prev) => ({
         ...prev,
-        photos: 'Agrega al menos una foto de tu artículo para continuar.',
+        photos: t('publish.errors.photoRequired'),
       }));
       return;
     }
@@ -433,23 +429,23 @@ export const PublishScreen: React.FC = () => {
     const nextErrors: FormErrors = {};
 
     if (!name.trim()) {
-      nextErrors.name = 'El nombre del artículo es obligatorio.';
+      nextErrors.name = t('publish.errors.nameRequired');
     }
     if (!description.trim()) {
-      nextErrors.description = 'La descripción es obligatoria.';
+      nextErrors.description = t('publish.errors.descriptionRequired');
     }
     if (!category.trim()) {
-      nextErrors.category = 'Selecciona una categoría.';
+      nextErrors.category = t('publish.errors.categoryRequired');
     }
     if (!condition.trim()) {
-      nextErrors.condition = 'Selecciona el estado del artículo.';
+      nextErrors.condition = t('publish.errors.conditionRequired');
     }
     const parsedVal = Number(estimatedValue);
     if (!estimatedValue || isNaN(parsedVal) || parsedVal <= 0) {
-      nextErrors.estimatedValue = 'Ingresa un valor estimado válido en USD.';
+      nextErrors.estimatedValue = t('publish.errors.valueInvalid');
     }
     if (!location.trim()) {
-      nextErrors.location = 'La ubicación es obligatoria.';
+      nextErrors.location = t('publish.errors.locationRequired');
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -488,7 +484,7 @@ export const PublishScreen: React.FC = () => {
     if (wantedItems.length === 0) {
       setErrors((prev) => ({
         ...prev,
-        wantedItems: 'Debes agregar al menos 1 artículo que aceptarías a cambio.',
+        wantedItems: t('publish.errors.wantedRequired'),
       }));
       return;
     }
@@ -535,12 +531,12 @@ export const PublishScreen: React.FC = () => {
         if (err.statusCode === 401) {
           setErrors((prev) => ({
             ...prev,
-            submit: 'Debes iniciar sesión para publicar un artículo en el catálogo.',
+            submit: t('publish.errors.loginRequired'),
           }));
         } else {
           setErrors((prev) => ({
             ...prev,
-            submit: err.message || 'No se pudo publicar el artículo. Intenta nuevamente.',
+            submit: err.message || t('publish.errors.publishFailed'),
           }));
         }
       } else if (err instanceof Error) {
@@ -551,7 +547,7 @@ export const PublishScreen: React.FC = () => {
       } else {
         setErrors((prev) => ({
           ...prev,
-          submit: 'Ocurrió un error al publicar tu artículo.',
+          submit: t('publish.errors.publishUnexpected'),
         }));
       }
     } finally {
@@ -579,14 +575,12 @@ export const PublishScreen: React.FC = () => {
           </div>
           <div className="min-w-0">
             <p className="font-label-md text-label-md font-bold text-on-surface truncate">
-              {locale === 'en' ? 'SmartSwap AI Assistant' : 'Asistente IA SmartSwap'}
+              {t('publish.ai.assistant')}
             </p>
             <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
               {isAnalyzingAi
-                ? 'Analizando objeto con IA...'
-                : locale === 'en'
-                  ? 'Auto-fill details, value & swap suggestions'
-                  : 'Autocompleta datos, valor y sugerencias de canje'}
+                ? t('publish.ai.analyzing')
+                : t('publish.ai.hint')}
             </p>
           </div>
         </div>
@@ -604,7 +598,7 @@ export const PublishScreen: React.FC = () => {
           )}
         >
           <span>
-            {isAnalyzingAi ? 'Analizando objeto con IA...' : '✨ Autocompletar con IA'}
+            {isAnalyzingAi ? t('publish.ai.analyzing') : t('publish.ai.button')}
           </span>
         </button>
       </div>
@@ -647,7 +641,7 @@ export const PublishScreen: React.FC = () => {
               className="flex items-center flex-wrap gap-1.5"
             >
               <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold mr-1">
-                Tags IA:
+                {t('publish.ai.tags')}
               </span>
               {aiTags.map((tag) => (
                 <span
@@ -681,18 +675,17 @@ export const PublishScreen: React.FC = () => {
 
           <div className="space-y-1.5 max-w-xs">
             <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
-              ¡Artículo publicado!
+              {t('publish.success.title')}
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Tu <span className="font-semibold text-on-surface">{name}</span> ya está visible para
-              la red SmartSwap.
+              {t('publish.success.description', { name })}
             </p>
           </div>
         </div>
 
         {/* Success Item Summary Card */}
         <section
-          aria-label="Resumen de publicación activa"
+          aria-label={t('publish.success.summaryAria')}
           className="w-full rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 text-left flex items-center gap-3.5"
         >
           <div className="relative w-16 h-16 rounded-xl bg-surface-container-high overflow-hidden shrink-0">
@@ -706,19 +699,19 @@ export const PublishScreen: React.FC = () => {
               </h2>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-[#1a7a4a]/10 text-[#1a7a4a] shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a4a]" />
-                Activo
+                {t('publish.success.active')}
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant">
-              <span>{category}</span>
+              <span>{t(`catalog.categories.${category}`, { defaultValue: category })}</span>
               <span>•</span>
               <span className="font-semibold text-on-surface">${estimatedValue} USD</span>
             </div>
 
             <span className="font-label-sm text-label-sm text-primary font-bold mt-1 flex items-center gap-1">
               <Icon name="sync_alt" size="xs" />
-              Listo para rutas de intercambio
+              {t('publish.success.readyForRoutes')}
             </span>
           </div>
         </section>
@@ -732,7 +725,7 @@ export const PublishScreen: React.FC = () => {
             leftIcon="sync_alt"
             onClick={() => navigate('/swap/configure')}
           >
-            Buscar un canje circular
+            {t('publish.success.findSwap')}
           </Button>
 
           <Button
@@ -742,7 +735,7 @@ export const PublishScreen: React.FC = () => {
             leftIcon="person"
             onClick={() => navigate('/profile')}
           >
-            Ver mi perfil
+            {t('publish.success.viewProfile')}
           </Button>
 
           <button
@@ -750,7 +743,7 @@ export const PublishScreen: React.FC = () => {
             onClick={() => navigate('/home')}
             className="font-label-md text-label-md text-on-surface-variant hover:text-primary py-2 transition-colors select-none text-center focus-visible:outline-none focus-visible:underline"
           >
-            Volver al inicio
+            {t('publish.success.backHome')}
           </button>
         </div>
       </div>
@@ -769,7 +762,7 @@ export const PublishScreen: React.FC = () => {
         multiple
         onChange={handleFileChange}
         className="hidden"
-        aria-label="Seleccionar foto del artículo"
+        aria-label={t('publish.selectPhoto')}
       />
 
       {/* Top Step Navigation Header */}
@@ -782,7 +775,7 @@ export const PublishScreen: React.FC = () => {
             className="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors mb-3 select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
           >
             <Icon name="arrow_back" size="xs" />
-            <span>Paso anterior</span>
+            <span>{t('publish.previousStep')}</span>
           </button>
         )}
 
@@ -841,7 +834,7 @@ export const PublishScreen: React.FC = () => {
                       isUpcoming && 'text-on-surface-variant/70 font-medium',
                     )}
                   >
-                    {step.label}
+                    {t(`publish.steps.${step.id}`, { defaultValue: step.label })}
                   </span>
                 </button>
               </React.Fragment>
@@ -855,10 +848,10 @@ export const PublishScreen: React.FC = () => {
         <div className="flex flex-col space-y-6">
           <div className="space-y-1">
             <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-              Agrega fotos de tu artículo
+              {t('publish.photos.title')}
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Toma una foto con tu cámara o elige de tu galería (compresión automática HD).
+              {t('publish.photos.subtitle')}
             </p>
           </div>
 
@@ -884,10 +877,10 @@ export const PublishScreen: React.FC = () => {
             </div>
             <div className="text-center">
               <span className="font-label-lg text-label-lg font-bold text-primary block">
-                {isCompressingPhoto ? 'Optimizando imagen...' : 'Toca para agregar fotos'}
+                {isCompressingPhoto ? t('publish.photos.optimizing') : t('publish.photos.tapToAdd')}
               </span>
               <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 block">
-                Cámara o Galería • Máx. 1024px JPEG (hasta 4 fotos)
+                {t('publish.photos.limits')}
               </span>
             </div>
           </div>
@@ -910,12 +903,12 @@ export const PublishScreen: React.FC = () => {
                     >
                       <img
                         src={photo}
-                        alt={`Foto del artículo ${index + 1}`}
+                        alt={t('publish.photos.alt', { index: index + 1 })}
                         className="w-full h-full object-cover"
                       />
                       {index === 0 && (
                         <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-xs font-label-sm text-[9px] font-bold text-primary shadow-xs">
-                          Portada
+                          {t('publish.photos.cover')}
                         </span>
                       )}
                       <button
@@ -969,10 +962,10 @@ export const PublishScreen: React.FC = () => {
         <div className="flex flex-col space-y-5">
           <div className="space-y-1">
             <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-              Cuéntanos sobre tu artículo
+              {t('publish.info.title')}
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Completa los detalles para que otros usuarios conozcan tu propuesta.
+              {t('publish.info.subtitle')}
             </p>
           </div>
 
@@ -981,9 +974,9 @@ export const PublishScreen: React.FC = () => {
 
           {/* Nombre del artículo */}
           <Input
-            label="Nombre del artículo"
+            label={t('publish.info.name')}
             required
-            placeholder="Ej. Bicicleta Trek Marlin 7"
+            placeholder={t('publish.info.namePlaceholder')}
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -996,7 +989,7 @@ export const PublishScreen: React.FC = () => {
           <div className="flex flex-col gap-1.5 w-full">
             <div className="flex items-center justify-between">
               <label htmlFor="description" className="font-label-md text-label-md text-on-surface">
-                Descripción
+                {t('publish.info.description')}
               </label>
               <span className="font-body-sm text-body-sm text-on-surface-variant">
                 {description.length} caracteres
@@ -1005,7 +998,7 @@ export const PublishScreen: React.FC = () => {
             <textarea
               id="description"
               rows={3}
-              placeholder="Describe el estado, características y detalles relevantes"
+              placeholder={t('publish.info.descriptionPlaceholder')}
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
@@ -1027,7 +1020,7 @@ export const PublishScreen: React.FC = () => {
 
           {/* Categoría Selector Chips */}
           <div className="flex flex-col gap-2 w-full">
-            <label className="font-label-md text-label-md text-on-surface">Categoría</label>
+            <label className="font-label-md text-label-md text-on-surface">{t('publish.info.category')}</label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((cat) => (
                 <Chip
@@ -1038,7 +1031,7 @@ export const PublishScreen: React.FC = () => {
                     if (errors.category) setErrors((prev) => ({ ...prev, category: undefined }));
                   }}
                 >
-                  {cat}
+                  {t(`catalog.categories.${cat}`, { defaultValue: cat })}
                 </Chip>
               ))}
             </div>
@@ -1050,7 +1043,7 @@ export const PublishScreen: React.FC = () => {
           {/* Estado Radio-style Cards */}
           <div className="flex flex-col gap-2 w-full">
             <label className="font-label-md text-label-md text-on-surface">
-              Estado del artículo
+              {t('publish.info.condition')}
             </label>
             <div className="grid grid-cols-2 gap-2.5">
               {CONDITIONS.map((cond) => {
@@ -1094,10 +1087,10 @@ export const PublishScreen: React.FC = () => {
                         isSelected ? 'text-primary font-bold' : 'text-on-surface font-semibold',
                       )}
                     >
-                      {cond.label}
+                      {t(`catalog.conditions.${cond.label}`, { defaultValue: cond.label })}
                     </span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant leading-tight mt-0.5">
-                      {cond.desc}
+                      {t(`publish.conditionDescriptions.${cond.label}`, { defaultValue: cond.desc })}
                     </span>
                   </button>
                 );
@@ -1115,7 +1108,7 @@ export const PublishScreen: React.FC = () => {
                 htmlFor="estimated-value-input"
                 className="font-label-md text-label-md text-on-surface"
               >
-                Valor estimado
+                {t('publish.info.estimatedValue')}
               </label>
               {aiValueRange ? (
                 <span className="font-label-sm text-label-sm text-primary font-bold">
@@ -1123,7 +1116,7 @@ export const PublishScreen: React.FC = () => {
                 </span>
               ) : (
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  Referencial
+                  {t('publish.info.reference')}
                 </span>
               )}
             </div>
@@ -1163,16 +1156,16 @@ export const PublishScreen: React.FC = () => {
 
           {/* Ubicación */}
           <Input
-            label="Ubicación"
+            label={t('publish.info.location')}
             leftIcon="location_on"
-            placeholder="Ej. Madrid, España"
+            placeholder={t('publish.info.locationPlaceholder')}
             value={location}
             onChange={(e) => {
               setLocation(e.target.value);
               if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
             }}
             error={errors.location}
-            helperText="Zona de entrega o punto de encuentro"
+            helperText={t('publish.info.locationHelper')}
           />
         </div>
       )}
@@ -1182,10 +1175,10 @@ export const PublishScreen: React.FC = () => {
         <div className="flex flex-col space-y-6">
           <div className="space-y-1">
             <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-              ¿Qué artículos aceptarías a cambio?
+              {t('publish.wants.title')}
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Esto ayuda al sistema a encontrar rutas de canje para ti.
+              {t('publish.wants.subtitle')}
             </p>
           </div>
 
@@ -1193,7 +1186,7 @@ export const PublishScreen: React.FC = () => {
           <div className="flex gap-2 items-center">
             <div className="flex-1">
               <Input
-                placeholder="Buscar artículos..."
+                placeholder={t('publish.wants.searchPlaceholder')}
                 leftIcon="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1212,14 +1205,14 @@ export const PublishScreen: React.FC = () => {
               disabled={!searchQuery.trim()}
               className="shrink-0"
             >
-              Agregar
+              {t('publish.wants.add')}
             </Button>
           </div>
 
           {/* Suggestion Chips */}
           <div className="space-y-2">
             <span className="font-label-md text-label-md font-semibold text-on-surface">
-              Sugerencias populares
+              {t('publish.wants.popular')}
             </span>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((item) => {
@@ -1242,11 +1235,11 @@ export const PublishScreen: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-label-md text-label-md font-semibold text-on-surface">
-                Artículos aceptados ({wantedItems.length})
+                {t('publish.wants.accepted', { count: wantedItems.length })}
               </span>
               {wantedItems.length > 0 && (
                 <span className="font-label-sm text-label-sm text-primary font-bold">
-                  {wantedItems.length >= 2 ? 'Variedad óptima' : 'Mínimo 1'}
+                  {wantedItems.length >= 2 ? t('publish.wants.optimalVariety') : t('publish.wants.minimumOne')}
                 </span>
               )}
             </div>
@@ -1254,7 +1247,7 @@ export const PublishScreen: React.FC = () => {
             {wantedItems.length === 0 ? (
               <div className="p-4 rounded-xl border border-dashed border-error/50 bg-error-container/20 text-center">
                 <p className="font-body-sm text-body-sm text-error">
-                  Debes agregar al menos 1 artículo que aceptarías a cambio.
+                  {t('publish.errors.wantedRequired')}
                 </p>
               </div>
             ) : (
@@ -1289,10 +1282,10 @@ export const PublishScreen: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="font-label-md text-label-md font-bold text-on-surface">
-                Descubre más opciones
+                {t('publish.wants.discoverMore')}
               </span>
               <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                Cuantos más artículos aceptes, más rutas encontrará el sistema.
+                {t('publish.wants.moreRoutes')}
               </p>
             </div>
           </div>
@@ -1304,10 +1297,10 @@ export const PublishScreen: React.FC = () => {
         <div className="flex flex-col space-y-5">
           <div className="space-y-1">
             <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-              Vista previa de tu publicación
+              {t('publish.preview.title')}
             </h1>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Así verán tu artículo otros usuarios.
+              {t('publish.preview.subtitle')}
             </p>
           </div>
 
@@ -1333,7 +1326,7 @@ export const PublishScreen: React.FC = () => {
                 className="w-full h-full object-cover"
               />
               <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-surface/90 backdrop-blur-sm font-label-sm text-label-sm text-primary font-bold shadow-xs">
-                {category}
+                {t(`catalog.categories.${category}`, { defaultValue: category })}
               </span>
             </div>
 
@@ -1344,7 +1337,7 @@ export const PublishScreen: React.FC = () => {
                   {name}
                 </h2>
                 <Badge variant="surface" className="shrink-0">
-                  {condition}
+                  {t(`catalog.conditions.${condition}`, { defaultValue: condition })}
                 </Badge>
               </div>
 
@@ -1352,7 +1345,7 @@ export const PublishScreen: React.FC = () => {
               <div className="flex items-center justify-between py-2 border-y border-surface-container-high/60">
                 <div className="flex flex-col">
                   <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
-                    Valor estimado
+                    {t('publish.info.estimatedValue')}
                   </span>
                   <span className="font-headline-sm text-headline-sm font-bold text-primary">
                     ${estimatedValue}{' '}
@@ -1370,7 +1363,7 @@ export const PublishScreen: React.FC = () => {
             {/* Description */}
             <div className="space-y-1">
               <span className="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wider">
-                Descripción
+                {t('publish.info.description')}
               </span>
               <p className="font-body-md text-body-md text-on-surface leading-relaxed whitespace-pre-line">
                 {description}
@@ -1381,7 +1374,7 @@ export const PublishScreen: React.FC = () => {
             <div className="space-y-2">
               <span className="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
                 <Icon name="swap_horizontal_circle" size="xs" className="text-secondary" />
-                Acepta a cambio:
+                {t('publish.preview.acceptsInExchange')}
               </span>
               <div className="flex flex-wrap gap-2">
                 {wantedItems.map((item) => (
@@ -1401,18 +1394,18 @@ export const PublishScreen: React.FC = () => {
                     <span className="font-label-lg text-label-lg font-bold text-on-surface">
                       {ownerName}
                     </span>
-                    <span className="inline-flex items-center text-primary" title="Verificado">
+                    <span className="inline-flex items-center text-primary" title={t('publish.preview.verified')}>
                       <Icon name="verified" size="xs" filled />
                     </span>
                   </div>
                   <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    ★ {ownerRating} • Dueño verificado
+                    {t('publish.preview.verifiedOwner', { rating: ownerRating })}
                   </span>
                 </div>
               </div>
 
               <Badge variant="primary-subtle" icon="verified_user">
-                Garantizado
+                {t('publish.preview.guaranteed')}
               </Badge>
             </div>
           </article>
@@ -1423,19 +1416,19 @@ export const PublishScreen: React.FC = () => {
       <div className="fixed bottom-0 inset-x-0 p-margin bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/60 z-50 max-w-[390px] mx-auto">
         {currentStep === 1 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep1}>
-            Continuar
+            {t('publish.continue')}
           </Button>
         )}
 
         {currentStep === 2 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep2}>
-            Continuar
+            {t('publish.continue')}
           </Button>
         )}
 
         {currentStep === 3 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep3}>
-            Continuar
+            {t('publish.continue')}
           </Button>
         )}
 
@@ -1447,7 +1440,7 @@ export const PublishScreen: React.FC = () => {
               className="flex-1"
               onClick={() => setCurrentStep(2)}
             >
-              Editar
+              {t('publish.edit')}
             </Button>
             <Button
               variant="primary"
@@ -1457,7 +1450,7 @@ export const PublishScreen: React.FC = () => {
               isLoading={isPublishing}
               onClick={handlePublish}
             >
-              Publicar ahora
+              {t('publish.publishNow')}
             </Button>
           </div>
         )}

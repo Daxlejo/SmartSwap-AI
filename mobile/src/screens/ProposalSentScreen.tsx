@@ -5,10 +5,12 @@ import { mockSwapRoute } from '@/data/mockData';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const ProposalSentScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const route = (location.state?.route as SwapRoute | undefined) ?? mockSwapRoute;
 
   const [animateCheck, setAnimateCheck] = useState(false);
@@ -41,25 +43,25 @@ export const ProposalSentScreen: React.FC = () => {
 
         <div className="space-y-1.5 max-w-xs">
           <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
-            ¡Propuesta Enviada!
+            {t('proposalSent.title')}
           </h1>
           <p className="font-body-md text-body-md text-on-surface-variant">
-            Tu propuesta de canje está en camino a Carlos V.
+            {t('proposalSent.description', { count: Math.max(1, route.participants.length - 1) })}
           </p>
         </div>
       </div>
 
       {/* Route Summary Card showing the 4-step chain */}
       <section
-        aria-label="Resumen de la ruta de 4 pasos"
+        aria-label={t('proposalSent.summaryAria', { count: route.stepsCount })}
         className="w-full rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 text-left space-y-3.5"
       >
         <div className="flex items-center justify-between">
           <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-            Resumen del Circuito
+            {t('proposalSent.summaryTitle')}
           </h2>
           <Badge variant="primary-subtle" icon="sync_alt">
-            {route.stepsCount} pasos
+            {t('proposalSent.steps', { count: route.stepsCount })}
           </Badge>
         </div>
 
@@ -84,7 +86,7 @@ export const ProposalSentScreen: React.FC = () => {
                     />
                     {isFirst && (
                       <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
-                        Tú
+                        {t('proposalSent.you')}
                       </span>
                     )}
                   </div>
@@ -109,11 +111,11 @@ export const ProposalSentScreen: React.FC = () => {
 
         <div className="flex items-center justify-between pt-0.5">
           <span className="font-body-md text-body-md text-on-surface-variant">
-            Impacto estimado
+            {t('proposalSent.estimatedImpact')}
           </span>
           <span className="font-label-md text-label-md font-bold text-[#1a7a4a] flex items-center gap-1">
             <Icon name="eco" size="xs" filled />
-            {route.co2SavedKg} kg CO₂ ahorrados
+            {t('proposalSent.co2Saved', { kg: route.co2SavedKg })}
           </span>
         </div>
       </section>
@@ -127,7 +129,7 @@ export const ProposalSentScreen: React.FC = () => {
           leftIcon="sync_alt"
           onClick={() => navigate('/swaps')}
         >
-          Ver Mis Canjes
+          {t('proposalSent.viewSwaps')}
         </Button>
         <Button
           variant="outline"
@@ -136,7 +138,7 @@ export const ProposalSentScreen: React.FC = () => {
           leftIcon="home"
           onClick={() => navigate('/home')}
         >
-          Volver al Inicio
+          {t('proposalSent.backHome')}
         </Button>
       </div>
     </div>

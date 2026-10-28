@@ -7,10 +7,12 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const ProposalConfirmScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { proposeRouteReal } = useApp();
   const route = (location.state?.route as SwapRoute | undefined) ?? mockSwapRoute;
 
@@ -25,8 +27,7 @@ export const ProposalConfirmScreen: React.FC = () => {
     mockSwapRoute.chainItems[mockSwapRoute.chainItems.length - 1];
   // Second participant in the chain (recipient of the user's item)
   const recipientUser = route.participants[1] || route.participants[0];
-  const recipientDisplayName =
-    recipientUser?.id === 'user-carlos' ? 'Carlos V.' : recipientUser?.name || 'Carlos V.';
+  const recipientDisplayName = recipientUser?.name ?? '';
 
   const handleSendProposal = async () => {
     if (!acceptedTerms || isSubmitting) return;
@@ -46,10 +47,10 @@ export const ProposalConfirmScreen: React.FC = () => {
       {/* Screen Header */}
       <div className="flex flex-col space-y-1">
         <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-          Confirmar Propuesta
+          {t('proposalConfirm.title')}
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant">
-          Revisa los detalles de tu intercambio circular antes de enviarlo.
+          {t('proposalConfirm.subtitle')}
         </p>
       </div>
 
@@ -57,15 +58,15 @@ export const ProposalConfirmScreen: React.FC = () => {
       <div className="flex flex-col space-y-3">
         {/* Section: Yo ofrezco */}
         <section
-          aria-label="Yo ofrezco"
+          aria-label={t('proposalConfirm.iOffer')}
           className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 space-y-3"
         >
           <div className="flex items-center justify-between">
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              Yo ofrezco
+              {t('proposalConfirm.iOffer')}
             </h2>
             <Badge variant="surface" icon="upload">
-              Tu artículo
+              {t('proposalConfirm.yourItem')}
             </Badge>
           </div>
 
@@ -80,11 +81,11 @@ export const ProposalConfirmScreen: React.FC = () => {
                 {offeredItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant truncate">
-                {offeredItem.condition}
+                {t(`catalog.conditions.${offeredItem.condition}`, { defaultValue: offeredItem.condition })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
-                  Valor est.: ${offeredItem.estimatedValue ?? 780}
+                  {t('proposalConfirm.estimatedValue', { value: offeredItem.estimatedValue ?? 780 })}
                 </span>
               </div>
             </div>
@@ -99,22 +100,22 @@ export const ProposalConfirmScreen: React.FC = () => {
               <Icon name="sync_alt" size="xs" />
             </div>
             <span className="font-label-sm text-label-sm text-on-surface font-bold whitespace-nowrap">
-              Intercambio Inteligente • -{route.co2SavedKg} kg CO₂
+              {t('proposalConfirm.smartSwap', { kg: route.co2SavedKg })}
             </span>
           </div>
         </div>
 
         {/* Section: Quiero recibir */}
         <section
-          aria-label="Quiero recibir"
+          aria-label={t('proposalConfirm.iWant')}
           className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 space-y-3"
         >
           <div className="flex items-center justify-between">
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              Quiero recibir
+              {t('proposalConfirm.iWant')}
             </h2>
             <Badge variant="primary-subtle" icon="download">
-              Objetivo final
+              {t('proposalConfirm.finalTarget')}
             </Badge>
           </div>
 
@@ -129,11 +130,11 @@ export const ProposalConfirmScreen: React.FC = () => {
                 {targetItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant truncate">
-                {targetItem.condition}
+                {t(`catalog.conditions.${targetItem.condition}`, { defaultValue: targetItem.condition })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
-                  Valor est.: ${targetItem.estimatedValue ?? 790}
+                  {t('proposalConfirm.estimatedValue', { value: targetItem.estimatedValue ?? 790 })}
                 </span>
               </div>
             </div>
@@ -144,13 +145,13 @@ export const ProposalConfirmScreen: React.FC = () => {
       {/* AI Explanation Summary if present */}
       {route.aiExplanation && (
         <section
-          aria-label="Equidad del circuito"
+          aria-label={t('proposalConfirm.fairnessAria')}
           className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-1.5"
         >
           <div className="flex items-center gap-1.5 text-primary">
             <Icon name="auto_awesome" size="xs" filled />
             <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
-              Equidad Verificada por IA
+              {t('proposalConfirm.aiVerified')}
             </span>
           </div>
           <p className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
@@ -162,19 +163,19 @@ export const ProposalConfirmScreen: React.FC = () => {
       {/* Recipient Info Card */}
       {recipientUser && (
         <section
-          aria-label="Destinatario de tu propuesta"
+          aria-label={t('proposalConfirm.recipientAria')}
           className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 space-y-3"
         >
           <div className="flex items-center justify-between">
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              Tu propuesta irá a {recipientDisplayName}
+              {t('proposalConfirm.goesTo', { name: recipientDisplayName })}
             </h2>
             <Badge
               variant="tertiary-subtle"
               className="text-tertiary bg-tertiary-fixed"
               icon="verified_user"
             >
-              Paso 1 de {route.stepsCount}
+              {t('proposalConfirm.stepOf', { count: route.stepsCount })}
             </Badge>
           </div>
 
@@ -217,7 +218,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           className="mt-0.5 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
         />
         <span className="font-body-md text-body-md text-on-surface-variant leading-snug">
-          Acepto los términos de custodia segura de SmartSwap
+          {t('proposalConfirm.acceptTerms')}
         </span>
       </label>
 
@@ -230,7 +231,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           disabled={isSubmitting}
           onClick={() => navigate(-1)}
         >
-          Cancelar
+          {t('proposalConfirm.cancel')}
         </Button>
         <Button
           variant="primary"
@@ -240,7 +241,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           rightIcon="send"
           onClick={handleSendProposal}
         >
-          {isSubmitting ? 'Enviando...' : 'Enviar Propuesta'}
+          {isSubmitting ? t('proposalConfirm.sending') : t('proposalConfirm.send')}
         </Button>
       </div>
     </div>

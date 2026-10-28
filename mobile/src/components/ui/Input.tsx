@@ -1,6 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import { Icon } from './Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -29,6 +30,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslation();
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
@@ -71,7 +73,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 <button
                   type="button"
                   onClick={onRightIconClick}
-                  aria-label="Input action"
+                  aria-label={t('nav.inputAction')}
                   className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Icon name={rightIcon} size="md" />

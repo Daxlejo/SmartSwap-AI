@@ -41,7 +41,7 @@ describe('routesService & mapApiRouteToUiRoute', () => {
           id: 'item-bike',
           name: 'Bicicleta Trek Marlin 7',
           category: 'Deportes',
-          condition: 'LIKE_NEW',
+          condition: 'EXCELLENT',
           ownerId: 'user-alex',
           estimatedValue: 780,
         },
@@ -91,7 +91,7 @@ describe('routesService & mapApiRouteToUiRoute', () => {
           id: 'item-camera',
           name: 'Cámara Fujifilm X-T30 II',
           category: 'Fotografía',
-          condition: 'NEW',
+          condition: 'LIKE_NEW',
           ownerId: 'user-sofia',
           estimatedValue: 790,
         },
@@ -168,10 +168,21 @@ describe('routesService & mapApiRouteToUiRoute', () => {
       const routes = await routesService.searchRoutes(payload);
 
       expect(postSpy).toHaveBeenCalledTimes(1);
-      expect(postSpy).toHaveBeenCalledWith('/routes/search', payload);
+      expect(postSpy).toHaveBeenCalledWith('/routes/search', { ...payload, locale: 'es' });
       expect(routes).toHaveLength(1);
       expect(routes[0].id).toBe('route-cycle-301');
       expect(routes[0].aiExplanation).toBe(sampleApiRoute.aiExplanation);
+    });
+
+    it('sends the explicit locale when provided', async () => {
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce([sampleApiRoute]);
+
+      await routesService.searchRoutes({ objectiveText: 'Mirrorless camera', locale: 'en' });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        '/routes/search',
+        expect.objectContaining({ locale: 'en' }),
+      );
     });
 
     it('gracefully falls back to local routeFinder when offline or backend unreachable', async () => {

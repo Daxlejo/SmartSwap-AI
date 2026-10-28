@@ -112,15 +112,17 @@ describe('Domain Services & Utilities', () => {
     expect(user.co2SavedKg).toBe(21.4);
   });
 
-  it('maps item conditions bi-directionally between UI and Prisma', () => {
-    expect(toBackendCondition('Como nuevo')).toBe('NEW');
-    expect(toBackendCondition('Excelente estado')).toBe('LIKE_NEW');
+  it('maps item conditions bi-directionally between UI and the API contract', () => {
+    expect(toBackendCondition('Como nuevo')).toBe('LIKE_NEW');
+    expect(toBackendCondition('Excelente estado')).toBe('EXCELLENT');
     expect(toBackendCondition('Buen estado')).toBe('GOOD');
-    expect(toBackendCondition('Para repuesto')).toBe('POOR');
+    expect(toBackendCondition('Para repuesto')).toBe('FOR_PARTS');
+    expect(toBackendCondition('EXCELLENT')).toBe('EXCELLENT');
 
-    expect(toDisplayCondition('NEW')).toBe('Como nuevo');
-    expect(toDisplayCondition('LIKE_NEW')).toBe('Excelente estado');
+    expect(toDisplayCondition('LIKE_NEW')).toBe('Como nuevo');
+    expect(toDisplayCondition('EXCELLENT')).toBe('Excelente estado');
     expect(toDisplayCondition('GOOD')).toBe('Buen estado');
+    expect(toDisplayCondition('FOR_PARTS')).toBe('Para repuesto');
   });
 
   it('normalizes items from both array and paginated envelope responses', async () => {
@@ -136,7 +138,7 @@ describe('Domain Services & Utilities', () => {
     };
 
     const normalized = normalizeItem(rawItem);
-    expect(normalized.condition).toBe('Excelente estado');
+    expect(normalized.condition).toBe('Como nuevo');
     expect(normalized.imageUrl).toBe('data:image/jpeg;base64,abc');
     expect(normalized.wants).toEqual(['MacBook', 'iPad']);
 

@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ResultsLocationState {
   routes?: SwapRoute[];
@@ -21,6 +22,7 @@ interface ResultsLocationState {
 
 export const RouteResultsScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const location = useLocation();
   const { searchRoutesReal } = useApp();
   const [searchParams] = useSearchParams();
@@ -132,15 +134,14 @@ export const RouteResultsScreen: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-0.5">
-              Rutas Encontradas
+              {t('routeResults.title')}
             </h2>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              {filteredRoutes.length} {filteredRoutes.length === 1 ? 'opción' : 'opciones'}{' '}
-              disponibles
+              {t('routeResults.available', { count: filteredRoutes.length })}
             </p>
           </div>
           <Badge variant="primary-subtle" icon="hub">
-            Ciclos IA
+            {t('routeResults.aiCycles')}
           </Badge>
         </div>
 
@@ -149,10 +150,10 @@ export const RouteResultsScreen: React.FC = () => {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {(
               [
-                { key: 'all', label: 'Todos los ciclos' },
-                { key: 2, label: '2 pasos (Directo)' },
-                { key: 3, label: '3 pasos' },
-                { key: 4, label: '4 pasos' },
+                { key: 'all', label: t('routeResults.filters.all') },
+                { key: 2, label: t('routeResults.filters.two') },
+                { key: 3, label: t('routeResults.filters.three') },
+                { key: 4, label: t('routeResults.filters.four') },
               ] as const
             ).map((pill) => {
               const isActive = hopFilter === pill.key;
@@ -179,16 +180,16 @@ export const RouteResultsScreen: React.FC = () => {
         {filteredRoutes.length === 0 ? (
           <EmptyState
             iconName="search"
-            title="Sin rutas disponibles"
-            description="No encontramos una cadena de canje para estos artículos en este momento."
+            title={t('routeResults.emptyTitle')}
+            description={t('routeResults.emptyDescription')}
             action={
               hopFilter !== 'all' ? (
                 <Button variant="primary" onClick={() => setHopFilter('all')}>
-                  Ver todos los ciclos
+                  {t('routeResults.showAll')}
                 </Button>
               ) : (
                 <Button variant="primary" onClick={() => navigate('/home')}>
-                  Volver al Inicio
+                  {t('routeResults.backHome')}
                 </Button>
               )
             }
@@ -211,7 +212,7 @@ export const RouteResultsScreen: React.FC = () => {
                       <div className="flex items-center gap-1.5 text-primary">
                         <Icon name="auto_awesome" size="xs" filled />
                         <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                          Equidad Verificada por IA • {matchPct}% Coincidencia
+                          {t('routeResults.aiVerified', { percent: matchPct })}
                         </span>
                       </div>
                       <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a] flex items-center gap-1">
