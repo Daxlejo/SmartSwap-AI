@@ -334,6 +334,25 @@ export const en: TranslationSchema = {
     syncing: 'Syncing active inventories...',
     matchPercent: '{{percent}}% match',
   },
+  catalog: {
+    categories: {
+      Todos: 'All',
+      Tecnología: 'Technology',
+      Deportes: 'Sports',
+      Fotografía: 'Photography',
+      Videojuegos: 'Video games',
+      Música: 'Music',
+      Hogar: 'Home',
+      Otros: 'Other',
+    },
+    conditions: {
+      Todos: 'All',
+      'Como nuevo': 'Like new',
+      'Excelente estado': 'Excellent condition',
+      'Buen estado': 'Good condition',
+      'Para repuesto': 'For parts',
+    },
+  },
   common: {
     loading: 'Loading...',
     error: 'An unexpected error occurred.',

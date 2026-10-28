@@ -332,6 +332,25 @@ export const es = {
     syncing: 'Sincronizando inventarios activos...',
     matchPercent: '{{percent}}% coincidencia',
   },
+  catalog: {
+    categories: {
+      Todos: 'Todos',
+      Tecnología: 'Tecnología',
+      Deportes: 'Deportes',
+      Fotografía: 'Fotografía',
+      Videojuegos: 'Videojuegos',
+      Música: 'Música',
+      Hogar: 'Hogar',
+      Otros: 'Otros',
+    },
+    conditions: {
+      Todos: 'Todos',
+      'Como nuevo': 'Como nuevo',
+      'Excelente estado': 'Excelente estado',
+      'Buen estado': 'Buen estado',
+      'Para repuesto': 'Para repuesto',
+    },
+  },
   common: {
     loading: 'Cargando...',
     error: 'Ha ocurrido un error inesperado.',
