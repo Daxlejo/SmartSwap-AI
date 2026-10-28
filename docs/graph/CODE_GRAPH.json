@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-28T20:27:32.034Z",
+  "generatedAt": "2026-10-28T20:39:08.925Z",
   "stats": {
-    "totalFiles": 118,
-    "apiFiles": 55,
+    "totalFiles": 119,
+    "apiFiles": 56,
     "mobileFiles": 63,
-    "endpointsCount": 39
+    "endpointsCount": 41
   },
   "endpoints": [
     {
@@ -109,6 +109,22 @@
       "controller": "ItemsController",
       "handler": "analyzePhoto",
       "summary": "Analyze an item photo and/or hint text to generate structured catalog metadata",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/items/me",
+      "controller": "ItemsController",
+      "handler": "findMine",
+      "summary": "List all items owned by the authenticated user",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/items/mine",
+      "controller": "ItemsController",
+      "handler": "findMine",
+      "summary": "List all items owned by the authenticated user",
       "file": "api/src/modules/items/items.controller.ts"
     },
     {
@@ -331,7 +347,8 @@
       "api/src/common/pipes/zod-validation.pipe.ts"
     ],
     "api/config": [
-      "api/src/config/env.validation.ts"
+      "api/src/config/env.validation.ts",
+      "api/src/config/swagger.config.ts"
     ],
     "api/main.ts": [
       "api/src/main.ts"
@@ -572,12 +589,23 @@
         "zod"
       ]
     },
+    "api/src/config/swagger.config.ts": {
+      "module": "api/config",
+      "exports": [
+        "API_VERSION",
+        "buildSwaggerConfig"
+      ],
+      "imports": [
+        "@nestjs/swagger"
+      ]
+    },
     "api/src/main.ts": {
       "module": "api/main.ts",
       "exports": [],
       "imports": [
         "./app.module",
         "./common/filters/all-exceptions.filter",
+        "./config/swagger.config",
         "@nestjs/common",
         "@nestjs/config",
         "@nestjs/core",
@@ -951,6 +979,22 @@
           "controller": "ItemsController",
           "handler": "findAll",
           "summary": "List public items with optional search and filters",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/items/mine",
+          "controller": "ItemsController",
+          "handler": "findMine",
+          "summary": "List all items owned by the authenticated user",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/items/me",
+          "controller": "ItemsController",
+          "handler": "findMine",
+          "summary": "List all items owned by the authenticated user",
           "file": "api/src/modules/items/items.controller.ts"
         },
         {

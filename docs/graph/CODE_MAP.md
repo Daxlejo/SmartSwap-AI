@@ -24,6 +24,8 @@
 | `GET` | `/items/:id` | `ItemsController` | `findOne` | Get a single item by ID |
 | `PATCH` | `/items/:id` | `ItemsController` | `update` | Update an item owned by the authenticated user |
 | `POST` | `/items/analyze-photo` | `ItemsController` | `analyzePhoto` | Analyze an item photo and/or hint text to generate structured catalog metadata |
+| `GET` | `/items/me` | `ItemsController` | `findMine` | List all items owned by the authenticated user |
+| `GET` | `/items/mine` | `ItemsController` | `findMine` | List all items owned by the authenticated user |
 | `POST` | `/items/upload-image` | `ItemsController` | `uploadImage` | Upload a base64 item image to Supabase Storage |
 | `GET` | `/notifications` | `NotificationsController` | `listUserNotifications` | List user notifications with unread count |
 | `DELETE` | `/notifications/:id` | `NotificationsController` | `deleteNotification` | Delete a notification |
