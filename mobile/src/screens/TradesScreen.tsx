@@ -288,7 +288,7 @@ export const TradesScreen: React.FC = () => {
                 : 'bg-surface-container-high text-on-surface-variant'
             }`}
           >
-            1
+            {sentRoutes.length}
           </span>
         </button>
 
