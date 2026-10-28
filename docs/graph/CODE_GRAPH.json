@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T19:25:38.769Z",
+  "generatedAt": "2026-10-28T19:31:46.813Z",
   "stats": {
     "totalFiles": 110,
     "apiFiles": 54,
@@ -557,6 +557,7 @@
         "@nestjs/common",
         "@nestjs/config",
         "@nestjs/core",
+        "@nestjs/platform-express",
         "@nestjs/swagger",
         "helmet"
       ]
