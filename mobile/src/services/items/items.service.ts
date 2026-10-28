@@ -4,7 +4,8 @@ import type { Item, ItemOwnerSummary } from '@/types';
 import bikeImg from '@/assets/item-bike.svg';
 import alexAvatar from '@/assets/avatar-alex.svg';
 
-export type PrismaItemCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
+export const API_ITEM_CONDITIONS = ['LIKE_NEW', 'EXCELLENT', 'GOOD', 'FOR_PARTS'] as const;
+export type ApiItemCondition = (typeof API_ITEM_CONDITIONS)[number];
 
 export interface ListItemsParams {
   query?: string;
@@ -81,46 +82,43 @@ export interface PaginatedItemsEnvelope {
   offset?: number;
 }
 
-const CONDITION_TO_DISPLAY: Record<string, string> = {
-  NEW: 'Como nuevo',
-  LIKE_NEW: 'Excelente estado',
+/** Item conditions exposed by the API contract (see api/src/modules/items/dto/create-item.dto.ts). */
+const CONDITION_TO_DISPLAY: Record<ApiItemCondition, string> = {
+  LIKE_NEW: 'Como nuevo',
+  EXCELLENT: 'Excelente estado',
   GOOD: 'Buen estado',
-  FAIR: 'Buen estado',
-  POOR: 'Para repuesto',
+  FOR_PARTS: 'Para repuesto',
 };
 
-const DISPLAY_TO_PRISMA_CONDITION: Record<string, PrismaItemCondition> = {
-  'como nuevo': 'NEW',
-  'nuevo': 'NEW',
-  'new': 'NEW',
-  'excelente estado': 'LIKE_NEW',
-  'like_new': 'LIKE_NEW',
+const DISPLAY_TO_API_CONDITION: Record<string, ApiItemCondition> = {
+  'como nuevo': 'LIKE_NEW',
+  nuevo: 'LIKE_NEW',
+  'excelente estado': 'EXCELLENT',
+  excelente: 'EXCELLENT',
   'buen estado': 'GOOD',
-  'good': 'GOOD',
-  'regular': 'FAIR',
-  'fair': 'FAIR',
-  'para repuesto': 'POOR',
-  'poor': 'POOR',
+  bueno: 'GOOD',
+  regular: 'GOOD',
+  'para repuesto': 'FOR_PARTS',
+  'para piezas': 'FOR_PARTS',
   'colección': 'LIKE_NEW',
 };
+
+const isApiItemCondition = (value: string): value is ApiItemCondition =>
+  (API_ITEM_CONDITIONS as readonly string[]).includes(value);
 
 export const toDisplayCondition = (condition: string): string => {
   if (!condition) return 'Excelente estado';
   const upper = condition.trim().toUpperCase();
-  if (CONDITION_TO_DISPLAY[upper]) {
-    return CONDITION_TO_DISPLAY[upper];
-  }
-  return condition;
+  return isApiItemCondition(upper) ? CONDITION_TO_DISPLAY[upper] : condition;
 };
 
-export const toBackendCondition = (condition: string): PrismaItemCondition => {
+export const toBackendCondition = (condition: string): ApiItemCondition => {
   if (!condition) return 'GOOD';
   const upper = condition.trim().toUpperCase();
-  if (['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR'].includes(upper)) {
-    return upper as PrismaItemCondition;
+  if (isApiItemCondition(upper)) {
+    return upper;
   }
-  const lower = condition.trim().toLowerCase();
-  return DISPLAY_TO_PRISMA_CONDITION[lower] || 'GOOD';
+  return DISPLAY_TO_API_CONDITION[condition.trim().toLowerCase()] || 'GOOD';
 };
 
 export const normalizeItem = (raw: RawItemDto): Item => {
