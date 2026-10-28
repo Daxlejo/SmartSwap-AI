@@ -167,7 +167,7 @@ export const HomeScreen = () => {
               <h2 className="font-headline-sm text-headline-sm text-white font-bold">
                 {t('home.engine.title')}
               </h2>
-              <p className="font-body-sm text-body-sm text-primary-fixed/90 leading-relaxed">
+              <p className="font-body-sm text-body-sm text-white/90 leading-relaxed">
                 {t('home.engine.description')}
               </p>
             </div>
@@ -182,7 +182,7 @@ export const HomeScreen = () => {
               >
                 {t('home.engine.cta')}
               </Button>
-              <span className="font-label-sm text-label-sm text-primary-fixed/90 font-medium">
+              <span className="font-label-sm text-label-sm text-white/90 font-medium">
                 {t('home.engine.hops')}
               </span>
             </div>
