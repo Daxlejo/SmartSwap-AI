@@ -1,0 +1,2402 @@
+{
+  "generatedAt": "2026-10-28T19:31:46.813Z",
+  "stats": {
+    "totalFiles": 110,
+    "apiFiles": 54,
+    "mobileFiles": 56,
+    "endpointsCount": 37
+  },
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/ai/analyze-photo",
+      "controller": "AiController",
+      "handler": "analyzePhoto",
+      "summary": "Analyze an item photo and/or hint text to generate structured catalog metadata",
+      "file": "api/src/modules/ai/ai.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/ai/estimate-value",
+      "controller": "AiController",
+      "handler": "estimateValue",
+      "summary": "Estimate fair circular swap value (USD) for an item",
+      "file": "api/src/modules/ai/ai.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/ai/explain-route",
+      "controller": "AiController",
+      "handler": "explainRoute",
+      "summary": "Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route",
+      "file": "api/src/modules/ai/ai.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "controller": "AuthController",
+      "handler": "login",
+      "summary": "Authenticate with email and password",
+      "file": "api/src/modules/auth/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "controller": "AuthController",
+      "handler": "getMe",
+      "summary": "Get current authenticated user profile",
+      "file": "api/src/modules/auth/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "controller": "AuthController",
+      "handler": "register",
+      "summary": "Register a new user account",
+      "file": "api/src/modules/auth/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "controller": "HealthController",
+      "handler": "getHealth",
+      "summary": "Healthcheck probe",
+      "file": "api/src/modules/health/health.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/items",
+      "controller": "ItemsController",
+      "handler": "findAll",
+      "summary": "List public items with optional search and filters",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/items",
+      "controller": "ItemsController",
+      "handler": "create",
+      "summary": "Create a new item and synchronize its wants",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/items/:id",
+      "controller": "ItemsController",
+      "handler": "remove",
+      "summary": "Delete an item owned by the authenticated user",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/items/:id",
+      "controller": "ItemsController",
+      "handler": "findOne",
+      "summary": "Get a single item by ID",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/items/:id",
+      "controller": "ItemsController",
+      "handler": "update",
+      "summary": "Update an item owned by the authenticated user",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/items/analyze-photo",
+      "controller": "ItemsController",
+      "handler": "analyzePhoto",
+      "summary": "Analyze an item photo and/or hint text to generate structured catalog metadata",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/items/upload-image",
+      "controller": "ItemsController",
+      "handler": "uploadImage",
+      "summary": "Upload a base64 item image to Supabase Storage",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "controller": "NotificationsController",
+      "handler": "listUserNotifications",
+      "summary": "List user notifications with unread count",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/notifications/:id",
+      "controller": "NotificationsController",
+      "handler": "deleteNotification",
+      "summary": "Delete a notification",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/notifications/:id/read",
+      "controller": "NotificationsController",
+      "handler": "markAsReadPatch",
+      "summary": "Mark a notification as read (PATCH)",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/notifications/:id/read",
+      "controller": "NotificationsController",
+      "handler": "markAsReadPost",
+      "summary": "Mark a notification as read (POST)",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/notifications/read-all",
+      "controller": "NotificationsController",
+      "handler": "markAllAsReadPatch",
+      "summary": "Mark all unread notifications as read (PATCH)",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/notifications/read-all",
+      "controller": "NotificationsController",
+      "handler": "markAllAsReadPost",
+      "summary": "Mark all unread notifications as read (POST)",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications/unread-count",
+      "controller": "NotificationsController",
+      "handler": "getUnreadCount",
+      "summary": "Get total unread notifications count",
+      "file": "api/src/modules/notifications/notifications.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/proposals",
+      "controller": "ProposalsController",
+      "handler": "listMyRoutes",
+      "summary": "List all barter proposals where the authenticated user is initiator or participant",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/proposals",
+      "controller": "ProposalsController",
+      "handler": "proposeRoute",
+      "summary": "Create exchange proposal, lock involved items, and notify participants",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/proposals/:id",
+      "controller": "ProposalsController",
+      "handler": "getRouteById",
+      "summary": "Get a single proposal by route ID or human-readable SW-XXXX code",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/proposals/:id/complete",
+      "controller": "ProposalsController",
+      "handler": "completeRoute",
+      "summary": "Confirm delivery and finalize a confirmed circular swap route proposal",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/proposals/:id/respond",
+      "controller": "ProposalsController",
+      "handler": "respondToRoute",
+      "summary": "Accept or reject a proposed swap route step with distributed consensus transitions",
+      "file": "api/src/modules/routes/proposals.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/routes",
+      "controller": "RoutesController",
+      "handler": "listMyRoutes",
+      "summary": "List all persisted swap routes where the authenticated user is initiator or participant",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/routes/:id",
+      "controller": "RoutesController",
+      "handler": "getRouteById",
+      "summary": "Get a single persisted swap route by ID or code",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/complete",
+      "controller": "RoutesController",
+      "handler": "completeRoute",
+      "summary": "Confirm delivery and finalize a confirmed circular swap route, updating items and eco metrics",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/propose",
+      "controller": "RoutesController",
+      "handler": "proposeRouteById",
+      "summary": "OpenAPI path-compatible endpoint to propose a discovered circular swap route",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/respond",
+      "controller": "RoutesController",
+      "handler": "respondToRoute",
+      "summary": "Accept or reject a proposed swap route step with distributed consensus transitions",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/find",
+      "controller": "RoutesController",
+      "handler": "findRoutesAlias",
+      "summary": "Alias endpoint to discover multi-hop circular swap routes",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/propose",
+      "controller": "RoutesController",
+      "handler": "proposeRoute",
+      "summary": "Propose a circular swap route, lock involved items, and notify participants",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/search",
+      "controller": "RoutesController",
+      "handler": "searchRoutes",
+      "summary": "Discover optimal 2-, 3-, and 4-hop circular swap routes matching the user objective",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/users/me",
+      "controller": "UsersController",
+      "handler": "getMe",
+      "summary": "Get authenticated user profile",
+      "file": "api/src/modules/users/users.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/users/me",
+      "controller": "UsersController",
+      "handler": "updateMe",
+      "summary": "Update authenticated user profile",
+      "file": "api/src/modules/users/users.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/users/me/stats",
+      "controller": "UsersController",
+      "handler": "getMeStats",
+      "summary": "Get authenticated user statistics and operational metrics",
+      "file": "api/src/modules/users/users.controller.ts"
+    }
+  ],
+  "modules": {
+    "api/app.module.ts": [
+      "api/src/app.module.ts"
+    ],
+    "api/common": [
+      "api/src/common/decorators/current-user.decorator.ts",
+      "api/src/common/filters/all-exceptions.filter.ts",
+      "api/src/common/guards/jwt-auth.guard.ts",
+      "api/src/common/pipes/zod-validation.pipe.ts"
+    ],
+    "api/config": [
+      "api/src/config/env.validation.ts"
+    ],
+    "api/main.ts": [
+      "api/src/main.ts"
+    ],
+    "api/ai": [
+      "api/src/modules/ai/ai.controller.ts",
+      "api/src/modules/ai/ai.module.ts",
+      "api/src/modules/ai/dto/analyze-photo.dto.ts",
+      "api/src/modules/ai/dto/estimate-value.dto.ts",
+      "api/src/modules/ai/dto/explain-route.dto.ts",
+      "api/src/modules/ai/services/ai-embedding.service.ts",
+      "api/src/modules/ai/services/ai-explainer.service.ts",
+      "api/src/modules/ai/services/ai-vision.service.ts",
+      "api/src/modules/ai/services/openai-client.service.ts"
+    ],
+    "api/auth": [
+      "api/src/modules/auth/auth.controller.ts",
+      "api/src/modules/auth/auth.module.ts",
+      "api/src/modules/auth/auth.service.ts",
+      "api/src/modules/auth/dto/login.dto.ts",
+      "api/src/modules/auth/dto/register.dto.ts"
+    ],
+    "api/health": [
+      "api/src/modules/health/health.controller.ts",
+      "api/src/modules/health/health.module.ts"
+    ],
+    "api/items": [
+      "api/src/modules/items/dto/create-item.dto.ts",
+      "api/src/modules/items/dto/query-items.dto.ts",
+      "api/src/modules/items/dto/update-item.dto.ts",
+      "api/src/modules/items/dto/upload-image.dto.ts",
+      "api/src/modules/items/items.controller.ts",
+      "api/src/modules/items/items.module.ts",
+      "api/src/modules/items/items.service.ts",
+      "api/src/modules/items/mappers/item.mapper.ts",
+      "api/src/modules/items/storage/supabase-storage.service.ts"
+    ],
+    "api/notifications": [
+      "api/src/modules/notifications/dto/query-notifications.dto.ts",
+      "api/src/modules/notifications/mappers/notification.mapper.ts",
+      "api/src/modules/notifications/notifications.controller.ts",
+      "api/src/modules/notifications/notifications.module.ts",
+      "api/src/modules/notifications/notifications.service.ts"
+    ],
+    "api/routes": [
+      "api/src/modules/routes/dto/propose-route.dto.ts",
+      "api/src/modules/routes/dto/respond-route.dto.ts",
+      "api/src/modules/routes/dto/search-routes.dto.ts",
+      "api/src/modules/routes/engine/route-scoring.strategy.ts",
+      "api/src/modules/routes/engine/swap-graph.engine.ts",
+      "api/src/modules/routes/mappers/route.mapper.ts",
+      "api/src/modules/routes/proposals.controller.ts",
+      "api/src/modules/routes/routes.controller.ts",
+      "api/src/modules/routes/routes.module.ts",
+      "api/src/modules/routes/routes.service.ts"
+    ],
+    "api/users": [
+      "api/src/modules/users/dto/update-profile.dto.ts",
+      "api/src/modules/users/mappers/user.mapper.ts",
+      "api/src/modules/users/users.controller.ts",
+      "api/src/modules/users/users.module.ts",
+      "api/src/modules/users/users.service.ts"
+    ],
+    "api/prisma": [
+      "api/src/prisma/prisma.module.ts",
+      "api/src/prisma/prisma.service.ts"
+    ],
+    "mobile/App.tsx": [
+      "mobile/src/App.tsx"
+    ],
+    "mobile/components": [
+      "mobile/src/components/BottomNav.tsx",
+      "mobile/src/components/ObjectCard.tsx",
+      "mobile/src/components/ProposalCard.tsx",
+      "mobile/src/components/RouteCard.tsx",
+      "mobile/src/components/RouteStep.tsx",
+      "mobile/src/components/TopBar.tsx",
+      "mobile/src/components/ui/Avatar.tsx",
+      "mobile/src/components/ui/Badge.tsx",
+      "mobile/src/components/ui/BottomSheet.tsx",
+      "mobile/src/components/ui/Button.tsx",
+      "mobile/src/components/ui/Chip.tsx",
+      "mobile/src/components/ui/EmptyState.tsx",
+      "mobile/src/components/ui/Icon.tsx",
+      "mobile/src/components/ui/Input.tsx",
+      "mobile/src/components/ui/ThemeToggle.tsx"
+    ],
+    "mobile/config": [
+      "mobile/src/config/env.ts"
+    ],
+    "mobile/context": [
+      "mobile/src/context/AppContext.tsx",
+      "mobile/src/context/ThemeContext.tsx"
+    ],
+    "mobile/data": [
+      "mobile/src/data/mockData.ts"
+    ],
+    "mobile/hooks": [
+      "mobile/src/hooks/useTheme.ts",
+      "mobile/src/hooks/useTranslation.ts"
+    ],
+    "mobile/i18n": [
+      "mobile/src/i18n/en.ts",
+      "mobile/src/i18n/es.ts",
+      "mobile/src/i18n/index.ts"
+    ],
+    "mobile/layouts": [
+      "mobile/src/layouts/AppLayout.tsx",
+      "mobile/src/layouts/AuthLayout.tsx"
+    ],
+    "mobile/lib": [
+      "mobile/src/lib/routeFinder.ts"
+    ],
+    "mobile/main.tsx": [
+      "mobile/src/main.tsx"
+    ],
+    "mobile/router.tsx": [
+      "mobile/src/router.tsx"
+    ],
+    "mobile/screens": [
+      "mobile/src/screens/ConfigureSwapScreen.tsx",
+      "mobile/src/screens/ExchangesScreen.tsx",
+      "mobile/src/screens/ExploreScreen.tsx",
+      "mobile/src/screens/HomeScreen.tsx",
+      "mobile/src/screens/LoginScreen.tsx",
+      "mobile/src/screens/NotificationsScreen.tsx",
+      "mobile/src/screens/ProfileScreen.tsx",
+      "mobile/src/screens/ProposalConfirmScreen.tsx",
+      "mobile/src/screens/ProposalSentScreen.tsx",
+      "mobile/src/screens/PublishScreen.tsx",
+      "mobile/src/screens/RegisterScreen.tsx",
+      "mobile/src/screens/RouteDetailScreen.tsx",
+      "mobile/src/screens/RouteResultsScreen.tsx",
+      "mobile/src/screens/SearchingScreen.tsx",
+      "mobile/src/screens/SplashScreen.tsx",
+      "mobile/src/screens/TradesScreen.tsx"
+    ],
+    "mobile/services": [
+      "mobile/src/services/ai/ai.service.ts",
+      "mobile/src/services/auth/auth.service.ts",
+      "mobile/src/services/http/apiClient.ts",
+      "mobile/src/services/items/items.service.ts",
+      "mobile/src/services/notifications/notifications.service.ts",
+      "mobile/src/services/routes/routes.service.ts",
+      "mobile/src/services/storage/tokenStorage.ts",
+      "mobile/src/services/swapService.ts"
+    ],
+    "mobile/types": [
+      "mobile/src/types/index.ts"
+    ],
+    "mobile/utils": [
+      "mobile/src/utils/imageCompressor.ts"
+    ]
+  },
+  "files": {
+    "api/src/app.module.ts": {
+      "module": "api/app.module.ts",
+      "exports": [
+        "AppModule"
+      ],
+      "imports": [
+        "./common/filters/all-exceptions.filter",
+        "./config/env.validation",
+        "./modules/ai/ai.module",
+        "./modules/auth/auth.module",
+        "./modules/health/health.module",
+        "./modules/items/items.module",
+        "./modules/notifications/notifications.module",
+        "./modules/routes/routes.module",
+        "./modules/users/users.module",
+        "./prisma/prisma.module",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/core",
+        "@nestjs/throttler"
+      ]
+    },
+    "api/src/common/decorators/current-user.decorator.ts": {
+      "module": "api/common",
+      "exports": [
+        "AuthenticatedRequest",
+        "CurrentUser",
+        "CurrentUserPayload"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "express"
+      ]
+    },
+    "api/src/common/filters/all-exceptions.filter.ts": {
+      "module": "api/common",
+      "exports": [
+        "AllExceptionsFilter",
+        "ErrorEnvelope"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "express"
+      ]
+    },
+    "api/src/common/guards/jwt-auth.guard.ts": {
+      "module": "api/common",
+      "exports": [
+        "JwtAuthGuard"
+      ],
+      "imports": [
+        "../decorators/current-user.decorator",
+        "@nestjs/common",
+        "@nestjs/jwt"
+      ]
+    },
+    "api/src/common/pipes/zod-validation.pipe.ts": {
+      "module": "api/common",
+      "exports": [
+        "ZodValidationPipe"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "zod"
+      ]
+    },
+    "api/src/config/env.validation.ts": {
+      "module": "api/config",
+      "exports": [
+        "EnvConfig",
+        "envSchema",
+        "validateEnv"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/main.ts": {
+      "module": "api/main.ts",
+      "exports": [],
+      "imports": [
+        "./app.module",
+        "./common/filters/all-exceptions.filter",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/core",
+        "@nestjs/platform-express",
+        "@nestjs/swagger",
+        "helmet"
+      ]
+    },
+    "api/src/modules/ai/ai.controller.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiController"
+      ],
+      "imports": [
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/analyze-photo.dto",
+        "./dto/estimate-value.dto",
+        "./dto/explain-route.dto",
+        "./services/ai-explainer.service",
+        "./services/ai-vision.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/ai/analyze-photo",
+          "controller": "AiController",
+          "handler": "analyzePhoto",
+          "summary": "Analyze an item photo and/or hint text to generate structured catalog metadata",
+          "file": "api/src/modules/ai/ai.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/ai/estimate-value",
+          "controller": "AiController",
+          "handler": "estimateValue",
+          "summary": "Estimate fair circular swap value (USD) for an item",
+          "file": "api/src/modules/ai/ai.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/ai/explain-route",
+          "controller": "AiController",
+          "handler": "explainRoute",
+          "summary": "Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route",
+          "file": "api/src/modules/ai/ai.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/ai/ai.module.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiModule"
+      ],
+      "imports": [
+        "./ai.controller",
+        "./services/ai-embedding.service",
+        "./services/ai-explainer.service",
+        "./services/ai-vision.service",
+        "./services/openai-client.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/ai/dto/analyze-photo.dto.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AnalyzePhotoDto",
+        "analyzePhotoSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/ai/dto/estimate-value.dto.ts": {
+      "module": "api/ai",
+      "exports": [
+        "EstimateValueDto",
+        "ItemConditionType",
+        "estimateValueSchema",
+        "itemConditionEnum"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/ai/dto/explain-route.dto.ts": {
+      "module": "api/ai",
+      "exports": [
+        "ExplainRouteDto",
+        "RouteStepExplanationInput",
+        "explainRouteSchema",
+        "routeStepExplanationSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/ai/services/ai-embedding.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiEmbeddingService",
+        "EMBEDDING_DIMENSIONS",
+        "cosineSimilarity"
+      ],
+      "imports": [
+        "./openai-client.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/ai/services/ai-explainer.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiExplainerService",
+        "RouteExplanationResult"
+      ],
+      "imports": [
+        "../dto/explain-route.dto",
+        "./openai-client.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/ai/services/ai-vision.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiVisionService",
+        "ConditionLabelEs",
+        "ValueEstimationResult",
+        "VisionAnalysisResult"
+      ],
+      "imports": [
+        "../dto/analyze-photo.dto",
+        "../dto/estimate-value.dto",
+        "./openai-client.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/ai/services/openai-client.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "OpenAiClientService",
+        "OpenAiContentPart",
+        "OpenAiImageContentPart",
+        "OpenAiTextContentPart"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@nestjs/config"
+      ]
+    },
+    "api/src/modules/auth/auth.controller.ts": {
+      "module": "api/auth",
+      "exports": [
+        "AuthController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "../users/mappers/user.mapper",
+        "./auth.service",
+        "./dto/login.dto",
+        "./dto/register.dto",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/auth/register",
+          "controller": "AuthController",
+          "handler": "register",
+          "summary": "Register a new user account",
+          "file": "api/src/modules/auth/auth.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "controller": "AuthController",
+          "handler": "login",
+          "summary": "Authenticate with email and password",
+          "file": "api/src/modules/auth/auth.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/auth/me",
+          "controller": "AuthController",
+          "handler": "getMe",
+          "summary": "Get current authenticated user profile",
+          "file": "api/src/modules/auth/auth.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/auth/auth.module.ts": {
+      "module": "api/auth",
+      "exports": [
+        "AuthModule"
+      ],
+      "imports": [
+        "../../common/guards/jwt-auth.guard",
+        "../users/users.module",
+        "./auth.controller",
+        "./auth.service",
+        "@nestjs/common",
+        "@nestjs/config",
+        "@nestjs/jwt"
+      ]
+    },
+    "api/src/modules/auth/auth.service.ts": {
+      "module": "api/auth",
+      "exports": [
+        "AuthResponse",
+        "AuthService"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../users/mappers/user.mapper",
+        "../users/users.service",
+        "./dto/login.dto",
+        "./dto/register.dto",
+        "@nestjs/common",
+        "@nestjs/jwt",
+        "@prisma/client",
+        "bcryptjs"
+      ]
+    },
+    "api/src/modules/auth/dto/login.dto.ts": {
+      "module": "api/auth",
+      "exports": [
+        "LoginDto",
+        "loginSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/auth/dto/register.dto.ts": {
+      "module": "api/auth",
+      "exports": [
+        "RegisterDto",
+        "registerSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/health/health.controller.ts": {
+      "module": "api/health",
+      "exports": [
+        "HealthCheckResponse",
+        "HealthController"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "controller": "HealthController",
+          "handler": "getHealth",
+          "summary": "Healthcheck probe",
+          "file": "api/src/modules/health/health.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/health/health.module.ts": {
+      "module": "api/health",
+      "exports": [
+        "HealthModule"
+      ],
+      "imports": [
+        "./health.controller",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/items/dto/create-item.dto.ts": {
+      "module": "api/items",
+      "exports": [
+        "CreateItemDto",
+        "ITEM_CONDITIONS",
+        "NormalizedItemCondition",
+        "createItemSchema",
+        "itemConditionSchema",
+        "normalizeItemCondition",
+        "toPrismaItemCondition"
+      ],
+      "imports": [
+        "@prisma/client",
+        "zod"
+      ]
+    },
+    "api/src/modules/items/dto/query-items.dto.ts": {
+      "module": "api/items",
+      "exports": [
+        "QueryItemsDto",
+        "queryItemsSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/items/dto/update-item.dto.ts": {
+      "module": "api/items",
+      "exports": [
+        "ItemStatusInput",
+        "UpdateItemDto",
+        "itemStatusSchema",
+        "toPrismaItemStatus",
+        "updateItemSchema"
+      ],
+      "imports": [
+        "./create-item.dto",
+        "@prisma/client",
+        "zod"
+      ]
+    },
+    "api/src/modules/items/dto/upload-image.dto.ts": {
+      "module": "api/items",
+      "exports": [
+        "UploadImageDto",
+        "uploadImageSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/items/items.controller.ts": {
+      "module": "api/items",
+      "exports": [
+        "ItemsController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "../ai/dto/analyze-photo.dto",
+        "../ai/services/ai-vision.service",
+        "./dto/create-item.dto",
+        "./dto/query-items.dto",
+        "./dto/update-item.dto",
+        "./dto/upload-image.dto",
+        "./items.service",
+        "./mappers/item.mapper",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/items",
+          "controller": "ItemsController",
+          "handler": "findAll",
+          "summary": "List public items with optional search and filters",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/items/:id",
+          "controller": "ItemsController",
+          "handler": "findOne",
+          "summary": "Get a single item by ID",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/items/analyze-photo",
+          "controller": "ItemsController",
+          "handler": "analyzePhoto",
+          "summary": "Analyze an item photo and/or hint text to generate structured catalog metadata",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/items/upload-image",
+          "controller": "ItemsController",
+          "handler": "uploadImage",
+          "summary": "Upload a base64 item image to Supabase Storage",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/items",
+          "controller": "ItemsController",
+          "handler": "create",
+          "summary": "Create a new item and synchronize its wants",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "PATCH",
+          "path": "/items/:id",
+          "controller": "ItemsController",
+          "handler": "update",
+          "summary": "Update an item owned by the authenticated user",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "DELETE",
+          "path": "/items/:id",
+          "controller": "ItemsController",
+          "handler": "remove",
+          "summary": "Delete an item owned by the authenticated user",
+          "file": "api/src/modules/items/items.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/items/items.module.ts": {
+      "module": "api/items",
+      "exports": [
+        "ItemsModule"
+      ],
+      "imports": [
+        "../ai/ai.module",
+        "./items.controller",
+        "./items.service",
+        "./mappers/item.mapper",
+        "./storage/supabase-storage.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/items/items.service.ts": {
+      "module": "api/items",
+      "exports": [
+        "ItemsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../ai/services/ai-embedding.service",
+        "./dto/create-item.dto",
+        "./dto/query-items.dto",
+        "./dto/update-item.dto",
+        "./mappers/item.mapper",
+        "./storage/supabase-storage.service",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "prismaModels": [
+        "Item",
+        "User"
+      ]
+    },
+    "api/src/modules/items/mappers/item.mapper.ts": {
+      "module": "api/items",
+      "exports": [
+        "ItemConditionLabel",
+        "ItemMapper",
+        "ItemOwnerSummary",
+        "ItemResponseDto",
+        "ItemWantSummary",
+        "ItemWithRelations"
+      ],
+      "imports": [
+        "../dto/create-item.dto",
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
+    "api/src/modules/items/storage/supabase-storage.service.ts": {
+      "module": "api/items",
+      "exports": [
+        "SupabaseStorageService"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "crypto"
+      ]
+    },
+    "api/src/modules/notifications/dto/query-notifications.dto.ts": {
+      "module": "api/notifications",
+      "exports": [
+        "QueryNotificationsDto",
+        "queryNotificationsSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/notifications/mappers/notification.mapper.ts": {
+      "module": "api/notifications",
+      "exports": [
+        "NotificationDto",
+        "NotificationMapper",
+        "NotificationWithUnreadCountDto",
+        "formatRelativeTimeSpanish"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
+    "api/src/modules/notifications/notifications.controller.ts": {
+      "module": "api/notifications",
+      "exports": [
+        "NotificationsController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/query-notifications.dto",
+        "./mappers/notification.mapper",
+        "./notifications.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/notifications",
+          "controller": "NotificationsController",
+          "handler": "listUserNotifications",
+          "summary": "List user notifications with unread count",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/notifications/unread-count",
+          "controller": "NotificationsController",
+          "handler": "getUnreadCount",
+          "summary": "Get total unread notifications count",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/notifications/read-all",
+          "controller": "NotificationsController",
+          "handler": "markAllAsReadPost",
+          "summary": "Mark all unread notifications as read (POST)",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "PATCH",
+          "path": "/notifications/read-all",
+          "controller": "NotificationsController",
+          "handler": "markAllAsReadPatch",
+          "summary": "Mark all unread notifications as read (PATCH)",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "PATCH",
+          "path": "/notifications/:id/read",
+          "controller": "NotificationsController",
+          "handler": "markAsReadPatch",
+          "summary": "Mark a notification as read (PATCH)",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/notifications/:id/read",
+          "controller": "NotificationsController",
+          "handler": "markAsReadPost",
+          "summary": "Mark a notification as read (POST)",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        },
+        {
+          "method": "DELETE",
+          "path": "/notifications/:id",
+          "controller": "NotificationsController",
+          "handler": "deleteNotification",
+          "summary": "Delete a notification",
+          "file": "api/src/modules/notifications/notifications.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/notifications/notifications.module.ts": {
+      "module": "api/notifications",
+      "exports": [
+        "NotificationsModule"
+      ],
+      "imports": [
+        "./mappers/notification.mapper",
+        "./notifications.controller",
+        "./notifications.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/notifications/notifications.service.ts": {
+      "module": "api/notifications",
+      "exports": [
+        "CreateNotificationInput",
+        "NotificationsService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "./dto/query-notifications.dto",
+        "./mappers/notification.mapper",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "prismaModels": [
+        "Notification"
+      ]
+    },
+    "api/src/modules/routes/dto/propose-route.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ProposeRouteDto",
+        "ProposeRouteStepDto",
+        "proposeRouteSchema",
+        "proposeRouteStepSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/dto/respond-route.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ROUTE_DECISIONS",
+        "RespondRouteDto",
+        "RouteDecision",
+        "respondRouteSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/dto/search-routes.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "SearchRoutesDto",
+        "SearchRoutesInput",
+        "searchRoutesSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/engine/route-scoring.strategy.ts": {
+      "module": "api/routes",
+      "exports": [
+        "CO2_KG_PER_STEP",
+        "CycleScoreInput",
+        "DEFAULT_VALUE_TOLERANCE_PCT",
+        "EdgeEvaluationResult",
+        "EvaluateEdgeOptions",
+        "GraphItemNode",
+        "GraphOwnerInfo",
+        "GraphWantNode",
+        "RouteScoringStrategy",
+        "SEMANTIC_SIMILARITY_THRESHOLD",
+        "WantMatchEvaluation"
+      ],
+      "imports": [
+        "../../ai/services/ai-embedding.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/routes/engine/swap-graph.engine.ts": {
+      "module": "api/routes",
+      "exports": [
+        "DirectedGraphEdge",
+        "EdgeEvaluationResult",
+        "GraphItemNode",
+        "GraphOwnerInfo",
+        "GraphWantNode",
+        "MAX_CYCLE_STEPS",
+        "MAX_RETURNED_CYCLES",
+        "MIN_CYCLE_STEPS",
+        "SwapCycleCandidate",
+        "SwapCycleStep",
+        "SwapGraphEngine",
+        "SwapGraphSearchParams"
+      ],
+      "imports": [
+        "./route-scoring.strategy",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/routes/mappers/route.mapper.ts": {
+      "module": "api/routes",
+      "exports": [
+        "PersistedStepItem",
+        "PersistedStepUser",
+        "RouteMapper",
+        "StepAcceptanceDto",
+        "SwapRouteDto",
+        "SwapRouteItemSummaryDto",
+        "SwapRouteStatusDto",
+        "SwapRouteStepDto",
+        "SwapRouteStepUserSummaryDto",
+        "SwapRouteStepWithRelations",
+        "SwapRouteWithRelations"
+      ],
+      "imports": [
+        "../../items/dto/create-item.dto",
+        "../engine/swap-graph.engine",
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
+    "api/src/modules/routes/proposals.controller.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ProposalsController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/propose-route.dto",
+        "./dto/respond-route.dto",
+        "./mappers/route.mapper",
+        "./routes.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/proposals",
+          "controller": "ProposalsController",
+          "handler": "listMyRoutes",
+          "summary": "List all barter proposals where the authenticated user is initiator or participant",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/proposals/:id",
+          "controller": "ProposalsController",
+          "handler": "getRouteById",
+          "summary": "Get a single proposal by route ID or human-readable SW-XXXX code",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/proposals",
+          "controller": "ProposalsController",
+          "handler": "proposeRoute",
+          "summary": "Create exchange proposal, lock involved items, and notify participants",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/proposals/:id/respond",
+          "controller": "ProposalsController",
+          "handler": "respondToRoute",
+          "summary": "Accept or reject a proposed swap route step with distributed consensus transitions",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/proposals/:id/complete",
+          "controller": "ProposalsController",
+          "handler": "completeRoute",
+          "summary": "Confirm delivery and finalize a confirmed circular swap route proposal",
+          "file": "api/src/modules/routes/proposals.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/routes/routes.controller.ts": {
+      "module": "api/routes",
+      "exports": [
+        "RoutesController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/propose-route.dto",
+        "./dto/respond-route.dto",
+        "./dto/search-routes.dto",
+        "./mappers/route.mapper",
+        "./routes.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/routes/search",
+          "controller": "RoutesController",
+          "handler": "searchRoutes",
+          "summary": "Discover optimal 2-, 3-, and 4-hop circular swap routes matching the user objective",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/find",
+          "controller": "RoutesController",
+          "handler": "findRoutesAlias",
+          "summary": "Alias endpoint to discover multi-hop circular swap routes",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/propose",
+          "controller": "RoutesController",
+          "handler": "proposeRoute",
+          "summary": "Propose a circular swap route, lock involved items, and notify participants",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/propose",
+          "controller": "RoutesController",
+          "handler": "proposeRouteById",
+          "summary": "OpenAPI path-compatible endpoint to propose a discovered circular swap route",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/routes",
+          "controller": "RoutesController",
+          "handler": "listMyRoutes",
+          "summary": "List all persisted swap routes where the authenticated user is initiator or participant",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/routes/:id",
+          "controller": "RoutesController",
+          "handler": "getRouteById",
+          "summary": "Get a single persisted swap route by ID or code",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/respond",
+          "controller": "RoutesController",
+          "handler": "respondToRoute",
+          "summary": "Accept or reject a proposed swap route step with distributed consensus transitions",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/complete",
+          "controller": "RoutesController",
+          "handler": "completeRoute",
+          "summary": "Confirm delivery and finalize a confirmed circular swap route, updating items and eco metrics",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/routes/routes.module.ts": {
+      "module": "api/routes",
+      "exports": [
+        "RoutesModule"
+      ],
+      "imports": [
+        "../ai/ai.module",
+        "./engine/route-scoring.strategy",
+        "./engine/swap-graph.engine",
+        "./mappers/route.mapper",
+        "./proposals.controller",
+        "./routes.controller",
+        "./routes.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/routes/routes.service.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ROUTE_RELATIONS_INCLUDE",
+        "RoutesService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "../ai/services/ai-embedding.service",
+        "../ai/services/ai-explainer.service",
+        "./dto/propose-route.dto",
+        "./dto/respond-route.dto",
+        "./dto/search-routes.dto",
+        "./engine/route-scoring.strategy",
+        "./engine/swap-graph.engine",
+        "./mappers/route.mapper",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "prismaModels": [
+        "Item",
+        "SwapRoute"
+      ]
+    },
+    "api/src/modules/users/dto/update-profile.dto.ts": {
+      "module": "api/users",
+      "exports": [
+        "UpdateProfileDto",
+        "updateProfileSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/users/mappers/user.mapper.ts": {
+      "module": "api/users",
+      "exports": [
+        "PublicUserProfile",
+        "UserMapper"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
+    "api/src/modules/users/users.controller.ts": {
+      "module": "api/users",
+      "exports": [
+        "UsersController"
+      ],
+      "imports": [
+        "../../common/decorators/current-user.decorator",
+        "../../common/guards/jwt-auth.guard",
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/update-profile.dto",
+        "./mappers/user.mapper",
+        "./users.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/users/me",
+          "controller": "UsersController",
+          "handler": "getMe",
+          "summary": "Get authenticated user profile",
+          "file": "api/src/modules/users/users.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/users/me/stats",
+          "controller": "UsersController",
+          "handler": "getMeStats",
+          "summary": "Get authenticated user statistics and operational metrics",
+          "file": "api/src/modules/users/users.controller.ts"
+        },
+        {
+          "method": "PATCH",
+          "path": "/users/me",
+          "controller": "UsersController",
+          "handler": "updateMe",
+          "summary": "Update authenticated user profile",
+          "file": "api/src/modules/users/users.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/users/users.module.ts": {
+      "module": "api/users",
+      "exports": [
+        "UsersModule"
+      ],
+      "imports": [
+        "./mappers/user.mapper",
+        "./users.controller",
+        "./users.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/users/users.service.ts": {
+      "module": "api/users",
+      "exports": [
+        "CreateUserInput",
+        "UserOperationalStats",
+        "UserStatsResponse",
+        "UsersService"
+      ],
+      "imports": [
+        "../../prisma/prisma.service",
+        "./dto/update-profile.dto",
+        "./mappers/user.mapper",
+        "@nestjs/common",
+        "@prisma/client"
+      ],
+      "prismaModels": [
+        "Item",
+        "SwapRoute",
+        "SwapRouteStep",
+        "User"
+      ]
+    },
+    "api/src/prisma/prisma.module.ts": {
+      "module": "api/prisma",
+      "exports": [
+        "PrismaModule"
+      ],
+      "imports": [
+        "./prisma.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/prisma/prisma.service.ts": {
+      "module": "api/prisma",
+      "exports": [
+        "PrismaService"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
+    "mobile/src/App.tsx": {
+      "module": "mobile/App.tsx",
+      "exports": [
+        "App"
+      ],
+      "imports": [
+        "./router",
+        "@capacitor/app",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/components/BottomNav.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "BottomNav"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "clsx",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/components/ObjectCard.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ObjectCard",
+        "ObjectCardProps"
+      ],
+      "imports": [
+        "./ui/Badge",
+        "./ui/Button",
+        "./ui/Icon",
+        "@/types"
+      ]
+    },
+    "mobile/src/components/ProposalCard.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ProposalCard",
+        "ProposalCardProps"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/types",
+        "react"
+      ]
+    },
+    "mobile/src/components/RouteCard.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "RouteCard",
+        "RouteCardProps"
+      ],
+      "imports": [
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/types",
+        "react"
+      ]
+    },
+    "mobile/src/components/RouteStep.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "RouteStep",
+        "RouteStepProps"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Icon",
+        "@/types",
+        "react"
+      ]
+    },
+    "mobile/src/components/TopBar.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "TopBar",
+        "TopBarProps"
+      ],
+      "imports": [
+        "./ui/Avatar",
+        "./ui/Icon",
+        "./ui/ThemeToggle",
+        "@/assets/avatar-alex.svg",
+        "@/assets/logo.svg",
+        "@/context/AppContext",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/components/ui/Avatar.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Avatar",
+        "AvatarProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx"
+      ]
+    },
+    "mobile/src/components/ui/Badge.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Badge",
+        "BadgeProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/BottomSheet.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "BottomSheet",
+        "BottomSheetProps"
+      ],
+      "imports": [
+        "./Icon",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/Button.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Button",
+        "ButtonProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/Chip.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Chip",
+        "ChipProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/EmptyState.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "EmptyState",
+        "EmptyStateProps"
+      ],
+      "imports": [
+        "./Icon",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/Icon.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Icon",
+        "IconProps"
+      ],
+      "imports": [
+        "clsx"
+      ]
+    },
+    "mobile/src/components/ui/Input.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Input",
+        "InputProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/ThemeToggle.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ThemeToggle",
+        "ThemeToggleProps"
+      ],
+      "imports": [
+        "./Icon",
+        "@/hooks/useTheme",
+        "clsx"
+      ]
+    },
+    "mobile/src/config/env.ts": {
+      "module": "mobile/config",
+      "exports": [
+        "EnvConfig",
+        "env"
+      ],
+      "imports": []
+    },
+    "mobile/src/context/AppContext.tsx": {
+      "module": "mobile/context",
+      "exports": [
+        "AppContext",
+        "AppContextValue",
+        "AppProvider",
+        "useApp"
+      ],
+      "imports": [
+        "@/data/mockData",
+        "@/services/auth/auth.service",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/services/notifications/notifications.service",
+        "@/services/routes/routes.service",
+        "@/services/storage/tokenStorage",
+        "@/types",
+        "react"
+      ]
+    },
+    "mobile/src/context/ThemeContext.tsx": {
+      "module": "mobile/context",
+      "exports": [
+        "Theme",
+        "ThemeContext",
+        "ThemeContextValue",
+        "ThemeProvider"
+      ],
+      "imports": [
+        "react"
+      ]
+    },
+    "mobile/src/data/mockData.ts": {
+      "module": "mobile/data",
+      "exports": [
+        "mockItems",
+        "mockProposals",
+        "mockSwapRoute",
+        "mockUsers"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/assets/avatar-carlos.svg",
+        "@/assets/avatar-david.svg",
+        "@/assets/avatar-diego.svg",
+        "@/assets/avatar-elena.svg",
+        "@/assets/avatar-laura.svg",
+        "@/assets/avatar-mateo.svg",
+        "@/assets/avatar-sofia.svg",
+        "@/assets/item-ball.svg",
+        "@/assets/item-bike.svg",
+        "@/assets/item-camera.svg",
+        "@/assets/item-guitar.svg",
+        "@/assets/item-headphones.svg",
+        "@/assets/item-ipad.svg",
+        "@/assets/item-keyboard.svg",
+        "@/assets/item-laptop.svg",
+        "@/assets/item-lens.svg",
+        "@/assets/item-monitor.svg",
+        "@/assets/item-smartwatch.svg",
+        "@/assets/item-switch.svg",
+        "@/assets/item-vintage-bike.svg",
+        "@/types"
+      ]
+    },
+    "mobile/src/hooks/useTheme.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useTheme"
+      ],
+      "imports": [
+        "@/context/ThemeContext",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useTranslation.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "SupportedLanguage",
+        "useTranslation"
+      ],
+      "imports": [
+        "@/i18n",
+        "react",
+        "react-i18next"
+      ]
+    },
+    "mobile/src/i18n/en.ts": {
+      "module": "mobile/i18n",
+      "exports": [
+        "en"
+      ],
+      "imports": []
+    },
+    "mobile/src/i18n/es.ts": {
+      "module": "mobile/i18n",
+      "exports": [
+        "es"
+      ],
+      "imports": []
+    },
+    "mobile/src/i18n/index.ts": {
+      "module": "mobile/i18n",
+      "exports": [
+        "LANGUAGE_STORAGE_KEY",
+        "getInitialLanguage",
+        "i18n"
+      ],
+      "imports": [
+        "./en",
+        "./es",
+        "i18next",
+        "react-i18next"
+      ]
+    },
+    "mobile/src/layouts/AppLayout.tsx": {
+      "module": "mobile/layouts",
+      "exports": [
+        "AppLayout"
+      ],
+      "imports": [
+        "@/components/BottomNav",
+        "@/components/TopBar",
+        "@/context/AppContext",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/layouts/AuthLayout.tsx": {
+      "module": "mobile/layouts",
+      "exports": [
+        "AuthLayout"
+      ],
+      "imports": [
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/lib/routeFinder.ts": {
+      "module": "mobile/lib",
+      "exports": [
+        "RouteFinderOptions",
+        "findRoutes"
+      ],
+      "imports": [
+        "../types"
+      ]
+    },
+    "mobile/src/main.tsx": {
+      "module": "mobile/main.tsx",
+      "exports": [],
+      "imports": [
+        "./App",
+        "./context/AppContext",
+        "./context/ThemeContext",
+        "./i18n",
+        "./index.css",
+        "react",
+        "react-dom/client"
+      ]
+    },
+    "mobile/src/router.tsx": {
+      "module": "mobile/router.tsx",
+      "exports": [
+        "router"
+      ],
+      "imports": [
+        "@/layouts/AppLayout",
+        "@/layouts/AuthLayout",
+        "@/screens/ConfigureSwapScreen",
+        "@/screens/ExploreScreen",
+        "@/screens/HomeScreen",
+        "@/screens/LoginScreen",
+        "@/screens/NotificationsScreen",
+        "@/screens/ProfileScreen",
+        "@/screens/ProposalConfirmScreen",
+        "@/screens/ProposalSentScreen",
+        "@/screens/PublishScreen",
+        "@/screens/RegisterScreen",
+        "@/screens/RouteDetailScreen",
+        "@/screens/RouteResultsScreen",
+        "@/screens/SearchingScreen",
+        "@/screens/SplashScreen",
+        "@/screens/TradesScreen",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ConfigureSwapScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ConfigureSwapScreen"
+      ],
+      "imports": [
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Chip",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/services/swapService",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ExchangesScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ExchangesScreen",
+        "TradesScreen"
+      ],
+      "imports": [
+        "./TradesScreen"
+      ]
+    },
+    "mobile/src/screens/ExploreScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ExploreScreen"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/components/ObjectCard",
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/BottomSheet",
+        "@/components/ui/Button",
+        "@/components/ui/Chip",
+        "@/components/ui/EmptyState",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "@/services/http/apiClient",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/HomeScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "HomeScreen"
+      ],
+      "imports": [
+        "@/components/ObjectCard",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Chip",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "@/services/swapService",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/LoginScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "LoginScreen",
+        "LoginScreenProps"
+      ],
+      "imports": [
+        "@/assets/logo.svg",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/components/ui/Input",
+        "@/context/AppContext",
+        "@/services/http/apiClient",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/NotificationsScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "NotificationsScreen"
+      ],
+      "imports": [
+        "@/components/ui/Badge",
+        "@/components/ui/Chip",
+        "@/components/ui/EmptyState",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/services/notifications/notifications.service",
+        "clsx",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ProfileScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ProfileScreen"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/BottomSheet",
+        "@/components/ui/Button",
+        "@/components/ui/Chip",
+        "@/components/ui/EmptyState",
+        "@/components/ui/Icon",
+        "@/components/ui/Input",
+        "@/components/ui/ThemeToggle",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "@/hooks/useTheme",
+        "@/services/http/apiClient",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ProposalConfirmScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ProposalConfirmScreen"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ProposalSentScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ProposalSentScreen"
+      ],
+      "imports": [
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/data/mockData",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/PublishScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "PublishScreen",
+        "mergeUniqueWants"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/assets/item-bike.svg",
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Chip",
+        "@/components/ui/Icon",
+        "@/components/ui/Input",
+        "@/context/AppContext",
+        "@/services/ai/ai.service",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/utils/imageCompressor",
+        "clsx",
+        "react",
+        "react-i18next",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/RegisterScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "RegisterScreen"
+      ],
+      "imports": [
+        "./LoginScreen",
+        "react"
+      ]
+    },
+    "mobile/src/screens/RouteDetailScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "RouteDetailScreen"
+      ],
+      "imports": [
+        "@/components/RouteStep",
+        "@/components/ui/Badge",
+        "@/components/ui/BottomSheet",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "@/services/routes/routes.service",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/RouteResultsScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "RouteResultsScreen"
+      ],
+      "imports": [
+        "@/components/RouteCard",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/EmptyState",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/services/routes/routes.service",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/SearchingScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "SearchingScreen"
+      ],
+      "imports": [
+        "@/assets/item-ball.svg",
+        "@/assets/item-bike.svg",
+        "@/assets/item-camera.svg",
+        "@/assets/item-headphones.svg",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/services/routes/routes.service",
+        "@/types",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/SplashScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "SplashScreen"
+      ],
+      "imports": [
+        "@/components/ui/Icon",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/TradesScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "TradesScreen"
+      ],
+      "imports": [
+        "@/assets/avatar-carlos.svg",
+        "@/assets/avatar-mateo.svg",
+        "@/assets/avatar-sofia.svg",
+        "@/assets/item-ball.svg",
+        "@/assets/item-bike.svg",
+        "@/assets/item-camera.svg",
+        "@/assets/item-headphones.svg",
+        "@/assets/item-lens.svg",
+        "@/assets/item-switch.svg",
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/data/mockData",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/services/ai/ai.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "AiPhotoAnalysisResponse",
+        "AiValueEstimateResponse",
+        "AnalyzeItemPhotoPayload",
+        "EstimateItemValuePayload",
+        "aiService"
+      ],
+      "imports": [
+        "@/services/http/apiClient"
+      ]
+    },
+    "mobile/src/services/auth/auth.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "AuthSession",
+        "LoginPayload",
+        "RawAuthResponse",
+        "RawUserDto",
+        "RegisterPayload",
+        "UpdateProfilePayload",
+        "authService",
+        "normalizeUser"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/services/http/apiClient",
+        "@/services/storage/tokenStorage",
+        "@/types"
+      ]
+    },
+    "mobile/src/services/http/apiClient.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "ApiError",
+        "NestErrorEnvelope",
+        "RequestOptions",
+        "apiClient",
+        "setOnUnauthorizedHandler"
+      ],
+      "imports": [
+        "@/config/env",
+        "@/services/storage/tokenStorage"
+      ]
+    },
+    "mobile/src/services/items/items.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "CreateItemPayload",
+        "ListItemsParams",
+        "PaginatedItemsEnvelope",
+        "PrismaItemCondition",
+        "RawItemDto",
+        "UpdateItemPayload",
+        "UploadImageResponse",
+        "itemsService",
+        "normalizeItem",
+        "toBackendCondition",
+        "toDisplayCondition"
+      ],
+      "imports": [
+        "@/assets/avatar-alex.svg",
+        "@/assets/item-bike.svg",
+        "@/services/http/apiClient",
+        "@/types",
+        "@/utils/imageCompressor"
+      ]
+    },
+    "mobile/src/services/notifications/notifications.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "AppNotification",
+        "NotificationBadge",
+        "NotificationType",
+        "RawNotificationDto",
+        "formatRelativeTimeSpanish",
+        "isSystemNotification",
+        "mapApiNotificationToUi",
+        "normalizeNotificationType",
+        "notificationsService"
+      ],
+      "imports": [
+        "@/components/ui/Badge",
+        "@/services/http/apiClient"
+      ]
+    },
+    "mobile/src/services/routes/routes.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "NormalizedRouteStep",
+        "ProposeRoutePayload",
+        "ProposeRouteStepInput",
+        "RouteDecision",
+        "RouteLifecycleStatus",
+        "SearchRoutesPayload",
+        "StepAcceptanceStatus",
+        "SwapRouteDto",
+        "SwapRouteStepDto",
+        "buildOfflineFallbackRoutes",
+        "formatMatchScore",
+        "mapApiRouteToUiRoute",
+        "mapRouteToProposal",
+        "routesService"
+      ],
+      "imports": [
+        "@/data/mockData",
+        "@/lib/routeFinder",
+        "@/services/auth/auth.service",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/types"
+      ]
+    },
+    "mobile/src/services/storage/tokenStorage.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "clearToken",
+        "getToken",
+        "hasToken",
+        "setToken",
+        "tokenStorage"
+      ],
+      "imports": []
+    },
+    "mobile/src/services/swapService.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "createItem",
+        "deleteItem",
+        "findRoutes",
+        "getCurrentUser",
+        "getItemById",
+        "getItems",
+        "getMyItems",
+        "getProposals",
+        "getRecommendedRoutes",
+        "getUserById"
+      ],
+      "imports": [
+        "@/data/mockData",
+        "@/lib/routeFinder",
+        "@/services/auth/auth.service",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/services/storage/tokenStorage",
+        "@/types"
+      ]
+    },
+    "mobile/src/types/index.ts": {
+      "module": "mobile/types",
+      "exports": [
+        "Item",
+        "ItemOwnerSummary",
+        "Proposal",
+        "ProposalStatus",
+        "SwapRoute",
+        "SwapStep",
+        "User"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/imageCompressor.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "ImageCompressionOptions",
+        "calculateTargetDimensions",
+        "compressImage",
+        "compressImageToDataUrl"
+      ],
+      "imports": []
+    }
+  }
+}

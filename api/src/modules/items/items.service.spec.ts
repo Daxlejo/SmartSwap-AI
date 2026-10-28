@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCondition, ItemStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -62,6 +66,9 @@ describe('ItemsService', () => {
     want: {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
+    },
+    swapRouteStep: {
+      count: jest.fn().mockResolvedValue(0),
     },
   };
 
@@ -205,6 +212,18 @@ describe('ItemsService', () => {
   });
 
   describe('update', () => {
+    it('should throw ConflictException when changing the status of an item locked in a swap', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockCreatedEntity,
+        status: ItemStatus.PENDING_SWAP,
+      });
+
+      await expect(
+        itemsService.update(ownerId, itemId, { status: 'PAUSED' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
     it('should throw ForbiddenException when a non-owner attempts to update an item', async () => {
       mockPrismaService.item.findUnique.mockResolvedValue(mockCreatedEntity);
 
@@ -292,6 +311,32 @@ describe('ItemsService', () => {
       expect(mockTx.item.delete).toHaveBeenCalledWith({
         where: { id: itemId },
       });
+      expect(result).toEqual({ deleted: true, id: itemId });
+    });
+
+    it('should throw ConflictException when the item is locked in a swap route', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockCreatedEntity,
+        status: ItemStatus.PENDING_SWAP,
+      });
+
+      await expect(itemsService.remove(ownerId, itemId)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should archive instead of deleting when the item has swap route history', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue(mockCreatedEntity);
+      mockTx.swapRouteStep.count.mockResolvedValueOnce(2);
+
+      const result = await itemsService.remove(ownerId, itemId);
+
+      expect(mockTx.item.update).toHaveBeenCalledWith({
+        where: { id: itemId },
+        data: { status: ItemStatus.ARCHIVED },
+      });
+      expect(mockTx.item.delete).not.toHaveBeenCalled();
       expect(result).toEqual({ deleted: true, id: itemId });
     });
   });

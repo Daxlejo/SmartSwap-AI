@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -316,6 +317,7 @@ describe('RoutesService', () => {
       findUniqueOrThrow: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     swapRouteStep: {
       update: jest.fn(),
@@ -491,6 +493,7 @@ describe('RoutesService', () => {
       expect(mockTx.item.updateMany).toHaveBeenCalledWith({
         where: {
           id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) },
+          status: ItemStatus.AVAILABLE,
         },
         data: {
           status: ItemStatus.PENDING_SWAP,
@@ -531,6 +534,32 @@ describe('RoutesService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(mockTx.swapRoute.create).not.toHaveBeenCalled();
+    });
+
+    it('throws ConflictException when a concurrent proposal locks an item first', async () => {
+      mockTx.item.findMany.mockResolvedValue(buildCatalogRows());
+      mockTx.swapRoute.findUnique.mockResolvedValue(null);
+      mockTx.swapRoute.create.mockResolvedValue(buildPersisted3HopRoute());
+      mockTx.item.updateMany.mockResolvedValue({ count: 2 });
+
+      await expect(
+        routesService.proposeRoute(userAId, proposeDto),
+      ).rejects.toThrow(ConflictException);
+      expect(mockTx.notification.createMany).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when steps do not form a closed cycle', async () => {
+      const brokenDto: ProposeRouteDto = {
+        ...proposeDto,
+        steps: proposeDto.steps.map((step, idx) =>
+          idx === 0 ? { ...step, receivesItemId: step.givesItemId } : step,
+        ),
+      };
+
+      await expect(
+        routesService.proposeRoute(userAId, brokenDto),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -724,9 +753,48 @@ describe('RoutesService', () => {
     it('throws NotFoundException in getRouteById when route does not exist', async () => {
       mockPrismaService.swapRoute.findUnique.mockResolvedValue(null);
 
-      await expect(routesService.getRouteById('missing-route')).rejects.toThrow(
-        NotFoundException,
+      await expect(
+        routesService.getRouteById(userAId, 'missing-route'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('hides a route from users who are not participants', async () => {
+      mockPrismaService.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute(),
       );
+
+      await expect(
+        routesService.getRouteById('outsider-user', 'route-id'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('commits the EXPIRED status and item unlock before rejecting a late response', async () => {
+      const expiredRoute = {
+        ...buildPersisted3HopRoute({
+          status: RouteStatus.ACTIVE,
+          stepBAcceptance: StepAcceptance.PENDING,
+          stepCAcceptance: StepAcceptance.PENDING,
+        }),
+        expiresAt: new Date(Date.now() - 60_000),
+      };
+      mockTx.swapRoute.findUnique.mockResolvedValue(expiredRoute);
+      mockTx.swapRoute.update.mockResolvedValue({});
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+
+      await expect(
+        routesService.respondToRoute(userBId, expiredRoute.id, {
+          decision: 'ACCEPTED',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      // The transaction callback must resolve (not throw) so the expiry is persisted.
+      await expect(
+        mockPrismaService.$transaction.mock.results[0].value,
+      ).resolves.toEqual({ expiredCode: expiredRoute.code });
+      expect(mockTx.swapRoute.update).toHaveBeenCalledWith({
+        where: { id: expiredRoute.id },
+        data: { status: RouteStatus.EXPIRED },
+      });
     });
   });
 });

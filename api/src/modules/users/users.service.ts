@@ -1,13 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import {
+  ItemStatus,
+  RouteStatus,
+  StepAcceptance,
+  User,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { PublicUserProfile, UserMapper } from './mappers/user.mapper';
 
 export interface CreateUserInput {
   email: string;
   passwordHash: string;
   name: string;
   location?: string;
+}
+
+export interface UserOperationalStats {
+  activeItemsCount: number;
+  lockedItemsCount: number;
+  activeRoutesCount: number;
+  pendingApprovalsCount: number;
+  tradesCompleted: number;
+  co2SavedKg: number;
+  rating: number;
+  level: number;
+}
+
+export interface UserStatsResponse {
+  user: PublicUserProfile;
+  stats: UserOperationalStats;
 }
 
 @Injectable()
@@ -77,6 +99,74 @@ export class UsersService {
       where: { id: userId },
       data: updateData,
     });
+  }
+
+  /**
+   * Computes operational and circular barter statistics for a user in parallel.
+   */
+  async getUserStats(userId: string): Promise<UserStatsResponse> {
+    const user = await this.findByIdOrThrow(userId);
+
+    const [
+      activeItemsCount,
+      lockedItemsCount,
+      activeRoutesCount,
+      pendingApprovalsCount,
+    ] = await Promise.all([
+      this.prisma.item.count({
+        where: {
+          ownerId: userId,
+          status: ItemStatus.AVAILABLE,
+        },
+      }),
+      this.prisma.item.count({
+        where: {
+          ownerId: userId,
+          status: ItemStatus.PENDING_SWAP,
+        },
+      }),
+      this.prisma.swapRoute.count({
+        where: {
+          status: {
+            in: [
+              RouteStatus.ACTIVE,
+              RouteStatus.SUGGESTED,
+              RouteStatus.CONFIRMED,
+            ],
+          },
+          steps: {
+            some: {
+              userId,
+            },
+          },
+        },
+      }),
+      this.prisma.swapRouteStep.count({
+        where: {
+          userId,
+          acceptance: StepAcceptance.PENDING,
+          route: {
+            status: {
+              in: [RouteStatus.ACTIVE, RouteStatus.SUGGESTED],
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      user: UserMapper.toPublicProfile(user),
+      stats: {
+        activeItemsCount,
+        lockedItemsCount,
+        activeRoutesCount,
+        pendingApprovalsCount,
+        tradesCompleted: user.tradesCompleted,
+        co2SavedKg: user.co2SavedKg,
+        rating: user.rating,
+        level: user.level,
+      },
+    };
   }
 
   private computeInitials(name: string): string {

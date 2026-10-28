@@ -183,6 +183,7 @@ export class RoutesService {
     dto: ProposeRouteDto,
   ): Promise<SwapRouteDto> {
     const normalizedSteps = this.normalizeProposalSteps(dto.steps);
+    this.assertClosedCycle(normalizedSteps);
     const hasInitiatorStep = normalizedSteps.some(
       (step) => step.userId === initiatorId,
     );
@@ -262,14 +263,22 @@ export class RoutesService {
         include: ROUTE_RELATIONS_INCLUDE,
       });
 
-      await tx.item.updateMany({
+      // Conditional lock: a concurrent proposal that already locked any item makes the count fall short.
+      const lockResult = await tx.item.updateMany({
         where: {
           id: { in: uniqueItemIds },
+          status: ItemStatus.AVAILABLE,
         },
         data: {
           status: ItemStatus.PENDING_SWAP,
         },
       });
+
+      if (lockResult.count !== uniqueItemIds.length) {
+        throw new ConflictException(
+          'One or more items were locked by another proposal at the same time',
+        );
+      }
 
       const nonInitiatorUserIds = Array.from(
         new Set(
@@ -319,7 +328,7 @@ export class RoutesService {
   /**
    * Retrieves a single persisted swap route by ID (or human-readable `SW-XXXX` code).
    */
-  async getRouteById(routeId: string): Promise<SwapRouteDto> {
+  async getRouteById(userId: string, routeId: string): Promise<SwapRouteDto> {
     const trimmedId = routeId.trim();
     let route = await this.prisma.swapRoute.findUnique({
       where: { id: trimmedId },
@@ -333,7 +342,12 @@ export class RoutesService {
       });
     }
 
-    if (!route) {
+    const isParticipant =
+      route !== null &&
+      (route.initiatorId === userId ||
+        route.steps.some((step) => step.userId === userId));
+
+    if (!route || !isParticipant) {
       throw new NotFoundException(`SwapRoute "${routeId}" not found`);
     }
 
@@ -350,7 +364,8 @@ export class RoutesService {
     routeId: string,
     dto: RespondRouteDto,
   ): Promise<SwapRouteDto> {
-    const updatedRoute = await this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
       const route = await tx.swapRoute.findUnique({
         where: { id: routeId.trim() },
         include: ROUTE_RELATIONS_INCLUDE,
@@ -387,9 +402,8 @@ export class RoutesService {
           where: { id: { in: involvedItemIds } },
           data: { status: ItemStatus.AVAILABLE },
         });
-        throw new ConflictException(
-          `Swap route "${route.code}" has expired and items have been unlocked`,
-        );
+        // Returned instead of thrown so the expiry and item unlock are committed.
+        return { expiredCode: route.code };
       }
 
       const nextAcceptance =
@@ -444,7 +458,7 @@ export class RoutesService {
           });
         }
 
-        return cancelledRoute;
+        return { route: cancelledRoute };
       }
 
       const allAccepted = route.steps.every((step) =>
@@ -473,16 +487,24 @@ export class RoutesService {
           })),
         });
 
-        return confirmedRoute;
+        return { route: confirmedRoute };
       }
 
-      return tx.swapRoute.findUniqueOrThrow({
-        where: { id: route.id },
-        include: ROUTE_RELATIONS_INCLUDE,
-      });
+      return {
+        route: await tx.swapRoute.findUniqueOrThrow({
+          where: { id: route.id },
+          include: ROUTE_RELATIONS_INCLUDE,
+        }),
+      };
     });
 
-    return this.routeMapper.toDto(updatedRoute as SwapRouteWithRelations);
+    if ('expiredCode' in outcome) {
+      throw new ConflictException(
+        `Swap route "${outcome.expiredCode}" has expired and items have been unlocked`,
+      );
+    }
+
+    return this.routeMapper.toDto(outcome.route as SwapRouteWithRelations);
   }
 
   /**
@@ -495,6 +517,7 @@ export class RoutesService {
     routeId: string,
   ): Promise<SwapRouteDto> {
     const finalizedRoute = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
       const route = await tx.swapRoute.findUnique({
         where: { id: routeId.trim() },
         include: ROUTE_RELATIONS_INCLUDE,
@@ -715,6 +738,43 @@ export class RoutesService {
       ...step,
       stepOrder: index,
     }));
+  }
+
+  /**
+   * Every item must be given exactly once and received exactly once, so the steps form a closed cycle.
+   */
+  private assertClosedCycle(steps: ProposeRouteDto['steps']): void {
+    const givenIds = steps.map((step) => step.givesItemId.trim());
+    const receivedIds = steps.map((step) => step.receivesItemId.trim());
+    const givenSet = new Set(givenIds);
+
+    const isClosedCycle =
+      givenSet.size === givenIds.length &&
+      new Set(receivedIds).size === receivedIds.length &&
+      receivedIds.every((id) => givenSet.has(id)) &&
+      steps.every(
+        (step) => step.givesItemId.trim() !== step.receivesItemId.trim(),
+      );
+
+    if (!isClosedCycle) {
+      throw new BadRequestException(
+        'Proposed steps must form a closed swap cycle where every item is given and received exactly once',
+      );
+    }
+  }
+
+  /**
+   * Takes a row-level write lock on the route so concurrent responses are serialized
+   * (otherwise two last acceptors could each miss the other's acceptance).
+   */
+  private async lockRouteRow(
+    tx: Prisma.TransactionClient,
+    routeId: string,
+  ): Promise<void> {
+    await tx.swapRoute.updateMany({
+      where: { id: routeId },
+      data: { updatedAt: new Date() },
+    });
   }
 
   private collectUniqueItemIds(
