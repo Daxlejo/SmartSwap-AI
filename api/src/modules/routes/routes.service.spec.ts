@@ -766,5 +766,34 @@ describe('RoutesService', () => {
         routesService.getRouteById('outsider-user', 'route-id'),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('commits the EXPIRED status and item unlock before rejecting a late response', async () => {
+      const expiredRoute = {
+        ...buildPersisted3HopRoute({
+          status: RouteStatus.ACTIVE,
+          stepBAcceptance: StepAcceptance.PENDING,
+          stepCAcceptance: StepAcceptance.PENDING,
+        }),
+        expiresAt: new Date(Date.now() - 60_000),
+      };
+      mockTx.swapRoute.findUnique.mockResolvedValue(expiredRoute);
+      mockTx.swapRoute.update.mockResolvedValue({});
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+
+      await expect(
+        routesService.respondToRoute(userBId, expiredRoute.id, {
+          decision: 'ACCEPTED',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      // The transaction callback must resolve (not throw) so the expiry is persisted.
+      await expect(
+        mockPrismaService.$transaction.mock.results[0].value,
+      ).resolves.toEqual({ expiredCode: expiredRoute.code });
+      expect(mockTx.swapRoute.update).toHaveBeenCalledWith({
+        where: { id: expiredRoute.id },
+        data: { status: RouteStatus.EXPIRED },
+      });
+    });
   });
 });

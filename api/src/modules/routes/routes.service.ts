@@ -364,7 +364,7 @@ export class RoutesService {
     routeId: string,
     dto: RespondRouteDto,
   ): Promise<SwapRouteDto> {
-    const updatedRoute = await this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       const route = await tx.swapRoute.findUnique({
         where: { id: routeId.trim() },
         include: ROUTE_RELATIONS_INCLUDE,
@@ -401,9 +401,8 @@ export class RoutesService {
           where: { id: { in: involvedItemIds } },
           data: { status: ItemStatus.AVAILABLE },
         });
-        throw new ConflictException(
-          `Swap route "${route.code}" has expired and items have been unlocked`,
-        );
+        // Returned instead of thrown so the expiry and item unlock are committed.
+        return { expiredCode: route.code };
       }
 
       const nextAcceptance =
@@ -458,7 +457,7 @@ export class RoutesService {
           });
         }
 
-        return cancelledRoute;
+        return { route: cancelledRoute };
       }
 
       const allAccepted = route.steps.every((step) =>
@@ -487,16 +486,24 @@ export class RoutesService {
           })),
         });
 
-        return confirmedRoute;
+        return { route: confirmedRoute };
       }
 
-      return tx.swapRoute.findUniqueOrThrow({
-        where: { id: route.id },
-        include: ROUTE_RELATIONS_INCLUDE,
-      });
+      return {
+        route: await tx.swapRoute.findUniqueOrThrow({
+          where: { id: route.id },
+          include: ROUTE_RELATIONS_INCLUDE,
+        }),
+      };
     });
 
-    return this.routeMapper.toDto(updatedRoute as SwapRouteWithRelations);
+    if ('expiredCode' in outcome) {
+      throw new ConflictException(
+        `Swap route "${outcome.expiredCode}" has expired and items have been unlocked`,
+      );
+    }
+
+    return this.routeMapper.toDto(outcome.route as SwapRouteWithRelations);
   }
 
   /**
