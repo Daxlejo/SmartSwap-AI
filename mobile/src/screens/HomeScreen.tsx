@@ -11,9 +11,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { ObjectCard } from '@/components/ObjectCard';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
+  const { t, language } = useTranslation();
   const {
     currentUser: contextUser,
     items: contextItems,
@@ -53,7 +55,7 @@ export const HomeScreen = () => {
         }
       } catch {
         if (isMounted) {
-          setError('No pudimos cargar los datos de la red. Por favor intenta de nuevo.');
+          setError(t('home.loadError'));
         }
       } finally {
         if (isMounted) {
@@ -95,25 +97,25 @@ export const HomeScreen = () => {
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-space-xs">
             <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-              Hola, {currentUser?.name?.split(' ')[0] || 'Alex'}
+              {t('home.greeting', { name: currentUser?.name?.split(' ')[0] || 'Alex' })}
             </h1>
             <span className="text-xl">👋</span>
           </div>
           <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">
-            Encuentra tu próximo canje sin dinero
+            {t('home.subtitle')}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-xs">
             <Icon name="eco" size="sm" filled className="text-primary" />
             <span className="font-label-sm text-label-sm text-primary font-bold">
-              {currentUser?.co2SavedKg ?? 0} kg CO₂ Ahorrados
+              {t('home.co2Saved', { kg: currentUser?.co2SavedKg ?? 0 })}
             </span>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10">
             <Icon name="swap_horiz" size="xs" className="text-primary" />
             <span className="font-label-sm text-[11px] text-primary font-bold">
-              {currentUser?.tradesCompleted ?? 0} canjes completados
+              {t('home.tradesCompleted', { count: currentUser?.tradesCompleted ?? 0 })}
             </span>
           </div>
         </div>
@@ -122,7 +124,7 @@ export const HomeScreen = () => {
       {/* Live Swap Ticker: latest real notification */}
       {latestNotification && (
         <section
-          aria-label="Actividad en vivo"
+          aria-label={t('home.liveAria')}
           className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-surface-container-low shadow-xs border border-surface-container-high/60 overflow-hidden"
         >
           <div className="relative flex items-center justify-center shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-primary">
@@ -131,7 +133,7 @@ export const HomeScreen = () => {
           </div>
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider shrink-0">
-              Canje en vivo
+              {t('home.liveSwap')}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface truncate">
               {latestNotification.title}
@@ -139,14 +141,14 @@ export const HomeScreen = () => {
           </div>
           <span className="font-label-sm text-label-sm text-outline shrink-0">
             {latestNotification.createdAt
-              ? formatRelativeTime(latestNotification.createdAt, 'es')
+              ? formatRelativeTime(latestNotification.createdAt, language)
               : latestNotification.time}
           </span>
         </section>
       )}
 
       {/* Quick Action Bento Grid */}
-      <section aria-label="Acciones rápidas" className="grid grid-cols-2 gap-space-sm">
+      <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
         {/* Card 1: Primary Action -> ConfigureSwap */}
         <div className="col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-tertiary p-space-md text-on-primary shadow-md">
           <div className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
@@ -155,7 +157,7 @@ export const HomeScreen = () => {
               <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md">
                 <Icon name="auto_awesome" size="xs" className="text-primary-fixed" />
                 <span className="font-label-sm text-label-sm font-bold text-primary-fixed">
-                  Motor de Emparejamiento
+                  {t('home.engine.badge')}
                 </span>
               </div>
               <Icon name="swap_calls" size="lg" className="text-primary-fixed" />
@@ -163,10 +165,10 @@ export const HomeScreen = () => {
 
             <div className="space-y-1">
               <h2 className="font-headline-sm text-headline-sm text-white font-bold">
-                Buscar un Canje Circular
+                {t('home.engine.title')}
               </h2>
               <p className="font-body-sm text-body-sm text-primary-fixed/90 leading-relaxed">
-                Empareja lo que ofreces con los artículos que deseas en un circuito colaborativo.
+                {t('home.engine.description')}
               </p>
             </div>
 
@@ -178,10 +180,10 @@ export const HomeScreen = () => {
                 onClick={() => navigate('/swap/configure')}
                 className="bg-surface text-primary hover:bg-surface-container-low font-bold shadow-xs"
               >
-                Encontrar canje
+                {t('home.engine.cta')}
               </Button>
               <span className="font-label-sm text-label-sm text-primary-fixed/90 font-medium">
-                Rutas de 2 a 4 saltos
+                {t('home.engine.hops')}
               </span>
             </div>
           </div>
@@ -198,15 +200,17 @@ export const HomeScreen = () => {
               <Icon name="add_a_photo" size="md" />
             </div>
             <span className="font-label-sm text-label-sm text-outline font-semibold">
-              {activeUserItemsCount > 0 ? `${activeUserItemsCount} activos` : 'Rápido'}
+              {activeUserItemsCount > 0
+                ? t('home.publish.activeCount', { count: activeUserItemsCount })
+                : t('home.publish.quick')}
             </span>
           </div>
           <div className="mt-3">
-            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">Publicar</h3>
+            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">{t('home.publish.title')}</h3>
             <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
               {activeUserItemsCount > 0
-                ? `${activeUserItemsCount} ${activeUserItemsCount === 1 ? 'artículo en canje' : 'artículos en canje'}`
-                : 'En 60 segundos'}
+                ? t('home.publish.itemsInSwap', { count: activeUserItemsCount })
+                : t('home.publish.inSeconds')}
             </p>
           </div>
         </button>
@@ -222,15 +226,15 @@ export const HomeScreen = () => {
               <Icon name="sync_alt" size="md" />
             </div>
             <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold animate-pulse">
-              {activeRoutesCount} {activeRoutesCount === 1 ? 'activa' : 'nuevas'}
+              {t('home.activeRoutes.badge', { count: activeRoutesCount })}
             </span>
           </div>
           <div className="mt-3">
             <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">
-              Rutas Activas
+              {t('home.activeRoutes.title')}
             </h3>
             <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {activeRoutesCount} {activeRoutesCount === 1 ? 'circuito' : 'circuitos'}
+              {t('home.activeRoutes.circuits', { count: activeRoutesCount })}
             </p>
           </div>
         </button>
@@ -238,12 +242,12 @@ export const HomeScreen = () => {
 
       {/* Signature Section: Recommended Circular Chain */}
       {activeRoute && (
-        <section aria-label="Ruta encontrada para ti" className="flex flex-col space-y-3">
+        <section aria-label={t('home.route.aria')} className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Icon name="route" size="md" className="text-secondary" />
               <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                Ruta Encontrada Para Ti
+                {t('home.route.title')}
               </h2>
             </div>
             <button
@@ -255,7 +259,7 @@ export const HomeScreen = () => {
               }
               className="font-label-sm text-label-sm text-primary font-bold flex items-center gap-0.5 hover:underline"
             >
-              <span>Ver ruta</span>
+              <span>{t('home.route.view')}</span>
               <Icon name="chevron_right" size="xs" />
             </button>
           </div>
@@ -265,12 +269,12 @@ export const HomeScreen = () => {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <Badge variant="secondary-subtle" icon="auto_mode">
-                Circuito Colaborativo ({activeRoute.stepsCount} Pasos)
+                {t('home.route.circuit', { count: activeRoute.stepsCount })}
               </Badge>
               <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
                 <Icon name="verified" size="xs" />
                 <span className="font-label-sm text-label-sm font-bold">
-                  Coincidencia: {formatMatchScore(activeRoute.matchScore)}%
+                  {t('home.route.match', { percent: formatMatchScore(activeRoute.matchScore) })}
                 </span>
               </div>
             </div>
@@ -279,7 +283,7 @@ export const HomeScreen = () => {
             <div className="flex items-center justify-between pb-1">
               <div className="flex flex-col min-w-0">
                 <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
-                  Objetivo Deseado
+                  {t('home.route.desiredTarget')}
                 </span>
                 <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
                   {activeRouteTarget?.name}
@@ -287,10 +291,10 @@ export const HomeScreen = () => {
               </div>
               <div className="text-right shrink-0">
                 <span className="font-headline-sm text-headline-sm text-primary font-bold">
-                  $0 gastados
+                  {t('home.route.zeroSpent')}
                 </span>
                 <p className="font-label-sm text-label-sm text-on-surface-variant">
-                  {activeRoute.participants?.length || 0} personas en el circuito
+                  {t('home.route.people', { count: activeRoute.participants?.length || 0 })}
                 </p>
               </div>
             </div>
@@ -298,9 +302,9 @@ export const HomeScreen = () => {
             {/* Visual Chain Horizontal Flow */}
             <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low">
               <div className="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-                <span>Tu artículo</span>
+                <span>{t('home.route.yourItem')}</span>
                 <Icon name="trending_flat" size="sm" className="text-primary" />
-                <span>Artículo deseado</span>
+                <span>{t('home.route.desiredItem')}</span>
               </div>
 
               {/* Chain Steps */}
@@ -324,7 +328,7 @@ export const HomeScreen = () => {
                           />
                           {isFirst && (
                             <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
-                              Tú
+                              {t('home.route.you')}
                             </span>
                           )}
                         </div>
@@ -356,7 +360,7 @@ export const HomeScreen = () => {
                 leftIcon="lightbulb"
                 onClick={() => setShowRouteExplanation(!showRouteExplanation)}
               >
-                ¿Cómo funciona?
+                {t('home.route.howItWorks')}
               </Button>
               <Button
                 variant="primary"
@@ -368,7 +372,7 @@ export const HomeScreen = () => {
                   })
                 }
               >
-                Ver ruta
+                {t('home.route.view')}
               </Button>
             </div>
 
@@ -377,11 +381,11 @@ export const HomeScreen = () => {
               <div className="p-3 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm leading-relaxed border border-surface-container-high">
                 <div className="flex items-center gap-1.5 font-headline-sm text-label-md font-bold text-on-surface mb-1">
                   <Icon name="psychology" size="sm" className="text-secondary" />
-                  <span>Dinámica del Intercambio Colaborativo</span>
+                  <span>{t('home.route.dynamicsTitle')}</span>
                 </div>
                 <p>
                   {activeRoute.aiExplanation ||
-                    `Cada participante entrega su artículo al siguiente del circuito (${activeRouteChain}) y todos reciben lo que buscaban sin dinero de por medio.`}
+                    t('home.route.fallbackExplanation', { chain: activeRouteChain })}
                 </p>
               </div>
             )}
@@ -390,14 +394,14 @@ export const HomeScreen = () => {
       )}
 
       {/* 'You Might Like' Section */}
-      <section aria-label="Artículos recomendados" className="flex flex-col space-y-3 pt-1">
+      <section aria-label={t('home.recommended.aria')} className="flex flex-col space-y-3 pt-1">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              Te Podría Interesar
+              {t('home.recommended.title')}
             </h2>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Basado en tus preferencias de canje
+              {t('home.recommended.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-1 bg-surface-container-high p-0.5 rounded-xl">
@@ -406,14 +410,14 @@ export const HomeScreen = () => {
               onClick={() => setFilterMode('nearby')}
               className="h-8 px-2.5 text-[12px]"
             >
-              Cercanos
+              {t('home.recommended.nearby')}
             </Chip>
             <Chip
               active={filterMode === 'wishlist'}
               onClick={() => setFilterMode('wishlist')}
               className="h-8 px-2.5 text-[12px]"
             >
-              Deseados
+              {t('home.recommended.wishlist')}
             </Chip>
           </div>
         </div>
@@ -440,7 +444,7 @@ export const HomeScreen = () => {
               className="mt-2"
               onClick={() => window.location.reload()}
             >
-              Reintentar
+              {t('home.recommended.retry')}
             </Button>
           </div>
         )}
@@ -450,10 +454,10 @@ export const HomeScreen = () => {
           <div className="p-8 text-center bg-surface-container-lowest rounded-2xl border border-surface-container-high/60">
             <Icon name="search_off" size="xl" className="text-outline mb-2" />
             <p className="font-body-md text-body-md text-on-surface font-semibold">
-              No se encontraron artículos con este filtro
+              {t('home.recommended.emptyTitle')}
             </p>
             <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-              Prueba cambiando a &quot;Cercanos&quot; para ver más opciones en tu ciudad.
+              {t('home.recommended.emptyDescription')}
             </p>
           </div>
         )}
