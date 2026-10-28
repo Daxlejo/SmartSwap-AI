@@ -129,6 +129,18 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.suggestedWants.length).toBeGreaterThan(0);
     });
 
+    it('writes the fallback name, description and wants in English while keeping Spanish categories', async () => {
+      const result = await visionService.analyzePhoto({
+        hintText: 'Guitarra Fender FA-125',
+        locale: 'en',
+      });
+
+      expect(result.source).toBe('fallback');
+      expect(result.category).toBe('Música');
+      expect(result.description).toContain('Musical instrument');
+      expect(result.suggestedWants).toContain('USB audio interface');
+    });
+
     it('estimates item value based on condition multiplier', async () => {
       const likeNewEstimate = await visionService.estimateValue({
         name: 'MacBook Air M1',
