@@ -20,6 +20,10 @@ export const en: TranslationSchema = {
     verifiedUser: 'Verified user',
     inputAction: 'Field action',
   },
+  serverStatus: {
+    waking: 'Waking up the server… the first load can take up to a minute.',
+    offline: 'Cannot reach the server. Retrying…',
+  },
   headers: {
     routeDetail: {
       title: 'Route details',

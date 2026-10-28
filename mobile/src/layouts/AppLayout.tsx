@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
+import { ServerStatusBanner } from '@/components/ServerStatusBanner';
 import { useApp } from '@/context/AppContext';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -59,6 +60,7 @@ export const AppLayout = () => {
     <div className="min-h-[100dvh] w-full bg-surface sm:bg-surface-container-low flex justify-center items-start">
       <div className="w-full max-w-[390px] min-h-[100dvh] h-[100dvh] bg-surface flex flex-col sm:shadow-2xl sm:ring-1 sm:ring-surface-container-high/20 relative overflow-hidden">
         <TopBar {...headerProps} />
+        <ServerStatusBanner />
         <main
           className={`flex-1 flex flex-col w-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch] ${
             isSwapFlow ? 'pb-6' : 'pb-24'

@@ -18,6 +18,10 @@ export const es = {
     verifiedUser: 'Usuario verificado',
     inputAction: 'Acción del campo',
   },
+  serverStatus: {
+    waking: 'Despertando el servidor… la primera carga puede tardar hasta 1 minuto.',
+    offline: 'Sin conexión con el servidor. Reintentando…',
+  },
   headers: {
     routeDetail: {
       title: 'Detalle de Ruta',
