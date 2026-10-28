@@ -183,6 +183,7 @@ export class RoutesService {
     dto: ProposeRouteDto,
   ): Promise<SwapRouteDto> {
     const normalizedSteps = this.normalizeProposalSteps(dto.steps);
+    this.assertClosedCycle(normalizedSteps);
     const hasInitiatorStep = normalizedSteps.some(
       (step) => step.userId === initiatorId,
     );
@@ -715,6 +716,29 @@ export class RoutesService {
       ...step,
       stepOrder: index,
     }));
+  }
+
+  /**
+   * Every item must be given exactly once and received exactly once, so the steps form a closed cycle.
+   */
+  private assertClosedCycle(steps: ProposeRouteDto['steps']): void {
+    const givenIds = steps.map((step) => step.givesItemId.trim());
+    const receivedIds = steps.map((step) => step.receivesItemId.trim());
+    const givenSet = new Set(givenIds);
+
+    const isClosedCycle =
+      givenSet.size === givenIds.length &&
+      new Set(receivedIds).size === receivedIds.length &&
+      receivedIds.every((id) => givenSet.has(id)) &&
+      steps.every(
+        (step) => step.givesItemId.trim() !== step.receivesItemId.trim(),
+      );
+
+    if (!isClosedCycle) {
+      throw new BadRequestException(
+        'Proposed steps must form a closed swap cycle where every item is given and received exactly once',
+      );
+    }
   }
 
   private collectUniqueItemIds(

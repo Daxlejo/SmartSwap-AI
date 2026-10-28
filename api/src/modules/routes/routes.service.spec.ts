@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -531,6 +532,20 @@ describe('RoutesService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(mockTx.swapRoute.create).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when steps do not form a closed cycle', async () => {
+      const brokenDto: ProposeRouteDto = {
+        ...proposeDto,
+        steps: proposeDto.steps.map((step, idx) =>
+          idx === 0 ? { ...step, receivesItemId: step.givesItemId } : step,
+        ),
+      };
+
+      await expect(
+        routesService.proposeRoute(userAId, brokenDto),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
   });
 
