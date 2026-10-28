@@ -28,7 +28,7 @@ export const HomeScreen = () => {
   const [recommendedRoute, setRecommendedRoute] = useState<SwapRoute | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   const [filterMode, setFilterMode] = useState<'nearby' | 'wishlist'>('nearby');
   const [showRouteExplanation, setShowRouteExplanation] = useState(false);
@@ -39,7 +39,7 @@ export const HomeScreen = () => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        setError(null);
+        setError(false);
         const [userData, itemsData, routesData] = await Promise.all([
           getCurrentUser(),
           getItems(),
@@ -55,7 +55,7 @@ export const HomeScreen = () => {
         }
       } catch {
         if (isMounted) {
-          setError(t('home.loadError'));
+          setError(true);
         }
       } finally {
         if (isMounted) {
@@ -437,7 +437,7 @@ export const HomeScreen = () => {
         {/* Error State */}
         {!isLoading && error && (
           <div className="p-4 rounded-2xl bg-error-container/30 text-error text-center font-body-sm text-body-sm">
-            <p>{error}</p>
+            <p>{t('home.loadError')}</p>
             <Button
               variant="outline"
               size="sm"
