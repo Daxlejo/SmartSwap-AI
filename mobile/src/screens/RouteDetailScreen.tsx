@@ -192,13 +192,15 @@ export const RouteDetailScreen: React.FC = () => {
             />
             <div>
               <div className="flex justify-between items-start mb-2">
-                <Badge variant="warning">{selectedItem.category}</Badge>
+                <Badge variant="warning">
+                  {t(`catalog.categories.${selectedItem.category}`, { defaultValue: selectedItem.category })}
+                </Badge>
                 <div className="flex items-center gap-2">
                   <span className="font-label-md text-label-md font-bold text-primary">
                     ${selectedItem.estimatedValue ?? 450} USD
                   </span>
                   <span className="font-body-sm text-body-sm font-medium text-on-surface-variant">
-                    {selectedItem.condition}
+                    {t(`catalog.conditions.${selectedItem.condition}`, { defaultValue: selectedItem.condition })}
                   </span>
                 </div>
               </div>

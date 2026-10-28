@@ -31,7 +31,7 @@ export const ObjectCard = ({
             className="w-full h-full object-cover"
           />
           <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm font-label-sm text-[10px] text-primary font-bold">
-            {item.category}
+            {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
           </span>
         </div>
 
@@ -43,7 +43,7 @@ export const ObjectCard = ({
                 {item.name}
               </h3>
               <Badge variant="surface" className="text-[10px] py-0 shrink-0">
-                {item.condition}
+                {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
               </Badge>
             </div>
 

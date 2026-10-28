@@ -81,7 +81,7 @@ export const ProposalConfirmScreen: React.FC = () => {
                 {offeredItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant truncate">
-                {offeredItem.condition}
+                {t(`catalog.conditions.${offeredItem.condition}`, { defaultValue: offeredItem.condition })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
@@ -130,7 +130,7 @@ export const ProposalConfirmScreen: React.FC = () => {
                 {targetItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant truncate">
-                {targetItem.condition}
+                {t(`catalog.conditions.${targetItem.condition}`, { defaultValue: targetItem.condition })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
