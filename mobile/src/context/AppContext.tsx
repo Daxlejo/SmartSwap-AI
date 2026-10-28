@@ -466,12 +466,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await loadMarketplaceAndUserItems(hasActiveToken);
   }, [loadMarketplaceAndUserItems]);
 
+  // Loads the routes of the user who just signed in so nothing from a previous session lingers
+  const loadSessionRoutes = useCallback(async (userId: string): Promise<void> => {
+    try {
+      const userRoutes = await routesService.listMyRoutes();
+      setRoutes(userRoutes.length > 0 ? userRoutes : [mockSwapRoute]);
+      setProposals(userRoutes.map((route) => mapRouteToProposal(route, userId)));
+    } catch {
+      setRoutes([mockSwapRoute]);
+      setProposals([]);
+    }
+  }, []);
+
   const loginWithEmail = useCallback(
     async (email: string, password: string): Promise<User> => {
       const session = await authService.login(email, password);
       setCurrentUser(session.user);
       setIsAuthenticated(true);
-      await loadMarketplaceAndUserItems(true);
+      await Promise.all([
+        loadMarketplaceAndUserItems(true),
+        loadSessionRoutes(session.user.id),
+      ]);
       try {
         const notifs = await notificationsService.listNotifications();
         setNotifications(notifs);
@@ -480,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return session.user;
     },
-    [loadMarketplaceAndUserItems],
+    [loadMarketplaceAndUserItems, loadSessionRoutes],
   );
 
   const registerWithEmail = useCallback(
@@ -488,7 +503,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const session = await authService.register(payload);
       setCurrentUser(session.user);
       setIsAuthenticated(true);
-      await loadMarketplaceAndUserItems(true);
+      await Promise.all([
+        loadMarketplaceAndUserItems(true),
+        loadSessionRoutes(session.user.id),
+      ]);
       try {
         const notifs = await notificationsService.listNotifications();
         setNotifications(notifs);
@@ -497,7 +515,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return session.user;
     },
-    [loadMarketplaceAndUserItems],
+    [loadMarketplaceAndUserItems, loadSessionRoutes],
   );
 
   const logout = useCallback(() => {
@@ -506,6 +524,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setMyItems([]);
     setNotifications([]);
+    setRoutes([mockSwapRoute]);
+    setProposals(mockProposals);
   }, []);
 
   const createItemReal = useCallback(async (payload: CreateItemPayload): Promise<Item> => {
