@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-28T19:31:46.813Z",
+  "generatedAt": "2026-10-28T20:09:55.932Z",
   "stats": {
-    "totalFiles": 110,
-    "apiFiles": 54,
-    "mobileFiles": 56,
+    "totalFiles": 113,
+    "apiFiles": 55,
+    "mobileFiles": 58,
     "endpointsCount": 37
   },
   "endpoints": [
@@ -323,6 +323,7 @@
     "api/ai": [
       "api/src/modules/ai/ai.controller.ts",
       "api/src/modules/ai/ai.module.ts",
+      "api/src/modules/ai/dto/ai-locale.dto.ts",
       "api/src/modules/ai/dto/analyze-photo.dto.ts",
       "api/src/modules/ai/dto/estimate-value.dto.ts",
       "api/src/modules/ai/dto/explain-route.dto.ts",
@@ -460,6 +461,7 @@
       "mobile/src/services/items/items.service.ts",
       "mobile/src/services/notifications/notifications.service.ts",
       "mobile/src/services/routes/routes.service.ts",
+      "mobile/src/services/storage/preferencesStorage.ts",
       "mobile/src/services/storage/tokenStorage.ts",
       "mobile/src/services/swapService.ts"
     ],
@@ -467,7 +469,8 @@
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
-      "mobile/src/utils/imageCompressor.ts"
+      "mobile/src/utils/imageCompressor.ts",
+      "mobile/src/utils/relativeTime.ts"
     ]
   },
   "files": {
@@ -619,6 +622,18 @@
         "@nestjs/common"
       ]
     },
+    "api/src/modules/ai/dto/ai-locale.dto.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AI_LOCALE_PROMPT_NAME",
+        "AiLocale",
+        "DEFAULT_AI_LOCALE",
+        "aiLocaleSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
     "api/src/modules/ai/dto/analyze-photo.dto.ts": {
       "module": "api/ai",
       "exports": [
@@ -626,6 +641,7 @@
         "analyzePhotoSchema"
       ],
       "imports": [
+        "./ai-locale.dto",
         "zod"
       ]
     },
@@ -650,6 +666,7 @@
         "routeStepExplanationSchema"
       ],
       "imports": [
+        "./ai-locale.dto",
         "zod"
       ]
     },
@@ -672,6 +689,7 @@
         "RouteExplanationResult"
       ],
       "imports": [
+        "../dto/ai-locale.dto",
         "../dto/explain-route.dto",
         "./openai-client.service",
         "@nestjs/common"
@@ -686,6 +704,7 @@
         "VisionAnalysisResult"
       ],
       "imports": [
+        "../dto/ai-locale.dto",
         "../dto/analyze-photo.dto",
         "../dto/estimate-value.dto",
         "./openai-client.service",
@@ -1182,6 +1201,7 @@
         "searchRoutesSchema"
       ],
       "imports": [
+        "../../ai/dto/ai-locale.dto",
         "zod"
       ]
     },
@@ -1415,6 +1435,7 @@
       ],
       "imports": [
         "../../prisma/prisma.service",
+        "../ai/dto/ai-locale.dto",
         "../ai/services/ai-embedding.service",
         "../ai/services/ai-explainer.service",
         "./dto/propose-route.dto",
@@ -1567,6 +1588,7 @@
       ],
       "imports": [
         "./ui/Icon",
+        "@/hooks/useTranslation",
         "clsx",
         "react-router-dom"
       ]
@@ -1581,6 +1603,7 @@
         "./ui/Badge",
         "./ui/Button",
         "./ui/Icon",
+        "@/hooks/useTranslation",
         "@/types"
       ]
     },
@@ -1594,6 +1617,7 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
+        "@/hooks/useTranslation",
         "@/types",
         "react"
       ]
@@ -1608,6 +1632,7 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/hooks/useTranslation",
         "@/types",
         "react"
       ]
@@ -1622,6 +1647,7 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Icon",
+        "@/hooks/useTranslation",
         "@/types",
         "react"
       ]
@@ -1639,6 +1665,7 @@
         "@/assets/avatar-alex.svg",
         "@/assets/logo.svg",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "react-router-dom"
       ]
     },
@@ -1650,6 +1677,7 @@
       ],
       "imports": [
         "./Icon",
+        "@/hooks/useTranslation",
         "clsx"
       ]
     },
@@ -1673,6 +1701,7 @@
       ],
       "imports": [
         "./Icon",
+        "@/hooks/useTranslation",
         "react"
       ]
     },
@@ -1729,6 +1758,7 @@
       ],
       "imports": [
         "./Icon",
+        "@/hooks/useTranslation",
         "clsx",
         "react"
       ]
@@ -1742,6 +1772,7 @@
       "imports": [
         "./Icon",
         "@/hooks/useTheme",
+        "@/hooks/useTranslation",
         "clsx"
       ]
     },
@@ -1782,6 +1813,7 @@
         "ThemeProvider"
       ],
       "imports": [
+        "@/services/storage/preferencesStorage",
         "react"
       ]
     },
@@ -1835,7 +1867,7 @@
         "useTranslation"
       ],
       "imports": [
-        "@/i18n",
+        "@/services/storage/preferencesStorage",
         "react",
         "react-i18next"
       ]
@@ -1845,11 +1877,14 @@
       "exports": [
         "en"
       ],
-      "imports": []
+      "imports": [
+        "./es"
+      ]
     },
     "mobile/src/i18n/es.ts": {
       "module": "mobile/i18n",
       "exports": [
+        "TranslationSchema",
         "es"
       ],
       "imports": []
@@ -1857,13 +1892,12 @@
     "mobile/src/i18n/index.ts": {
       "module": "mobile/i18n",
       "exports": [
-        "LANGUAGE_STORAGE_KEY",
-        "getInitialLanguage",
         "i18n"
       ],
       "imports": [
         "./en",
         "./es",
+        "@/services/storage/preferencesStorage",
         "i18next",
         "react-i18next"
       ]
@@ -1908,6 +1942,7 @@
         "./context/ThemeContext",
         "./i18n",
         "./index.css",
+        "./services/storage/preferencesStorage",
         "react",
         "react-dom/client"
       ]
@@ -1949,6 +1984,7 @@
         "@/components/ui/Chip",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/swapService",
         "@/types",
         "react",
@@ -1982,6 +2018,7 @@
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
+        "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
         "react",
@@ -2001,8 +2038,11 @@
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
+        "@/hooks/useTranslation",
+        "@/services/routes/routes.service",
         "@/services/swapService",
         "@/types",
+        "@/utils/relativeTime",
         "react",
         "react-router-dom"
       ]
@@ -2020,6 +2060,7 @@
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "react",
         "react-router-dom"
@@ -2036,7 +2077,9 @@
         "@/components/ui/EmptyState",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/notifications/notifications.service",
+        "@/utils/relativeTime",
         "clsx",
         "react",
         "react-router-dom"
@@ -2061,6 +2104,7 @@
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTheme",
+        "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "react",
         "react-router-dom"
@@ -2078,6 +2122,7 @@
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
+        "@/hooks/useTranslation",
         "@/types",
         "react",
         "react-router-dom"
@@ -2093,6 +2138,7 @@
         "@/components/ui/Button",
         "@/components/ui/Icon",
         "@/data/mockData",
+        "@/hooks/useTranslation",
         "@/types",
         "react",
         "react-router-dom"
@@ -2114,13 +2160,13 @@
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/ai/ai.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/utils/imageCompressor",
         "clsx",
         "react",
-        "react-i18next",
         "react-router-dom"
       ]
     },
@@ -2147,6 +2193,7 @@
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
+        "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
         "react",
@@ -2165,6 +2212,7 @@
         "@/components/ui/EmptyState",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
         "react",
@@ -2184,6 +2232,7 @@
         "@/components/ui/Button",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
         "react",
@@ -2197,6 +2246,7 @@
       ],
       "imports": [
         "@/components/ui/Icon",
+        "@/hooks/useTranslation",
         "react",
         "react-router-dom"
       ]
@@ -2222,6 +2272,7 @@
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/data/mockData",
+        "@/hooks/useTranslation",
         "react",
         "react-router-dom"
       ]
@@ -2275,10 +2326,11 @@
     "mobile/src/services/items/items.service.ts": {
       "module": "mobile/services",
       "exports": [
+        "API_ITEM_CONDITIONS",
+        "ApiItemCondition",
         "CreateItemPayload",
         "ListItemsParams",
         "PaginatedItemsEnvelope",
-        "PrismaItemCondition",
         "RawItemDto",
         "UpdateItemPayload",
         "UploadImageResponse",
@@ -2337,8 +2389,22 @@
         "@/services/auth/auth.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
+        "@/services/storage/preferencesStorage",
         "@/types"
       ]
+    },
+    "mobile/src/services/storage/preferencesStorage.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "DEFAULT_LOCALE",
+        "DEFAULT_THEME",
+        "LOCALE_STORAGE_KEY",
+        "LocalePreference",
+        "THEME_STORAGE_KEY",
+        "ThemePreference",
+        "preferencesStorage"
+      ],
+      "imports": []
     },
     "mobile/src/services/storage/tokenStorage.ts": {
       "module": "mobile/services",
@@ -2397,6 +2463,15 @@
         "compressImageToDataUrl"
       ],
       "imports": []
+    },
+    "mobile/src/utils/relativeTime.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "formatRelativeTime"
+      ],
+      "imports": [
+        "@/services/storage/preferencesStorage"
+      ]
     }
   }
 }
