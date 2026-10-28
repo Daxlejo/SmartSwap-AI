@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCondition, ItemStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -293,6 +297,18 @@ describe('ItemsService', () => {
         where: { id: itemId },
       });
       expect(result).toEqual({ deleted: true, id: itemId });
+    });
+
+    it('should throw ConflictException when the item is locked in a swap route', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockCreatedEntity,
+        status: ItemStatus.PENDING_SWAP,
+      });
+
+      await expect(itemsService.remove(ownerId, itemId)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,9 +1,10 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ItemStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import {
@@ -240,6 +241,12 @@ export class ItemsService {
       );
     }
 
+    if (dto.status !== undefined && this.isLockedInSwap(existingItem.status)) {
+      throw new ConflictException(
+        'Cannot change the status of an item that is locked in a swap route',
+      );
+    }
+
     const resolvedImages =
       dto.images !== undefined
         ? await this.resolveImages(userId, dto.images)
@@ -371,6 +378,12 @@ export class ItemsService {
       );
     }
 
+    if (this.isLockedInSwap(existingItem.status)) {
+      throw new ConflictException(
+        'Cannot delete an item that is locked in a swap route',
+      );
+    }
+
     await this.prisma.$transaction(async (tx) => {
       await tx.want.deleteMany({
         where: { itemId },
@@ -385,6 +398,10 @@ export class ItemsService {
       deleted: true,
       id: itemId,
     };
+  }
+
+  private isLockedInSwap(status: ItemStatus): boolean {
+    return status === ItemStatus.PENDING_SWAP || status === ItemStatus.SWAPPED;
   }
 
   private deriveAiTags(
