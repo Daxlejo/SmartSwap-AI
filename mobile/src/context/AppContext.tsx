@@ -11,6 +11,10 @@ import {
   type ProposeRoutePayload,
   type RouteDecision,
 } from '@/services/routes/routes.service';
+import {
+  notificationsService,
+  type AppNotification,
+} from '@/services/notifications/notifications.service';
 import { mockUsers, mockItems, mockSwapRoute, mockProposals } from '@/data/mockData';
 
 export interface AppContextValue {
@@ -23,6 +27,8 @@ export interface AppContextValue {
   users: User[];
   routes: SwapRoute[];
   proposals: Proposal[];
+  notifications: AppNotification[];
+  unreadNotificationsCount: number;
   loginWithEmail: (email: string, password: string) => Promise<User>;
   registerWithEmail: (payload: RegisterPayload) => Promise<User>;
   logout: () => void;
@@ -39,10 +45,95 @@ export interface AppContextValue {
   ) => Promise<SwapRoute>;
   completeSwapReal: (routeId: string) => Promise<SwapRoute>;
   refreshRoutesReal: () => Promise<SwapRoute[]>;
+  markNotificationReadReal: (id: string) => Promise<void>;
+  markAllNotificationsReadReal: () => Promise<void>;
+  refreshNotificationsReal: () => Promise<AppNotification[]>;
 }
 
 const defaultUser: User = mockUsers.find((u) => u.id === 'user-alex') || mockUsers[0];
 const defaultMyItems: Item[] = mockItems.filter((item) => item.ownerId === defaultUser.id);
+
+const defaultNotifications: AppNotification[] = [
+  {
+    id: 'notif-1',
+    type: 'proposal_accepted',
+    unread: true,
+    icon: 'check_circle',
+    iconColor: 'text-[#1a7a4a]',
+    iconBg: 'bg-[#e8f5ee]',
+    title: 'Carlos aceptó tu propuesta',
+    body: 'Bicicleta Trek ↔ Balón FIFA — El intercambio puede continuar.',
+    time: 'hace 5 min',
+    badge: 'Canje',
+    badgeVariant: 'secondary-subtle',
+  },
+  {
+    id: 'notif-2',
+    type: 'new_route',
+    unread: true,
+    icon: 'route',
+    iconColor: 'text-primary',
+    iconBg: 'bg-primary-fixed/60',
+    title: 'Nueva ruta encontrada para ti',
+    body: 'Encontramos un circuito de 4 pasos: Bicicleta → Balón → Audífonos → Cámara',
+    time: 'hace 23 min',
+    badge: 'Ruta inteligente',
+    badgeVariant: 'tertiary-subtle',
+    routeId: 'SR-8492',
+  },
+  {
+    id: 'notif-3',
+    type: 'proposal_received',
+    unread: true,
+    icon: 'swap_horiz',
+    iconColor: 'text-secondary',
+    iconBg: 'bg-secondary-fixed/60',
+    title: 'Mateo quiere tu bicicleta',
+    body: 'Mateo R. ofrece su Nintendo Switch OLED a cambio de tu Trek Marlin 7.',
+    time: 'hace 1 h',
+    badge: 'Canje',
+    badgeVariant: 'secondary-subtle',
+  },
+  {
+    id: 'notif-4',
+    type: 'proposal_declined',
+    unread: false,
+    icon: 'cancel',
+    iconColor: 'text-error',
+    iconBg: 'bg-error-container/60',
+    title: 'Propuesta rechazada',
+    body: 'Sofía rechazó el intercambio por la lente Sony 50mm.',
+    time: 'hace 3 h',
+    badge: 'Canje',
+    badgeVariant: 'secondary-subtle',
+  },
+  {
+    id: 'notif-5',
+    type: 'system',
+    unread: false,
+    icon: 'verified_user',
+    iconColor: 'text-primary',
+    iconBg: 'bg-primary-fixed/60',
+    title: 'Identidad verificada',
+    body: 'Tu cuenta ha sido verificada con documento oficial.',
+    time: 'ayer',
+    badge: 'Sistema',
+    badgeVariant: 'surface',
+  },
+  {
+    id: 'notif-6',
+    type: 'system',
+    unread: false,
+    icon: 'eco',
+    iconColor: 'text-[#1a7a4a]',
+    iconBg: 'bg-[#e8f5ee]',
+    title: '14.2 kg CO₂ ahorrados',
+    body: 'Llevas 23 canjes completos. ¡Sigue extendiendo la vida útil de los artículos!',
+    time: 'hace 3 días',
+    badge: 'Sistema',
+    badgeVariant: 'surface',
+  },
+];
 
 const isSwapRouteObject = (val: SwapRoute | ProposeRoutePayload): val is SwapRoute => {
   return (
@@ -115,6 +206,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users] = useState<User[]>(mockUsers);
   const [routes, setRoutes] = useState<SwapRoute[]>([mockSwapRoute]);
   const [proposals, setProposals] = useState<Proposal[]>(mockProposals);
+  const [notifications, setNotifications] = useState<AppNotification[]>(() =>
+    tokenStorage.hasToken() ? [] : defaultNotifications,
+  );
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notifications.filter((n) => n.unread).length;
+  }, [notifications]);
 
   const refreshRoutesReal = useCallback(async (): Promise<SwapRoute[]> => {
     if (!tokenStorage.hasToken()) {
@@ -138,6 +236,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return routes;
     }
   }, [currentUser?.id, routes]);
+
+  const refreshNotificationsReal = useCallback(async (): Promise<AppNotification[]> => {
+    if (!tokenStorage.hasToken()) {
+      return notifications;
+    }
+
+    try {
+      const list = await notificationsService.listNotifications();
+      setNotifications(list);
+      return list;
+    } catch {
+      return notifications;
+    }
+  }, [notifications]);
+
+  const markNotificationReadReal = useCallback(async (id: string): Promise<void> => {
+    setNotifications((prev) =>
+      prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)),
+    );
+
+    if (tokenStorage.hasToken()) {
+      try {
+        await notificationsService.markAsRead(id);
+      } catch {
+        // Keep optimistic state update
+      }
+    }
+  }, []);
+
+  const markAllNotificationsReadReal = useCallback(async (): Promise<void> => {
+    setNotifications((prev) =>
+      prev.map((notif) => ({ ...notif, unread: false })),
+    );
+
+    if (tokenStorage.hasToken()) {
+      try {
+        await notificationsService.markAllAsRead();
+      } catch {
+        // Keep optimistic state update
+      }
+    }
+  }, []);
 
   const loadMarketplaceAndUserItems = useCallback(async (hasActiveToken: boolean) => {
     setIsItemsLoading(true);
@@ -180,6 +320,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthenticated(false);
       setCurrentUser(null);
       setMyItems([]);
+      setNotifications([]);
     });
 
     return () => {
@@ -204,12 +345,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!isMounted) return;
         setCurrentUser(user);
         setIsAuthenticated(true);
-        await loadMarketplaceAndUserItems(true);
+
+        await Promise.allSettled([
+          loadMarketplaceAndUserItems(true),
+          notificationsService.listNotifications().then((list) => {
+            if (isMounted) {
+              setNotifications(list);
+            }
+          }),
+        ]);
       } catch {
         if (!isMounted) return;
         tokenStorage.clearToken();
         setIsAuthenticated(false);
         setCurrentUser(defaultUser);
+        setNotifications(defaultNotifications);
       } finally {
         if (isMounted) {
           setIsHydrating(false);
@@ -224,6 +374,85 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [loadMarketplaceAndUserItems]);
 
+  // Visibility-aware polling effect (every 15,000 ms ONLY when authenticated, document.visibilityState === 'visible', and import.meta.env.MODE !== 'test')
+  useEffect(() => {
+    if (!isAuthenticated || import.meta.env.MODE === 'test') {
+      return;
+    }
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const silentPoll = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return;
+      }
+
+      try {
+        const [notifsResult, routesResult] = await Promise.allSettled([
+          notificationsService.listNotifications(),
+          routesService.listMyRoutes(),
+        ]);
+
+        if (notifsResult.status === 'fulfilled') {
+          setNotifications(notifsResult.value);
+        }
+
+        if (
+          routesResult.status === 'fulfilled' &&
+          routesResult.value.length > 0
+        ) {
+          setRoutes(routesResult.value);
+          const mappedProposals = routesResult.value.map((r) =>
+            mapRouteToProposal(r, currentUser?.id || defaultUser.id),
+          );
+          setProposals((prev) => {
+            const existingIds = new Set(mappedProposals.map((p) => p.id));
+            return [...mappedProposals, ...prev.filter((p) => !existingIds.has(p.id))];
+          });
+        }
+      } catch {
+        // Silently ignore background polling errors
+      }
+    };
+
+    const startPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      intervalId = setInterval(silentPoll, 15000);
+    };
+
+    const stopPolling = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void silentPoll();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    return () => {
+      stopPolling();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+  }, [isAuthenticated, currentUser?.id]);
+
   const refreshItems = useCallback(async () => {
     const hasActiveToken = tokenStorage.hasToken();
     await loadMarketplaceAndUserItems(hasActiveToken);
@@ -235,6 +464,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(session.user);
       setIsAuthenticated(true);
       await loadMarketplaceAndUserItems(true);
+      try {
+        const notifs = await notificationsService.listNotifications();
+        setNotifications(notifs);
+      } catch {
+        // Silent fallback
+      }
       return session.user;
     },
     [loadMarketplaceAndUserItems],
@@ -246,6 +481,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(session.user);
       setIsAuthenticated(true);
       await loadMarketplaceAndUserItems(true);
+      try {
+        const notifs = await notificationsService.listNotifications();
+        setNotifications(notifs);
+      } catch {
+        // Silent fallback
+      }
       return session.user;
     },
     [loadMarketplaceAndUserItems],
@@ -256,6 +497,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(false);
     setCurrentUser(null);
     setMyItems([]);
+    setNotifications([]);
   }, []);
 
   const createItemReal = useCallback(async (payload: CreateItemPayload): Promise<Item> => {
@@ -420,6 +662,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       users,
       routes,
       proposals,
+      notifications,
+      unreadNotificationsCount,
       loginWithEmail,
       registerWithEmail,
       logout,
@@ -432,6 +676,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       respondToProposalReal,
       completeSwapReal,
       refreshRoutesReal,
+      markNotificationReadReal,
+      markAllNotificationsReadReal,
+      refreshNotificationsReal,
     }),
     [
       currentUser,
@@ -443,6 +690,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       users,
       routes,
       proposals,
+      notifications,
+      unreadNotificationsCount,
       loginWithEmail,
       registerWithEmail,
       logout,
@@ -455,6 +704,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       respondToProposalReal,
       completeSwapReal,
       refreshRoutesReal,
+      markNotificationReadReal,
+      markAllNotificationsReadReal,
+      refreshNotificationsReal,
     ],
   );
 
@@ -471,6 +723,8 @@ const fallbackContextValue: AppContextValue = {
   users: mockUsers,
   routes: [mockSwapRoute],
   proposals: mockProposals,
+  notifications: defaultNotifications,
+  unreadNotificationsCount: defaultNotifications.filter((n) => n.unread).length,
   loginWithEmail: async (email, password) => {
     const session = await authService.login(email, password);
     return session.user;
@@ -493,6 +747,15 @@ const fallbackContextValue: AppContextValue = {
     routesService.respondToRoute(routeId, decision, comment),
   completeSwapReal: async (routeId) => routesService.completeRoute(routeId),
   refreshRoutesReal: async () => routesService.listMyRoutes(),
+  markNotificationReadReal: async (id: string) => {
+    await notificationsService.markAsRead(id);
+  },
+  markAllNotificationsReadReal: async () => {
+    await notificationsService.markAllAsRead();
+  },
+  refreshNotificationsReal: async () => {
+    return notificationsService.listNotifications();
+  },
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
