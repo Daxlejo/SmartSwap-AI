@@ -4,20 +4,11 @@ import './i18n';
 import { App } from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppProvider } from './context/AppContext';
+import { preferencesStorage } from './services/storage/preferencesStorage';
 import './index.css';
 
-// Apply initial theme before React mounts to avoid flash of wrong theme (FOUC)
-try {
-  const savedTheme = localStorage.getItem('smartswap-theme');
-  const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-} catch {
-  // Graceful fallback for environments with restricted storage access
-}
+// Apply the stored theme (light by default) before React mounts to avoid a flash of the wrong theme
+document.documentElement.classList.toggle('dark', preferencesStorage.getTheme() === 'dark');
 
 const rootElement = document.getElementById('root');
 
