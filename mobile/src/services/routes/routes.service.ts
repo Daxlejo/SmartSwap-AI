@@ -642,6 +642,13 @@ export const routesService = {
     return extractSingleRoute(response);
   },
 
+  async cancelRoute(routeId: string): Promise<SwapRoute> {
+    const response = await apiClient.post<SwapRouteDto | SingleRouteEnvelope>(
+      `/routes/${routeId}/cancel`,
+    );
+    return extractSingleRoute(response);
+  },
+
   async completeRoute(routeId: string): Promise<SwapRoute> {
     const response = await apiClient.post<SwapRouteDto | SingleRouteEnvelope>(
       `/routes/${routeId}/complete`,
