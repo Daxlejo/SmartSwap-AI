@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { aiLocaleSchema } from './ai-locale.dto';
 
 export const routeStepExplanationSchema = z.object({
   userName: z.string().trim().min(1, 'userName is required'),
@@ -22,6 +23,7 @@ export const explainRouteSchema = z.object({
     .array(routeStepExplanationSchema)
     .min(1, 'At least one swap step is required')
     .max(10, 'At most 10 swap steps are allowed'),
+  locale: aiLocaleSchema.optional(),
 });
 
 export type RouteStepExplanationInput = z.infer<

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AI_LOCALE_PROMPT_NAME,
+  DEFAULT_AI_LOCALE,
+} from '../dto/ai-locale.dto';
+import {
   ExplainRouteDto,
   RouteStepExplanationInput,
 } from '../dto/explain-route.dto';
@@ -16,22 +20,24 @@ export class AiExplainerService {
   constructor(private readonly openAiClient: OpenAiClientService) {}
 
   /**
-   * Generates a concise 2-sentence Spanish explanation (`explanation`) of why a circular swap route
-   * is fair in market value parity and positive ecological impact.
+   * Generates a concise 2-sentence explanation (`explanation`) in the requested locale (Spanish by default)
+   * of why a circular swap route is fair in market value parity and positive ecological impact.
    */
   async explainSwapRoute(
     dto: ExplainRouteDto,
   ): Promise<RouteExplanationResult> {
+    const locale = dto.locale ?? DEFAULT_AI_LOCALE;
+    const language = AI_LOCALE_PROMPT_NAME[locale];
     const computedFairness = this.computeFairnessScore(dto.steps);
     const fallbackFactory = (): RouteExplanationResult =>
       this.buildFallbackExplanation(dto, computedFairness);
 
     const systemPrompt = [
       'Eres el motor explicativo de economía circular de SmartSwap.',
-      'Redacta una explicación concisa de EXACTAMENTE 2 oraciones en español sobre por qué esta ruta de trueque circular o directo es justa en valor económico y beneficiosa para el medio ambiente.',
+      `Redacta una explicación concisa de EXACTAMENTE 2 oraciones en ${language} sobre por qué esta ruta de trueque circular o directo es justa en valor económico y beneficiosa para el medio ambiente.`,
       'Devuelve ÚNICAMENTE un objeto JSON válido con estas claves:',
       '{',
-      '  "explanation": "Explicación de 2 oraciones en español mencionando a los participantes/artículos y el impacto ecológico.",',
+      `  "explanation": "Explicación de 2 oraciones en ${language} mencionando a los participantes/artículos y el impacto ecológico.",`,
       '  "fairnessScore": numero_entero_entre_50_y_100',
       '}',
     ].join('\n');
@@ -107,6 +113,20 @@ export class AiExplainerService {
           `${s.userName} (${s.givesItemName} → ${s.receivesItemName})`,
       )
       .join(', ');
+
+    if (dto.locale === 'en') {
+      const englishSentence1 =
+        stepCount === 1 && firstStep
+          ? `This direct swap fulfills the goal "${dto.objectiveText}" by connecting ${firstStep.userName}, trading ${firstStep.givesItemName} for ${firstStep.receivesItemName} with a ${fairnessScore}% value fairness index.`
+          : `This ${stepCount}-link circular route connects ${participantsSummary} to reach "${dto.objectiveText}" while keeping ${fairnessScore}% market value parity without using money.`;
+      const englishSentence2 = `By reusing these items in the SmartSwap community, the cycle avoids roughly ${co2Estimated} kg of CO₂ emissions and extends the useful life of the equipment.`;
+
+      return {
+        explanation: `${englishSentence1} ${englishSentence2}`,
+        fairnessScore,
+        source: 'fallback',
+      };
+    }
 
     const sentence1 =
       stepCount === 1 && firstStep
