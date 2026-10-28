@@ -212,6 +212,18 @@ describe('ItemsService', () => {
   });
 
   describe('update', () => {
+    it('should throw ConflictException when changing the status of an item locked in a swap', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockCreatedEntity,
+        status: ItemStatus.PENDING_SWAP,
+      });
+
+      await expect(
+        itemsService.update(ownerId, itemId, { status: 'PAUSED' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
     it('should throw ForbiddenException when a non-owner attempts to update an item', async () => {
       mockPrismaService.item.findUnique.mockResolvedValue(mockCreatedEntity);
 
