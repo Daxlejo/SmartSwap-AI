@@ -336,7 +336,7 @@ describe('RoutesService', () => {
       findMany: jest.fn(),
     },
     swapRoute: {
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
     },
     $transaction: jest.fn(
@@ -712,6 +712,56 @@ describe('RoutesService', () => {
           decision: 'ACCEPTED',
         }),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('lazy route expiry', () => {
+    it('expires overdue pending routes, unlocks items and notifies participants before listing', async () => {
+      mockPrismaService.swapRoute.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'route-overdue',
+            code: 'SW-1111',
+            steps: [
+              { userId: userAId, givesItemId: itemAId, receivesItemId: itemCId },
+              { userId: userBId, givesItemId: itemBId, receivesItemId: itemAId },
+            ],
+          },
+        ])
+        .mockResolvedValueOnce([]);
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.notification.createMany.mockResolvedValue({ count: 2 });
+
+      await routesService.listMyRoutes(userAId);
+
+      expect(mockTx.swapRoute.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'route-overdue',
+          status: { in: [RouteStatus.ACTIVE, RouteStatus.SUGGESTED] },
+        },
+        data: { status: RouteStatus.EXPIRED },
+      });
+      expect(mockTx.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+      expect(mockTx.notification.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ userId: userBId, type: 'ROUTE_EXPIRED' }),
+        ]),
+      });
+    });
+
+    it('skips routes another request already expired', async () => {
+      mockPrismaService.swapRoute.findMany
+        .mockResolvedValueOnce([{ id: 'route-overdue', code: 'SW-1111', steps: [] }])
+        .mockResolvedValueOnce([]);
+      mockTx.swapRoute.updateMany.mockResolvedValueOnce({ count: 0 });
+
+      await routesService.listMyRoutes(userAId);
+
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.notification.createMany).not.toHaveBeenCalled();
     });
   });
 
