@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const SplashScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Animation sequence phases:
   // Phase 1 (0-200ms): screen background fades in from transparent
@@ -59,7 +61,7 @@ export const SplashScreen: React.FC = () => {
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') handleSkip();
       }}
-      aria-label="Pantalla de inicio SmartSwap - Toca para continuar"
+      aria-label={t('splash.aria')}
       style={{ '--color-primary': '#00685f', backgroundColor: '#00685f' } as React.CSSProperties}
       className={`fixed inset-0 z-50 flex flex-col items-center justify-between min-h-[100dvh] w-full bg-primary px-margin py-8 select-none overflow-hidden cursor-pointer ${
         reducedMotion ? '' : phase >= 6 ? 'animate-screen-out' : 'animate-screen-in'
@@ -159,7 +161,7 @@ export const SplashScreen: React.FC = () => {
             reducedMotion ? '' : phase >= 4 ? 'animate-subtitle-fade' : 'opacity-0'
           }`}
         >
-          Red de Canje Circular P2P
+          {t('splash.subtitle')}
         </p>
       </div>
 
