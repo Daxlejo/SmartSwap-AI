@@ -317,6 +317,7 @@ describe('RoutesService', () => {
       findUniqueOrThrow: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     swapRouteStep: {
       update: jest.fn(),

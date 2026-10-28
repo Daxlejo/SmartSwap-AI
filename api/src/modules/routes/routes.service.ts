@@ -365,6 +365,7 @@ export class RoutesService {
     dto: RespondRouteDto,
   ): Promise<SwapRouteDto> {
     const outcome = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
       const route = await tx.swapRoute.findUnique({
         where: { id: routeId.trim() },
         include: ROUTE_RELATIONS_INCLUDE,
@@ -516,6 +517,7 @@ export class RoutesService {
     routeId: string,
   ): Promise<SwapRouteDto> {
     const finalizedRoute = await this.prisma.$transaction(async (tx) => {
+      await this.lockRouteRow(tx, routeId.trim());
       const route = await tx.swapRoute.findUnique({
         where: { id: routeId.trim() },
         include: ROUTE_RELATIONS_INCLUDE,
@@ -759,6 +761,20 @@ export class RoutesService {
         'Proposed steps must form a closed swap cycle where every item is given and received exactly once',
       );
     }
+  }
+
+  /**
+   * Takes a row-level write lock on the route so concurrent responses are serialized
+   * (otherwise two last acceptors could each miss the other's acceptance).
+   */
+  private async lockRouteRow(
+    tx: Prisma.TransactionClient,
+    routeId: string,
+  ): Promise<void> {
+    await tx.swapRoute.updateMany({
+      where: { id: routeId },
+      data: { updatedAt: new Date() },
+    });
   }
 
   private collectUniqueItemIds(
