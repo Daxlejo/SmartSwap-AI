@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { Icon } from './Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface AvatarProps {
   src?: string;
@@ -23,6 +24,7 @@ export const Avatar = ({
   verified = false,
   className,
 }: AvatarProps) => {
+  const { t } = useTranslation();
   return (
     <div className={clsx('relative inline-flex shrink-0 select-none', className)}>
       {src ? (
@@ -47,7 +49,7 @@ export const Avatar = ({
       {verified && (
         <span
           className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center ring-2 ring-surface shadow-xs"
-          title="Usuario verificado"
+          title={t('nav.verifiedUser')}
         >
           <Icon name="check" size="xs" />
         </span>

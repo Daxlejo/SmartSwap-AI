@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Icon } from './Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface BottomSheetProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   children,
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Prevent body scroll when open
@@ -61,7 +63,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">{title}</h2>
             <button 
               onClick={onClose} 
-              aria-label="Cerrar"
+              aria-label={t('nav.close')}
               className="p-2 -mr-2 text-on-surface-variant hover:text-on-surface transition-colors bg-surface-container-high rounded-full active:scale-95"
             >
               <Icon name="close" size="sm" />
