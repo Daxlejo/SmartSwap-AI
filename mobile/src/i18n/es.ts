@@ -238,6 +238,23 @@ export const es = {
     sending: 'Enviando...',
     send: 'Enviar Propuesta',
   },
+  routeResults: {
+    title: 'Rutas Encontradas',
+    available_one: '{{count}} opción disponible',
+    available_other: '{{count}} opciones disponibles',
+    aiCycles: 'Ciclos IA',
+    filters: {
+      all: 'Todos los ciclos',
+      two: '2 pasos (Directo)',
+      three: '3 pasos',
+      four: '4 pasos',
+    },
+    emptyTitle: 'Sin rutas disponibles',
+    emptyDescription: 'No encontramos una cadena de canje para estos artículos en este momento.',
+    showAll: 'Ver todos los ciclos',
+    backHome: 'Volver al Inicio',
+    aiVerified: 'Equidad Verificada por IA • {{percent}}% Coincidencia',
+  },
   common: {
     loading: 'Cargando...',
     error: 'Ha ocurrido un error inesperado.',

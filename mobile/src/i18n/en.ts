@@ -240,6 +240,23 @@ export const en: TranslationSchema = {
     sending: 'Sending...',
     send: 'Send proposal',
   },
+  routeResults: {
+    title: 'Routes found',
+    available_one: '{{count}} option available',
+    available_other: '{{count}} options available',
+    aiCycles: 'AI cycles',
+    filters: {
+      all: 'All cycles',
+      two: '2 steps (Direct)',
+      three: '3 steps',
+      four: '4 steps',
+    },
+    emptyTitle: 'No routes available',
+    emptyDescription: 'We couldn\'t find a swap chain for these items right now.',
+    showAll: 'Show all cycles',
+    backHome: 'Back to home',
+    aiVerified: 'AI-verified fairness • {{percent}}% match',
+  },
   common: {
     loading: 'Loading...',
     error: 'An unexpected error occurred.',
