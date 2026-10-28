@@ -16,7 +16,6 @@ export const useTranslation = (ns?: string) => {
     async (lang: SupportedLanguage) => {
       preferencesStorage.setLocale(lang);
       await i18n.changeLanguage(lang);
-      document.documentElement.lang = lang;
     },
     [i18n],
   );

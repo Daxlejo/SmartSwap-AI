@@ -20,4 +20,13 @@ i18n
     },
   });
 
+// Keep <html lang> in sync for screen readers and native text features
+const syncDocumentLanguage = (lng: string) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng;
+  }
+};
+syncDocumentLanguage(i18n.language);
+i18n.on('languageChanged', syncDocumentLanguage);
+
 export default i18n;
