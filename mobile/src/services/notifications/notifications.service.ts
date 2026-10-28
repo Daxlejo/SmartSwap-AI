@@ -7,6 +7,7 @@ export type NotificationType =
   | 'proposal_received'
   | 'proposal_declined'
   | 'swap_completed'
+  | 'proposal_expired'
   | 'system'
   | string;
 
@@ -19,6 +20,7 @@ const API_TYPE_TO_UI_TYPE: Record<string, NotificationType> = {
   ROUTE_CONFIRMED: 'proposal_accepted',
   ROUTE_CANCELLED: 'proposal_declined',
   ROUTE_COMPLETED: 'swap_completed',
+  ROUTE_EXPIRED: 'proposal_expired',
   SYSTEM_WELCOME: 'system',
 };
 
@@ -156,6 +158,13 @@ export const mapApiNotificationToUi = (dto: RawNotificationDto): AppNotification
       defaultIconBg = 'bg-error-container/60';
       defaultBadge = 'Canje';
       defaultBadgeVariant = 'secondary-subtle';
+      break;
+    case 'proposal_expired':
+      defaultIcon = 'schedule';
+      defaultIconColor = 'text-on-surface-variant';
+      defaultIconBg = 'bg-surface-container-high';
+      defaultBadge = 'Canje';
+      defaultBadgeVariant = 'surface';
       break;
     case 'swap_completed':
       defaultIcon = 'eco';

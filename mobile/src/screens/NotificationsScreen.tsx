@@ -25,6 +25,7 @@ const LOCALIZED_TYPES = new Set([
   'proposal_accepted',
   'proposal_declined',
   'swap_completed',
+  'proposal_expired',
   'system',
 ]);
 

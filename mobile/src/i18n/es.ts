@@ -195,6 +195,11 @@ export const es = {
         title: 'Ruta {{code}} cancelada',
         body: 'Un participante rechazó la propuesta {{code}}. Tus artículos vuelven a estar activos.',
       },
+      proposal_expired: {
+        badge: 'Ruta expirada',
+        title: 'Ruta {{code}} expirada',
+        body: 'La propuesta {{code}} venció sin la respuesta de todos los participantes. Tus artículos vuelven a estar activos.',
+      },
       swap_completed: {
         badge: 'Trueque completado',
         title: '¡Trueque {{code}} finalizado con éxito!',

@@ -197,6 +197,11 @@ export const en: TranslationSchema = {
         title: 'Route {{code}} cancelled',
         body: 'A participant declined proposal {{code}}. Your items are active again.',
       },
+      proposal_expired: {
+        badge: 'Route expired',
+        title: 'Route {{code}} expired',
+        body: 'Proposal {{code}} expired before every participant replied. Your items are active again.',
+      },
       swap_completed: {
         badge: 'Swap completed',
         title: 'Swap {{code}} completed successfully!',
