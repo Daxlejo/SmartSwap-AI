@@ -1,505 +1,157 @@
-openapi: 3.1.0
-info:
-  title: SmartSwap API
-  description: Base OpenAPI 3.1 specification for the SmartSwap circular bartering platform.
-  version: 1.0.0
-  contact:
-    name: SmartSwap Engineering Team
-    email: dev@smartswap.io
-
-servers:
-  - url: http://localhost:3000/api/v1
-    description: Local Development Server
-  - url: https://api.smartswap.io/v1
-    description: Production Server
-
-tags:
-  - name: Health
-    description: Service health and readiness endpoints
-  - name: Auth
-    description: User authentication, registration, and session management
-  - name: Items
-    description: Catalog, inventory, and barter item management
-  - name: Routes
-    description: Multi-hop circular barter route discovery and management
-  - name: Notifications
-    description: Real-time and persistent user notifications
-  - name: Proposals
-    description: Barter and circular exchange proposals
-
+# GENERATED FILE - do not edit by hand.
+# Source: Nest Swagger decorators + Zod DTO schemas (api/scripts/openapi.ts).
+# Regenerate with `npm run openapi`; CI/tests run `npm run openapi:check`.
+openapi: 3.0.0
 paths:
-  /health:
+  /api/v1/health:
     get:
-      tags:
-        - Health
-      summary: Health check probe
-      description: Returns service operational status, uptime, and timestamp.
-      operationId: getHealth
+      operationId: HealthController_getHealth
+      summary: Healthcheck probe
+      description: Checks Prisma DB connectivity (SELECT 1) and returns operational status, uptime, and API version.
+      parameters: []
       responses:
         '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-
-  /auth/register:
-    post:
-      tags:
-        - Auth
-      summary: Register a new user
-      description: Creates a new user profile and returns authentication credentials.
-      operationId: register
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterDto'
-      responses:
-        '201':
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '409':
-          description: Email already in use
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/login:
-    post:
-      tags:
-        - Auth
-      summary: Authenticate user
-      description: Validates user credentials and issues JWT access and refresh tokens.
-      operationId: login
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginDto'
-      responses:
-        '200':
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /auth/refresh:
-    post:
-      tags:
-        - Auth
-      summary: Refresh authentication tokens
-      description: Exchange a valid refresh token for a new access token.
-      operationId: refreshToken
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenDto'
-      responses:
-        '200':
-          description: Tokens refreshed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenPair'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /auth/me:
-    get:
-      tags:
-        - Auth
-      summary: Get current authenticated user
-      description: Returns the profile data of the currently logged-in user.
-      operationId: getCurrentUser
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User profile details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /items:
-    get:
-      tags:
-        - Items
-      summary: Browse and filter items
-      description: Returns a paginated list of published items with optional search and category filters.
-      operationId: listItems
-      parameters:
-        - name: query
-          in: query
-          description: Free-text search across item title and description
-          required: false
-          schema:
-            type: string
-        - name: category
-          in: query
-          description: Filter by item category
-          required: false
-          schema:
-            type: string
-        - name: condition
-          in: query
-          description: Filter by condition
-          required: false
-          schema:
-            type: string
-        - name: ownerId
-          in: query
-          description: Filter by owner user ID
-          required: false
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 0
-      responses:
-        '200':
-          description: List of items
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ItemListResponse'
-
-    post:
-      tags:
-        - Items
-      summary: Publish a new item
-      description: Creates a new trade item associated with the authenticated user.
-      operationId: createItem
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateItemDto'
-      responses:
-        '201':
-          description: Item created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /items/me:
-    get:
-      tags:
-        - Items
-      summary: Get authenticated user's items
-      description: Returns all barter items owned by the authenticated user.
-      operationId: getMyItems
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Array of user items
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Item'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /items/{id}:
-    get:
-      tags:
-        - Items
-      summary: Get item details
-      description: Returns complete item profile by its unique ID.
-      operationId: getItemById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Item found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
-    patch:
-      tags:
-        - Items
-      summary: Update an item
-      description: Modifies item attributes. Only the owner can update the item.
-      operationId: updateItem
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateItemDto'
-      responses:
-        '200':
-          description: Item updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
-    delete:
-      tags:
-        - Items
-      summary: Delete an item
-      description: Removes an item from the catalog.
-      operationId: deleteItem
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Item deleted successfully
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
-  /routes/find:
-    post:
-      tags:
-        - Routes
-      summary: Find circular barter routes
-      description: Executes the circular graph BFS search algorithm to find exchange chains between offered and requested items.
-      operationId: findRoutes
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FindRoutesDto'
-      responses:
-        '200':
-          description: List of discovered multi-swap routes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SwapRoute'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /routes/recommended:
-    get:
-      tags:
-        - Routes
-      summary: Get recommended swap routes
-      description: Retrieves circular barter opportunities tailored to the authenticated user's current inventory and preferences.
-      operationId: getRecommendedRoutes
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of recommended routes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SwapRoute'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /routes/{id}:
-    get:
-      tags:
-        - Routes
-      summary: Get swap route by ID
-      description: Returns full details, steps, chain participants, and CO2 savings for a specific swap route.
-      operationId: getRouteById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Swap route details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SwapRoute'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
-  /notifications:
-    get:
-      tags:
-        - Notifications
-      summary: List user notifications
-      description: Returns all notifications for the authenticated user, optionally filtered by category.
-      operationId: getNotifications
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: filter
-          in: query
-          required: false
-          description: Filter notifications by category
-          schema:
-            type: string
-            enum: [all, swaps, system]
-            default: all
-      responses:
-        '200':
-          description: Array of user notifications
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Notification'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /notifications/read-all:
-    patch:
-      tags:
-        - Notifications
-      summary: Mark all notifications as read
-      description: Updates read status for all unread notifications of the authenticated user.
-      operationId: markAllNotificationsRead
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: All notifications marked as read
+          description: Service operational status
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  updatedCount:
-                    type: integer
-                    example: 3
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /notifications/{id}/read:
-    patch:
+                  status:
+                    type: string
+                    example: ok
+                  db:
+                    type: string
+                    enum:
+                      - connected
+                      - disconnected
+                    example: connected
+                  uptime:
+                    type: number
+                    example: 12.34
+                  timestamp:
+                    type: string
+                    example: '2026-10-23T18:10:00.000Z'
+                  version:
+                    type: string
+                    example: 2.4.0
+                required:
+                  - status
+                  - db
+                  - uptime
+                  - timestamp
+                  - version
       tags:
-        - Notifications
-      summary: Mark notification as read
-      description: Sets a single notification's unread status to false.
-      operationId: markNotificationRead
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Notification updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Notification'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
-  /proposals:
-    get:
-      tags:
-        - Proposals
-      summary: List barter proposals
-      description: Returns proposals sent or received by the authenticated user.
-      operationId: listProposals
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [pending, accepted, declined, completed]
-      responses:
-        '200':
-          description: List of proposals
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Proposal'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
+        - Health
+  /api/v1/auth/register:
     post:
+      operationId: AuthController_register
+      summary: Register a new user account
+      parameters: []
+      responses:
+        '201':
+          description: User successfully registered
+        '400':
+          description: Validation error
+        '409':
+          description: Email already registered
       tags:
-        - Proposals
-      summary: Create exchange proposal
-      description: Submits a direct or circuit barter proposal to another user.
-      operationId: createProposal
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+                  minLength: 2
+                location:
+                  type: string
+              required:
+                - email
+                - password
+                - name
+              additionalProperties: false
+  /api/v1/auth/login:
+    post:
+      operationId: AuthController_login
+      summary: Authenticate with email and password
+      parameters: []
+      responses:
+        '200':
+          description: User successfully authenticated
+        '400':
+          description: Validation error
+        '401':
+          description: Invalid email or password
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 1
+              required:
+                - email
+                - password
+              additionalProperties: false
+  /api/v1/auth/me:
+    get:
+      operationId: AuthController_getMe
+      summary: Get current authenticated user profile
+      parameters: []
+      responses:
+        '200':
+          description: Authenticated user profile
+        '401':
+          description: Unauthorized
+      tags:
+        - auth
+      security:
+        - bearer: []
+  /api/v1/users/me:
+    get:
+      operationId: UsersController_getMe
+      summary: Get authenticated user profile
+      parameters: []
+      responses:
+        '200':
+          description: Current user public profile
+        '401':
+          description: Unauthorized
+      tags:
+        - users
+      security:
+        - bearerAuth: []
+    patch:
+      operationId: UsersController_updateMe
+      summary: Update authenticated user profile
+      parameters: []
+      responses:
+        '200':
+          description: Updated user public profile
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - users
       security:
         - bearerAuth: []
       requestBody:
@@ -507,523 +159,1266 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProposalDto'
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                location:
+                  type: string
+                  maxLength: 120
+                avatarUrl:
+                  type: string
+                  format: uri
+              additionalProperties: false
+  /api/v1/users/me/stats:
+    get:
+      operationId: UsersController_getMeStats
+      summary: Get authenticated user statistics and operational metrics
+      parameters: []
+      responses:
+        '200':
+          description: User profile with operational statistics
+        '401':
+          description: Unauthorized
+      tags:
+        - users
+      security:
+        - bearerAuth: []
+  /api/v1/items:
+    get:
+      operationId: ItemsController_findAll
+      summary: List public items with optional search and filters
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: condition
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: Filtered list of catalog items
+      tags:
+        - items
+    post:
+      operationId: ItemsController_create
+      summary: Create a new item and synchronize its wants
+      parameters: []
       responses:
         '201':
-          description: Proposal created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Proposal'
+          description: Created item with wants
         '400':
-          $ref: '#/components/responses/BadRequestError'
+          description: Validation error
         '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                category:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                condition:
+                  type: string
+                description:
+                  type: string
+                  minLength: 5
+                  maxLength: 1000
+                estimatedValue:
+                  type: number
+                  exclusiveMinimum: true
+                  minimum: 0
+                location:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                imageUrl:
+                  type: string
+                  minLength: 1
+                images:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  minItems: 1
+                  maxItems: 4
+                wants:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  minItems: 1
+                  maxItems: 10
+                aiTags:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+              required:
+                - name
+                - category
+                - condition
+                - description
+                - estimatedValue
+                - images
+                - wants
+              additionalProperties: false
+  /api/v1/items/mine:
+    get:
+      operationId: ItemsController_findMine
+      summary: List all items owned by the authenticated user
+      parameters: []
+      responses:
+        '200':
+          description: List of user-owned items
+        '401':
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
+  /api/v1/items/me:
+    get:
+      operationId: ItemsController_findMine
+      summary: List all items owned by the authenticated user
+      parameters: []
+      responses:
+        '200':
+          description: List of user-owned items
+        '401':
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
+  /api/v1/items/{id}:
+    get:
+      operationId: ItemsController_findOne
+      summary: Get a single item by ID
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item detail with owner and wants
+        '404':
+          description: Item not found
+      tags:
+        - items
+    patch:
+      operationId: ItemsController_update
+      summary: Update an item owned by the authenticated user
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated item with wants
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not item owner)
+        '404':
+          description: Item not found
+      tags:
+        - items
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                category:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                condition:
+                  type: string
+                description:
+                  type: string
+                  minLength: 5
+                  maxLength: 1000
+                estimatedValue:
+                  type: number
+                  exclusiveMinimum: true
+                  minimum: 0
+                location:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                imageUrl:
+                  type: string
+                  minLength: 1
+                images:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  minItems: 1
+                  maxItems: 4
+                wants:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                  minItems: 1
+                  maxItems: 10
+                aiTags:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                status:
+                  type: string
+              additionalProperties: false
+    delete:
+      operationId: ItemsController_remove
+      summary: Delete an item owned by the authenticated user
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item and associated wants deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden (not item owner)
+        '404':
+          description: Item not found
+      tags:
+        - items
+      security:
+        - bearer: []
+  /api/v1/items/analyze-photo:
+    post:
+      operationId: ItemsController_analyzePhoto
+      summary: Analyze an item photo and/or hint text to generate structured catalog metadata
+      parameters: []
+      responses:
+        '200':
+          description: Structured item classification, valuation, and suggested wants
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageBase64:
+                  type: string
+                  minLength: 1
+                hintText:
+                  type: string
+                  maxLength: 300
+                locale:
+                  type: string
+                  enum:
+                    - es
+                    - en
+                  default: es
+              additionalProperties: false
+  /api/v1/items/upload-image:
+    post:
+      operationId: ItemsController_uploadImage
+      summary: Upload a base64 item image to Supabase Storage
+      parameters: []
+      responses:
+        '201':
+          description: Public image URL returned
+        '400':
+          description: Invalid base64 image payload
+        '401':
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageBase64:
+                  type: string
+                  minLength: 1
+                image:
+                  type: string
+                  minLength: 1
+                dataUrl:
+                  type: string
+                  minLength: 1
+                base64:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+              additionalProperties: false
+  /api/v1/ai/analyze-photo:
+    post:
+      operationId: AiController_analyzePhoto
+      summary: Analyze an item photo and/or hint text to generate structured catalog metadata
+      parameters: []
+      responses:
+        '200':
+          description: Structured item classification, valuation, and suggested wants
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageBase64:
+                  type: string
+                  minLength: 1
+                hintText:
+                  type: string
+                  maxLength: 300
+                locale:
+                  type: string
+                  enum:
+                    - es
+                    - en
+                  default: es
+              additionalProperties: false
+  /api/v1/ai/estimate-value:
+    post:
+      operationId: AiController_estimateValue
+      summary: Estimate fair circular swap value (USD) for an item
+      parameters: []
+      responses:
+        '200':
+          description: Estimated swap value range, tags, and reasoning
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 140
+                category:
+                  type: string
+                  minLength: 2
+                  maxLength: 80
+                condition:
+                  type: string
+                  enum:
+                    - LIKE_NEW
+                    - EXCELLENT
+                    - GOOD
+                    - FOR_PARTS
+                description:
+                  type: string
+                  maxLength: 2000
+              required:
+                - name
+                - category
+                - condition
+              additionalProperties: false
+  /api/v1/ai/explain-route:
+    post:
+      operationId: AiController_explainRoute
+      summary: Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route
+      parameters: []
+      responses:
+        '200':
+          description: Spanish explanation and fairness score
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                objectiveText:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      userName:
+                        type: string
+                        minLength: 1
+                      givesItemName:
+                        type: string
+                        minLength: 1
+                      givesItemValue:
+                        type: number
+                        minimum: 0
+                      receivesItemName:
+                        type: string
+                        minLength: 1
+                      receivesItemValue:
+                        type: number
+                        minimum: 0
+                    required:
+                      - userName
+                      - givesItemName
+                      - givesItemValue
+                      - receivesItemName
+                      - receivesItemValue
+                    additionalProperties: false
+                  minItems: 1
+                  maxItems: 10
+                locale:
+                  type: string
+                  enum:
+                    - es
+                    - en
+              required:
+                - objectiveText
+                - steps
+              additionalProperties: false
+  /api/v1/routes/search:
+    post:
+      operationId: RoutesController_searchRoutes
+      summary: Discover optimal 2-, 3-, and 4-hop circular swap routes matching the user objective
+      parameters: []
+      responses:
+        '200':
+          description: Ranked circular swap routes enriched with AI explanations
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offeredItemId:
+                  type: string
+                  minLength: 1
+                objectiveText:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+                desiredCategory:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                maxSteps:
+                  type: integer
+                  minimum: 2
+                  maximum: 4
+                  default: 4
+                valueTolerancePct:
+                  type: number
+                  minimum: 10
+                  maximum: 70
+                  default: 45
+                locale:
+                  type: string
+                  enum:
+                    - es
+                    - en
+                  default: es
+              required:
+                - objectiveText
+              additionalProperties: false
+  /api/v1/routes/find:
+    post:
+      operationId: RoutesController_findRoutesAlias
+      summary: Alias endpoint to discover multi-hop circular swap routes
+      parameters: []
+      responses:
+        '200':
+          description: Ranked circular swap routes enriched with AI explanations
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offeredItemId:
+                  type: string
+                  minLength: 1
+                objectiveText:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+                desiredCategory:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+                maxSteps:
+                  type: integer
+                  minimum: 2
+                  maximum: 4
+                  default: 4
+                valueTolerancePct:
+                  type: number
+                  minimum: 10
+                  maximum: 70
+                  default: 45
+                locale:
+                  type: string
+                  enum:
+                    - es
+                    - en
+                  default: es
+              required:
+                - objectiveText
+              additionalProperties: false
+  /api/v1/routes/propose:
+    post:
+      operationId: RoutesController_proposeRoute
+      summary: Propose a circular swap route, lock involved items, and notify participants
+      parameters: []
+      responses:
+        '201':
+          description: Persisted swap route proposal with locked items
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '409':
+          description: One or more items are already locked in another proposal
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                objectiveText:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+                matchScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                aiExplanation:
+                  type: string
+                  maxLength: 2000
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      stepOrder:
+                        type: integer
+                        minimum: 0
+                        maximum: 10
+                      userId:
+                        type: string
+                        minLength: 1
+                      givesItemId:
+                        type: string
+                        minLength: 1
+                      receivesItemId:
+                        type: string
+                        minLength: 1
+                    required:
+                      - stepOrder
+                      - userId
+                      - givesItemId
+                      - receivesItemId
+                    additionalProperties: false
+                  minItems: 2
+                  maxItems: 4
+              required:
+                - objectiveText
+                - matchScore
+                - steps
+              additionalProperties: false
+  /api/v1/routes/{id}/propose:
+    post:
+      operationId: RoutesController_proposeRouteById
+      summary: OpenAPI path-compatible endpoint to propose a discovered circular swap route
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Persisted swap route proposal with locked items
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '409':
+          description: One or more items are already locked in another proposal
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                objectiveText:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+                matchScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                aiExplanation:
+                  type: string
+                  maxLength: 2000
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      stepOrder:
+                        type: integer
+                        minimum: 0
+                        maximum: 10
+                      userId:
+                        type: string
+                        minLength: 1
+                      givesItemId:
+                        type: string
+                        minLength: 1
+                      receivesItemId:
+                        type: string
+                        minLength: 1
+                    required:
+                      - stepOrder
+                      - userId
+                      - givesItemId
+                      - receivesItemId
+                    additionalProperties: false
+                  minItems: 2
+                  maxItems: 4
+              required:
+                - objectiveText
+                - matchScore
+                - steps
+              additionalProperties: false
+  /api/v1/routes:
+    get:
+      operationId: RoutesController_listMyRoutes
+      summary: List all persisted swap routes where the authenticated user is initiator or participant
+      parameters: []
+      responses:
+        '200':
+          description: User swap routes ordered by updatedAt DESC
+        '401':
+          description: Unauthorized
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+  /api/v1/routes/{id}:
+    get:
+      operationId: RoutesController_getRouteById
+      summary: Get a single persisted swap route by ID or code
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Swap route detail
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap route not found
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+  /api/v1/routes/{id}/respond:
+    post:
+      operationId: RoutesController_respondToRoute
+      summary: Accept or reject a proposed swap route step with distributed consensus transitions
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated swap route after recording participant decision
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not a route participant
+        '404':
+          description: Swap route not found
+        '409':
+          description: Route is not in PROPOSED state
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - ACCEPTED
+                    - REJECTED
+                comment:
+                  type: string
+                  maxLength: 500
+              required:
+                - decision
+              additionalProperties: false
+  /api/v1/routes/{id}/cancel:
+    post:
+      operationId: RoutesController_cancelRoute
+      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled swap route
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not the route initiator
+        '404':
+          description: Swap route not found
+        '409':
+          description: Route is no longer pending
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+  /api/v1/routes/{id}/complete:
+    post:
+      operationId: RoutesController_completeRoute
+      summary: Confirm delivery and finalize a confirmed circular swap route, updating items and eco metrics
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated or finalized COMPLETED swap route
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not a route participant
+        '404':
+          description: Swap route not found
+        '409':
+          description: Route is not in CONFIRMED state
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+  /api/v1/proposals:
+    get:
+      operationId: ProposalsController_listMyRoutes
+      summary: List all barter proposals where the authenticated user is initiator or participant
+      parameters: []
+      responses:
+        '200':
+          description: User swap route proposals ordered by updatedAt DESC
+        '401':
+          description: Unauthorized
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+    post:
+      operationId: ProposalsController_proposeRoute
+      summary: Create exchange proposal, lock involved items, and notify participants
+      parameters: []
+      responses:
+        '201':
+          description: Persisted swap route proposal with locked items
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '409':
+          description: One or more items are already locked in another proposal
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                objectiveText:
+                  type: string
+                  minLength: 2
+                  maxLength: 200
+                matchScore:
+                  type: number
+                  minimum: 0
+                  maximum: 100
+                aiExplanation:
+                  type: string
+                  maxLength: 2000
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      stepOrder:
+                        type: integer
+                        minimum: 0
+                        maximum: 10
+                      userId:
+                        type: string
+                        minLength: 1
+                      givesItemId:
+                        type: string
+                        minLength: 1
+                      receivesItemId:
+                        type: string
+                        minLength: 1
+                    required:
+                      - stepOrder
+                      - userId
+                      - givesItemId
+                      - receivesItemId
+                    additionalProperties: false
+                  minItems: 2
+                  maxItems: 4
+              required:
+                - objectiveText
+                - matchScore
+                - steps
+              additionalProperties: false
+  /api/v1/proposals/{id}:
+    get:
+      operationId: ProposalsController_getRouteById
+      summary: Get a single proposal by route ID or human-readable SW-XXXX code
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Swap route proposal detail
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap route proposal not found
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+  /api/v1/proposals/{id}/respond:
+    post:
+      operationId: ProposalsController_respondToRoute
+      summary: Accept or reject a proposed swap route step with distributed consensus transitions
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated swap route proposal after recording decision
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not a route participant
+        '404':
+          description: Swap route proposal not found
+        '409':
+          description: Route is not in PROPOSED state
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - ACCEPTED
+                    - REJECTED
+                comment:
+                  type: string
+                  maxLength: 500
+              required:
+                - decision
+              additionalProperties: false
+  /api/v1/proposals/{id}/cancel:
+    post:
+      operationId: ProposalsController_cancelRoute
+      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancelled swap route
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not the route initiator
+        '404':
+          description: Swap route not found
+        '409':
+          description: Route is no longer pending
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+  /api/v1/proposals/{id}/complete:
+    post:
+      operationId: ProposalsController_completeRoute
+      summary: Confirm delivery and finalize a confirmed circular swap route proposal
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Completed or updated swap route proposal
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not a route participant
+        '404':
+          description: Swap route proposal not found
+        '409':
+          description: Route is not in CONFIRMED state
+      tags:
+        - proposals
+      security:
+        - bearerAuth: []
+  /api/v1/notifications:
+    get:
+      operationId: NotificationsController_listUserNotifications
+      summary: List user notifications with unread count
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          description: Maximum items to return (default 50)
+          schema:
+            type: number
+        - name: unreadOnly
+          required: false
+          in: query
+          description: Filter by unread notifications only
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of notifications and total unread count
+        '401':
+          description: Unauthorized
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+  /api/v1/notifications/unread-count:
+    get:
+      operationId: NotificationsController_getUnreadCount
+      summary: Get total unread notifications count
+      parameters: []
+      responses:
+        '200':
+          description: Unread count object
+        '401':
+          description: Unauthorized
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+  /api/v1/notifications/read-all:
+    post:
+      operationId: NotificationsController_markAllAsReadPost
+      summary: Mark all unread notifications as read (POST)
+      parameters: []
+      responses:
+        '200':
+          description: Updated count and remaining unread count
+        '401':
+          description: Unauthorized
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+    patch:
+      operationId: NotificationsController_markAllAsReadPatch
+      summary: Mark all unread notifications as read (PATCH)
+      parameters: []
+      responses:
+        '200':
+          description: Updated count and remaining unread count
+        '401':
+          description: Unauthorized
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+  /api/v1/notifications/{id}/read:
+    patch:
+      operationId: NotificationsController_markAsReadPatch
+      summary: Mark a notification as read (PATCH)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Notification ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated notification DTO and remaining unread count
+        '401':
+          description: Unauthorized
+        '404':
+          description: Notification not found
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+    post:
+      operationId: NotificationsController_markAsReadPost
+      summary: Mark a notification as read (POST)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Notification ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated notification DTO and remaining unread count
+        '401':
+          description: Unauthorized
+        '404':
+          description: Notification not found
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+  /api/v1/notifications/{id}:
+    delete:
+      operationId: NotificationsController_deleteNotification
+      summary: Delete a notification
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Notification ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Notification not found
+      tags:
+        - Notifications
+      security:
+        - bearerAuth: []
+info:
+  title: SmartSwap API
+  description: SmartSwap circular bartering platform backend API
+  version: 2.4.0
+  contact: {}
+tags:
+  - name: Health
+    description: Service health and readiness probes
+  - name: Auth
+    description: Authentication and authorization
+  - name: Users
+    description: User accounts and profile management
+  - name: Items
+    description: Catalog and inventory management
+  - name: Routes
+    description: Circular multi-step swap route engine
+  - name: AI
+    description: AI embeddings, matching, and explanations
+  - name: Notifications
+    description: User notification center
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://smartswap-api.onrender.com
+    description: Production (Render)
 components:
   securitySchemes:
     bearerAuth:
-      type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Enter JWT Bearer token
-
-  responses:
-    BadRequestError:
-      description: Invalid request parameters or payload
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    UnauthorizedError:
-      description: Authentication is missing, invalid, or expired
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    NotFoundError:
-      description: Requested resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-
-  schemas:
-    HealthResponse:
-      type: object
-      required:
-        - status
-        - timestamp
-        - uptime
-      properties:
-        status:
-          type: string
-          example: ok
-        timestamp:
-          type: string
-          format: date-time
-          example: '2026-10-23T13:00:00Z'
-        uptime:
-          type: number
-          example: 124.5
-        version:
-          type: string
-          example: 1.0.0
-
-    User:
-      type: object
-      required:
-        - id
-        - name
-        - email
-        - avatarUrl
-        - rating
-        - location
-        - verified
-        - co2SavedKg
-      properties:
-        id:
-          type: string
-          example: user-alex
-        name:
-          type: string
-          example: Alex Morales
-        email:
-          type: string
-          format: email
-          example: alex.morales@correo.com
-        avatarUrl:
-          type: string
-          example: /src/assets/avatar-alex.svg
-        rating:
-          type: number
-          example: 4.9
-        location:
-          type: string
-          example: Bogotá, Colombia
-        verified:
-          type: boolean
-          example: true
-        co2SavedKg:
-          type: number
-          example: 14.2
-        createdAt:
-          type: string
-          format: date-time
-          example: '2026-01-15T08:00:00Z'
-
-    Item:
-      type: object
-      required:
-        - id
-        - name
-        - category
-        - condition
-        - ownerId
-        - imageUrl
-        - wants
-      properties:
-        id:
-          type: string
-          example: item-bike-1
-        name:
-          type: string
-          example: Bicicleta de Montaña Trek Marlin 7
-        category:
-          type: string
-          example: Deportes
-        condition:
-          type: string
-          example: Excelente estado
-        ownerId:
-          type: string
-          example: user-alex
-        imageUrl:
-          type: string
-          example: /src/assets/item-bike.svg
-        wants:
-          type: array
-          items:
-            type: string
-          example: [item-ball-2, item-camera-5]
-        description:
-          type: string
-          example: Bicicleta de montaña rin 29, frenos hidráulicos, 1x10 velocidades.
-        estimatedValue:
-          type: number
-          example: 450
-        createdAt:
-          type: string
-          format: date-time
-          example: '2026-02-01T10:00:00Z'
-
-    ItemListResponse:
-      type: object
-      required:
-        - data
-        - total
-        - limit
-        - offset
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Item'
-        total:
-          type: integer
-          example: 42
-        limit:
-          type: integer
-          example: 20
-        offset:
-          type: integer
-          example: 0
-
-    CreateItemDto:
-      type: object
-      required:
-        - name
-        - category
-        - condition
-        - imageUrl
-        - wants
-      properties:
-        name:
-          type: string
-          example: Nintendo Switch OLED
-        category:
-          type: string
-          example: Videojuegos
-        condition:
-          type: string
-          example: Como nuevo
-        imageUrl:
-          type: string
-          example: /src/assets/item-switch.svg
-        wants:
-          type: array
-          items:
-            type: string
-          example: [item-guitar-6]
-        description:
-          type: string
-          example: Incluye 2 mandos Joy-Con y dock original.
-        estimatedValue:
-          type: number
-          example: 300
-
-    UpdateItemDto:
-      type: object
-      properties:
-        name:
-          type: string
-        category:
-          type: string
-        condition:
-          type: string
-        imageUrl:
-          type: string
-        wants:
-          type: array
-          items:
-            type: string
-        description:
-          type: string
-        estimatedValue:
-          type: number
-
-    SwapStep:
-      type: object
-      required:
-        - fromUserId
-        - toUserId
-        - fromItemId
-        - toItemId
-      properties:
-        fromUserId:
-          type: string
-          example: user-alex
-        toUserId:
-          type: string
-          example: user-carlos
-        fromItemId:
-          type: string
-          example: item-bike-1
-        toItemId:
-          type: string
-          example: item-ball-2
-
-    SwapRoute:
-      type: object
-      required:
-        - id
-        - title
-        - stepsCount
-        - targetItemId
-        - offeredItemId
-        - participants
-        - chainItems
-        - co2SavedKg
-        - isLoop
-      properties:
-        id:
-          type: string
-          example: route-1
-        title:
-          type: string
-          example: Circuito de 4 pasos
-        stepsCount:
-          type: integer
-          example: 4
-        targetItemId:
-          type: string
-          example: item-camera-5
-        offeredItemId:
-          type: string
-          example: item-bike-1
-        participants:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-        chainItems:
-          type: array
-          items:
-            $ref: '#/components/schemas/Item'
-        co2SavedKg:
-          type: number
-          example: 18.5
-        isLoop:
-          type: boolean
-          example: true
-
-    FindRoutesDto:
-      type: object
-      required:
-        - haveItemId
-        - wantItemId
-      properties:
-        haveItemId:
-          type: string
-          example: item-bike-1
-        wantItemId:
-          type: string
-          example: item-camera-5
-        maxSwaps:
-          type: integer
-          default: 5
-          example: 5
-        maxRoutes:
-          type: integer
-          default: 3
-          example: 3
-
-    Proposal:
-      type: object
-      required:
-        - id
-        - targetItemId
-        - offeredItemId
-        - proposerUserId
-        - recipientUserId
-        - status
-        - createdAt
-      properties:
-        id:
-          type: string
-          example: prop-101
-        targetItemId:
-          type: string
-          example: item-camera-5
-        offeredItemId:
-          type: string
-          example: item-bike-1
-        proposerUserId:
-          type: string
-          example: user-alex
-        recipientUserId:
-          type: string
-          example: user-sofia
-        status:
-          type: string
-          enum: [pending, accepted, declined, completed]
-          example: pending
-        createdAt:
-          type: string
-          format: date-time
-          example: '2026-10-23T11:30:00Z'
-
-    CreateProposalDto:
-      type: object
-      required:
-        - targetItemId
-        - offeredItemId
-        - recipientUserId
-      properties:
-        targetItemId:
-          type: string
-          example: item-camera-5
-        offeredItemId:
-          type: string
-          example: item-bike-1
-        recipientUserId:
-          type: string
-          example: user-sofia
-
-    Notification:
-      type: object
-      required:
-        - id
-        - type
-        - unread
-        - icon
-        - iconColor
-        - iconBg
-        - title
-        - body
-        - time
-        - badge
-      properties:
-        id:
-          type: string
-          example: notif-1
-        type:
-          type: string
-          enum: [proposal_accepted, new_route, proposal_received, proposal_declined, system]
-          example: proposal_accepted
-        unread:
-          type: boolean
-          example: true
-        icon:
-          type: string
-          example: check_circle
-        iconColor:
-          type: string
-          example: text-[#1a7a4a]
-        iconBg:
-          type: string
-          example: bg-[#e8f5ee]
-        title:
-          type: string
-          example: Carlos aceptó tu propuesta
-        body:
-          type: string
-          example: Bicicleta Trek ↔ Balón FIFA — El intercambio puede continuar.
-        time:
-          type: string
-          example: hace 5 min
-        badge:
-          type: string
-          enum: [Canje, Ruta inteligente, Sistema]
-          example: Canje
-        badgeVariant:
-          type: string
-          example: secondary-subtle
-        createdAt:
-          type: string
-          format: date-time
-          example: '2026-10-23T12:55:00Z'
-
-    RegisterDto:
-      type: object
-      required:
-        - name
-        - email
-        - password
-      properties:
-        name:
-          type: string
-          example: Alex Morales
-        email:
-          type: string
-          format: email
-          example: alex.morales@correo.com
-        password:
-          type: string
-          format: password
-          minLength: 8
-          example: CircularEconomy2025!
-        location:
-          type: string
-          example: Bogotá, Colombia
-
-    LoginDto:
-      type: object
-      required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-          example: alex.morales@correo.com
-        password:
-          type: string
-          format: password
-          example: CircularEconomy2025!
-
-    RefreshTokenDto:
-      type: object
-      required:
-        - refreshToken
-      properties:
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-    TokenPair:
-      type: object
-      required:
-        - accessToken
-        - refreshToken
-      properties:
-        accessToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        expiresIn:
-          type: integer
-          example: 3600
-
-    AuthResponse:
-      type: object
-      required:
-        - accessToken
-        - refreshToken
-        - user
-      properties:
-        accessToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        user:
-          $ref: '#/components/schemas/User'
-
-    ErrorResponse:
-      type: object
-      required:
-        - statusCode
-        - message
-        - error
-        - timestamp
-      properties:
-        statusCode:
-          type: integer
-          example: 400
-        message:
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-          example: Validation failed
-        error:
-          type: string
-          example: Bad Request
-        timestamp:
-          type: string
-          format: date-time
-          example: '2026-10-23T13:00:00Z'
+      type: http
+      name: Authorization
+      description: Enter your JWT bearer token
+      in: header
+  schemas: {}
