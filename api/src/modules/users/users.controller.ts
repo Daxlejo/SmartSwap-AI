@@ -22,7 +22,7 @@ import {
   updateProfileSchema,
 } from './dto/update-profile.dto';
 import { PublicUserProfile, UserMapper } from './mappers/user.mapper';
-import { UsersService } from './users.service';
+import { UserStatsResponse, UsersService } from './users.service';
 
 @ApiTags('users')
 @ApiBearerAuth('bearerAuth')
@@ -40,6 +40,21 @@ export class UsersController {
   ): Promise<PublicUserProfile> {
     const user = await this.usersService.findByIdOrThrow(currentUser.sub);
     return UserMapper.toPublicProfile(user);
+  }
+
+  @Get('me/stats')
+  @ApiOperation({
+    summary: 'Get authenticated user statistics and operational metrics',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile with operational statistics',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMeStats(
+    @CurrentUser() currentUser: CurrentUserPayload,
+  ): Promise<UserStatsResponse> {
+    return this.usersService.getUserStats(currentUser.sub);
   }
 
   @Patch('me')
