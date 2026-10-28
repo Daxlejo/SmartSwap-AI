@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { aiLocaleSchema, DEFAULT_AI_LOCALE } from './ai-locale.dto';
 
 export const analyzePhotoSchema = z
   .object({
     imageBase64: z.string().trim().min(1).optional(),
     hintText: z.string().trim().max(300).optional(),
-    locale: z.enum(['es', 'en']).optional().default('es'),
+    locale: aiLocaleSchema.optional().default(DEFAULT_AI_LOCALE),
   })
   .refine(
     (data) =>
