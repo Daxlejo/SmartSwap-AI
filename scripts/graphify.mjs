@@ -114,15 +114,14 @@ function extractEndpoints(content, relPath) {
 
   // Match method definitions with decorators preceding them
   // Matches: @Get(...), @Post(...), etc. followed by any other decorators (@...), followed by method name
-  const httpDecoratorRegex = /@(Get|Post|Patch|Delete|Put)\s*\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/g;
+  // Supports @Get(), @Get('path') and @Get(['path-a', 'path-b'])
+  const httpDecoratorRegex = /@(Get|Post|Patch|Delete|Put)\s*\(\s*(?:['"`]([^'"`]*)['"`]|\[([^\]]*)\])?\s*\)/g;
   let httpMatch;
   while ((httpMatch = httpDecoratorRegex.exec(content)) !== null) {
     const httpMethod = httpMatch[1].toUpperCase();
-    let subPath = httpMatch[2] || '';
-    if (subPath && !subPath.startsWith('/')) {
-      subPath = '/' + subPath;
-    }
-    const fullPath = (baseRoute + subPath) || '/';
+    const subPaths = httpMatch[3] !== undefined
+      ? [...httpMatch[3].matchAll(/['"`]([^'"`]*)['"`]/g)].map((m) => m[1])
+      : [httpMatch[2] || ''];
 
     // Scan forward from the HTTP decorator to find method name and ApiOperation
     const sliceAfter = content.slice(httpMatch.index);
@@ -135,14 +134,17 @@ function extractEndpoints(content, relPath) {
     const summaryMatch = blockWindow.match(/@ApiOperation\s*\(\s*\{[\s\S]*?summary:\s*['"`]([^'"`]+)['"`]/);
     const summary = summaryMatch ? summaryMatch[1].replace(/\s+/g, ' ').trim() : '';
 
-    endpoints.push({
-      method: httpMethod,
-      path: fullPath,
-      controller: controllerName,
-      handler,
-      summary,
-      file: relPath,
-    });
+    for (const rawSubPath of subPaths) {
+      const subPath = rawSubPath && !rawSubPath.startsWith('/') ? '/' + rawSubPath : rawSubPath;
+      endpoints.push({
+        method: httpMethod,
+        path: (baseRoute + subPath) || '/',
+        controller: controllerName,
+        handler,
+        summary,
+        file: relPath,
+      });
+    }
   }
 
   return endpoints;
