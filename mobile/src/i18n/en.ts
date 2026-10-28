@@ -187,6 +187,22 @@ export const en: TranslationSchema = {
     viewRoute: 'View route',
     chainDelivery: 'Chain delivery • View details',
   },
+  proposalSent: {
+    title: 'Proposal sent!',
+    description: 'Your swap proposal is on its way to the {{count}} circuit participants.',
+    summaryAria: 'Summary of the {{count}}-step route',
+    summaryTitle: 'Circuit summary',
+    steps: '{{count}} steps',
+    you: 'You',
+    estimatedImpact: 'Estimated impact',
+    co2Saved: '{{kg}} kg CO₂ saved',
+    viewSwaps: 'View my swaps',
+    backHome: 'Back to home',
+  },
+  splash: {
+    aria: 'SmartSwap splash screen - Tap to continue',
+    subtitle: 'P2P circular swap network',
+  },
   common: {
     loading: 'Loading...',
     error: 'An unexpected error occurred.',

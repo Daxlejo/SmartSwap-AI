@@ -185,6 +185,22 @@ export const es = {
     viewRoute: 'Ver ruta',
     chainDelivery: 'Entrega en cadena • Ver detalle',
   },
+  proposalSent: {
+    title: '¡Propuesta Enviada!',
+    description: 'Tu propuesta de canje está en camino a los {{count}} participantes del circuito.',
+    summaryAria: 'Resumen de la ruta de {{count}} pasos',
+    summaryTitle: 'Resumen del Circuito',
+    steps: '{{count}} pasos',
+    you: 'Tú',
+    estimatedImpact: 'Impacto estimado',
+    co2Saved: '{{kg}} kg CO₂ ahorrados',
+    viewSwaps: 'Ver Mis Canjes',
+    backHome: 'Volver al Inicio',
+  },
+  splash: {
+    aria: 'Pantalla de inicio SmartSwap - Toca para continuar',
+    subtitle: 'Red de Canje Circular P2P',
+  },
   common: {
     loading: 'Cargando...',
     error: 'Ha ocurrido un error inesperado.',
