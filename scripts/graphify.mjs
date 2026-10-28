@@ -268,7 +268,7 @@ function run() {
     '- **`routes/`**: `routes.controller.ts`, `routes.service.ts`, `engine/swap-graph.engine.ts`, `engine/route-scoring.strategy.ts` — Bounded DFS cycle finder (k=2,3,4) & atomic swap consensus.',
     '- **`ai/`**: `ai.controller.ts`, `services/ai-vision.service.ts`, `services/ai-explainer.service.ts`, `services/openai-client.service.ts` — OpenAI vision, valuation, and route explanation.',
     '- **`health/`**: `health.controller.ts` — DB probe and service liveness check.',
-    '- **`notifications/`**: `notifications.module.ts` — Day 5 push/in-app notification engine (pending).',
+    '- **`notifications/`**: `notifications.controller.ts`, `notifications.service.ts`, `mappers/notification.mapper.ts` — In-app notification center (list, unread count, read, delete).',
     '- **`common/` & `prisma/`**: `jwt-auth.guard.ts`, `zod-validation.pipe.ts`, `prisma.service.ts` (soft-delete/logging).',
     '',
     '## 4. Mobile Architecture (`mobile/src/`)',
