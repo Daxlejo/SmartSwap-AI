@@ -3,6 +3,7 @@ import type { Item, User } from '@/types';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface RouteStepProps {
   fromUser: User;
@@ -21,6 +22,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
   isLast = false,
   onItemClick,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="relative flex gap-3.5">
       {/* Vertical Timeline Connector */}
@@ -50,7 +52,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
               </span>
               {isFirst && (
                 <Badge variant="primary" className="px-2 py-0.2">
-                  Tú
+                  {t('cards.you')}
                 </Badge>
               )}
               <Icon
@@ -87,7 +89,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
                 {itemGiven.name}
               </p>
               <p className="font-label-sm text-label-sm text-primary font-bold mt-0.5">
-                Entrega en cadena • Ver detalle
+                {t('cards.chainDelivery')}
               </p>
             </div>
             <Icon name="chevron_right" size="md" className="text-on-surface-variant shrink-0" />
