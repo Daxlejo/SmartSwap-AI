@@ -9,10 +9,12 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const RouteDetailScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { routeId: routeIdParam } = useParams<{ routeId: string }>();
   const { routes } = useApp();
 
@@ -57,7 +59,7 @@ export const RouteDetailScreen: React.FC = () => {
   const matchPct = formatMatchScore(route.matchScore);
   const aiExplanationText =
     route.aiExplanation ||
-    `Ciclo circular equilibrado de ${route.stepsCount} pasos: los valores estimados de los artículos están balanceados sin requerir dinero adicional, evitando ${route.co2SavedKg} kg de CO₂.`;
+    t('routeDetail.fallbackExplanation', { count: route.stepsCount, kg: route.co2SavedKg });
 
   return (
     <div className="flex flex-col h-full bg-surface relative">
@@ -66,7 +68,7 @@ export const RouteDetailScreen: React.FC = () => {
           <Badge variant="success" className="flex items-center gap-1">
             <Icon name="check" size="xs" />
             <span>
-              {route.stepsCount} {route.stepsCount === 1 ? 'cambio' : 'cambios'}
+              {t('routeDetail.swapCount', { count: route.stepsCount })}
             </span>
           </Badge>
           <Badge
@@ -78,33 +80,33 @@ export const RouteDetailScreen: React.FC = () => {
           </Badge>
           <Badge variant="primary-subtle" className="flex items-center gap-1">
             <Icon name="auto_awesome" size="xs" />
-            <span>{matchPct}% coincidencia</span>
+            <span>{t('routeDetail.match', { percent: matchPct })}</span>
           </Badge>
         </div>
         <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-1">
-          Detalle de la ruta
+          {t('routeDetail.title')}
         </h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Esta ruta circular permite que todos obtengan lo que buscan.
+          {t('routeDetail.subtitle')}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-margin py-5 space-y-5">
         {/* AI Fairness & Environmental Impact Card */}
         <section
-          aria-label="Explicación IA de equidad"
+          aria-label={t('routeDetail.aiAria')}
           className="rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-2.5 shadow-2xs"
         >
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 text-primary">
               <Icon name="psychology" size="sm" filled />
               <h3 className="font-headline-sm text-headline-sm font-bold">
-                Análisis IA de Equidad Circular
+                {t('routeDetail.aiTitle')}
               </h3>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-surface-container-high font-label-sm text-[11px] font-bold text-[#1a7a4a] flex items-center gap-1">
               <Icon name="eco" size="xs" filled />
-              {route.co2SavedKg} kg CO₂ ahorrados
+              {t('routeDetail.co2Saved', { kg: route.co2SavedKg })}
             </span>
           </div>
 
@@ -138,7 +140,7 @@ export const RouteDetailScreen: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <Icon name="payments" size="xs" className="text-primary" />
                     <span className="font-label-sm text-[11px] text-on-surface-variant">
-                      Valor estimado:
+                      {t('routeDetail.estimatedValue')}
                     </span>
                     <span className="font-label-sm text-[11px] font-bold text-on-surface">
                       ${stepValue} USD
@@ -157,10 +159,10 @@ export const RouteDetailScreen: React.FC = () => {
                       className="text-[10px] py-0"
                     >
                       {acceptance === 'ACCEPTED'
-                        ? 'Aceptado'
+                        ? t('routeDetail.acceptance.accepted')
                         : acceptance === 'DECLINED'
-                          ? 'Rechazado'
-                          : 'Pendiente'}
+                          ? t('routeDetail.acceptance.declined')
+                          : t('routeDetail.acceptance.pending')}
                     </Badge>
                   )}
                 </div>
@@ -172,7 +174,7 @@ export const RouteDetailScreen: React.FC = () => {
 
       <div className="p-margin bg-surface border-t border-surface-container-high/60 mt-auto">
         <Button variant="primary" className="w-full py-3.5" onClick={handlePropose}>
-          Proponer intercambio
+          {t('routeDetail.propose')}
         </Button>
       </div>
 
