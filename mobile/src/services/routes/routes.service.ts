@@ -1,4 +1,8 @@
 import { apiClient } from '@/services/http/apiClient';
+import {
+  preferencesStorage,
+  type LocalePreference,
+} from '@/services/storage/preferencesStorage';
 import { normalizeUser, type RawUserDto } from '@/services/auth/auth.service';
 import { normalizeItem, type RawItemDto } from '@/services/items/items.service';
 import { findRoutes as findLocalRoutes } from '@/lib/routeFinder';
@@ -54,6 +58,8 @@ export interface SearchRoutesPayload {
   desiredCategory?: string;
   maxSteps?: number;
   valueTolerancePct?: number;
+  /** Language for AI route explanations; defaults to the user's app locale. */
+  locale?: LocalePreference;
 }
 
 export interface ProposeRouteStepInput {
@@ -597,7 +603,7 @@ export const routesService = {
     try {
       const response = await apiClient.post<SwapRouteDto[] | RoutesListEnvelope>(
         '/routes/search',
-        payload,
+        { ...payload, locale: payload.locale ?? preferencesStorage.getLocale() },
       );
       return extractRoutesArray(response);
     } catch {

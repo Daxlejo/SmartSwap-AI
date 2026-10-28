@@ -168,10 +168,21 @@ describe('routesService & mapApiRouteToUiRoute', () => {
       const routes = await routesService.searchRoutes(payload);
 
       expect(postSpy).toHaveBeenCalledTimes(1);
-      expect(postSpy).toHaveBeenCalledWith('/routes/search', payload);
+      expect(postSpy).toHaveBeenCalledWith('/routes/search', { ...payload, locale: 'es' });
       expect(routes).toHaveLength(1);
       expect(routes[0].id).toBe('route-cycle-301');
       expect(routes[0].aiExplanation).toBe(sampleApiRoute.aiExplanation);
+    });
+
+    it('sends the explicit locale when provided', async () => {
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce([sampleApiRoute]);
+
+      await routesService.searchRoutes({ objectiveText: 'Mirrorless camera', locale: 'en' });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        '/routes/search',
+        expect.objectContaining({ locale: 'en' }),
+      );
     });
 
     it('gracefully falls back to local routeFinder when offline or backend unreachable', async () => {
