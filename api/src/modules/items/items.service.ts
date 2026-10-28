@@ -389,6 +389,21 @@ export class ItemsService {
         where: { itemId },
       });
 
+      // Route steps reference items with onDelete: Restrict, so items with swap history are archived instead.
+      const routeStepsCount = await tx.swapRouteStep.count({
+        where: {
+          OR: [{ givesItemId: itemId }, { receivesItemId: itemId }],
+        },
+      });
+
+      if (routeStepsCount > 0) {
+        await tx.item.update({
+          where: { id: itemId },
+          data: { status: ItemStatus.ARCHIVED },
+        });
+        return;
+      }
+
       await tx.item.delete({
         where: { id: itemId },
       });

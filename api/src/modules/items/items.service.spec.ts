@@ -67,6 +67,9 @@ describe('ItemsService', () => {
       createMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    swapRouteStep: {
+      count: jest.fn().mockResolvedValue(0),
+    },
   };
 
   const mockPrismaService = {
@@ -309,6 +312,20 @@ describe('ItemsService', () => {
         ConflictException,
       );
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should archive instead of deleting when the item has swap route history', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue(mockCreatedEntity);
+      mockTx.swapRouteStep.count.mockResolvedValueOnce(2);
+
+      const result = await itemsService.remove(ownerId, itemId);
+
+      expect(mockTx.item.update).toHaveBeenCalledWith({
+        where: { id: itemId },
+        data: { status: ItemStatus.ARCHIVED },
+      });
+      expect(mockTx.item.delete).not.toHaveBeenCalled();
+      expect(result).toEqual({ deleted: true, id: itemId });
     });
   });
 });
