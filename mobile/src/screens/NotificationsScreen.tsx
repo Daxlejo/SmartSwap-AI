@@ -1,128 +1,50 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import { useApp } from '@/context/AppContext';
+import {
+  isSystemNotification,
+  type AppNotification,
+} from '@/services/notifications/notifications.service';
 import { Icon } from '@/components/ui/Icon';
-import { Badge, type BadgeProps } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 type FilterTab = 'Todas' | 'Canjes' | 'Sistema';
 
-interface NotificationItem {
-  id: string;
-  type: 'proposal_accepted' | 'new_route' | 'proposal_received' | 'proposal_declined' | 'system';
-  unread: boolean;
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  title: string;
-  body: string;
-  time: string;
-  badge: 'Canje' | 'Ruta inteligente' | 'Sistema';
-  badgeVariant: BadgeProps['variant'];
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif-1',
-    type: 'proposal_accepted',
-    unread: true,
-    icon: 'check_circle',
-    iconColor: 'text-[#1a7a4a]',
-    iconBg: 'bg-[#e8f5ee]',
-    title: 'Carlos aceptó tu propuesta',
-    body: 'Bicicleta Trek ↔ Balón FIFA — El intercambio puede continuar.',
-    time: 'hace 5 min',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-2',
-    type: 'new_route',
-    unread: true,
-    icon: 'route',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary-fixed/60',
-    title: 'Nueva ruta encontrada para ti',
-    body: 'Encontramos un circuito de 4 pasos: Bicicleta → Balón → Audífonos → Cámara',
-    time: 'hace 23 min',
-    badge: 'Ruta inteligente',
-    badgeVariant: 'tertiary-subtle',
-  },
-  {
-    id: 'notif-3',
-    type: 'proposal_received',
-    unread: true,
-    icon: 'swap_horiz',
-    iconColor: 'text-secondary',
-    iconBg: 'bg-secondary-fixed/60',
-    title: 'Mateo quiere tu bicicleta',
-    body: 'Mateo R. ofrece su Nintendo Switch OLED a cambio de tu Trek Marlin 7.',
-    time: 'hace 1 h',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-4',
-    type: 'proposal_declined',
-    unread: false,
-    icon: 'cancel',
-    iconColor: 'text-error',
-    iconBg: 'bg-error-container/60',
-    title: 'Propuesta rechazada',
-    body: 'Sofía rechazó el intercambio por la lente Sony 50mm.',
-    time: 'hace 3 h',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-5',
-    type: 'system',
-    unread: false,
-    icon: 'verified_user',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary-fixed/60',
-    title: 'Identidad verificada',
-    body: 'Tu cuenta ha sido verificada con documento oficial.',
-    time: 'ayer',
-    badge: 'Sistema',
-    badgeVariant: 'surface',
-  },
-  {
-    id: 'notif-6',
-    type: 'system',
-    unread: false,
-    icon: 'eco',
-    iconColor: 'text-[#1a7a4a]',
-    iconBg: 'bg-[#e8f5ee]',
-    title: '14.2 kg CO₂ ahorrados',
-    body: 'Llevas 23 canjes completos. ¡Sigue extendiendo la vida útil de los artículos!',
-    time: 'hace 3 días',
-    badge: 'Sistema',
-    badgeVariant: 'surface',
-  },
-];
-
 export const NotificationsScreen = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<FilterTab>('Todas');
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const {
+    notifications,
+    markNotificationReadReal,
+    markAllNotificationsReadReal,
+  } = useApp();
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
+  const handleMarkAllAsRead = async () => {
+    await markAllNotificationsReadReal();
   };
 
-  const handleToggleRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, unread: false } : item)),
-    );
+  const handleNotificationClick = async (notif: AppNotification) => {
+    if (notif.unread) {
+      await markNotificationReadReal(notif.id);
+    }
+
+    if (notif.routeId) {
+      navigate(`/swap/route/${notif.routeId}`);
+    } else {
+      navigate('/trades');
+    }
   };
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((notif) => {
       if (activeTab === 'Canjes') {
-        return notif.badge === 'Canje';
+        return !isSystemNotification(notif.type);
       }
       if (activeTab === 'Sistema') {
-        return notif.badge === 'Sistema';
+        return isSystemNotification(notif.type);
       }
       return true; // 'Todas'
     });
@@ -176,10 +98,10 @@ export const NotificationsScreen = () => {
               key={notif.id}
               role="button"
               tabIndex={0}
-              onClick={() => handleToggleRead(notif.id)}
+              onClick={() => handleNotificationClick(notif)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handleToggleRead(notif.id);
+                  handleNotificationClick(notif);
                 }
               }}
               className={clsx(
