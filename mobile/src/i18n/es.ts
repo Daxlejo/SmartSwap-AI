@@ -18,6 +18,51 @@ export const es = {
     verifiedUser: 'Usuario verificado',
     inputAction: 'Acción del campo',
   },
+  headers: {
+    routeDetail: {
+      title: 'Detalle de Ruta',
+      subtitle: 'Paso a Paso',
+    },
+    explore: {
+      title: 'Explorar',
+      subtitle: 'Catálogo P2P',
+    },
+    publish: {
+      title: 'Publicar',
+      subtitle: 'Nuevo artículo',
+    },
+    swaps: {
+      title: 'Canjes',
+      subtitle: 'Tus intercambios',
+    },
+    profile: {
+      title: 'Mi Perfil',
+    },
+    configure: {
+      title: 'Configurar Canje',
+      subtitle: 'Tengo y Busco',
+    },
+    searching: {
+      title: 'Buscando Rutas',
+      subtitle: 'Red SmartSwap',
+    },
+    results: {
+      title: 'Rutas Encontradas',
+      subtitle: 'Cadenas Circulares',
+    },
+    confirm: {
+      title: 'Confirmar Canje',
+      subtitle: 'Revisión Final',
+    },
+    sent: {
+      title: 'Propuesta Enviada',
+      subtitle: 'En Custodia',
+    },
+    notifications: {
+      title: 'Notificaciones',
+      subtitle: 'Centro de Avisos',
+    },
+  },
   auth: {
     errors: {
       missingCredentials: 'Por favor ingresa tu correo electrónico y contraseña.',

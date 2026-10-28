@@ -2,49 +2,51 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { useApp } from '@/context/AppContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const AppLayout = () => {
   const location = useLocation();
   const { currentUser } = useApp();
+  const { t } = useTranslation();
   const pathname = location.pathname;
 
   // Determine header configuration based on route
   const getHeaderProps = () => {
     if (pathname.startsWith('/swap/route/')) {
-      return { title: 'Detalle de Ruta', subtitle: 'Paso a Paso', showBack: true };
+      return { title: t('headers.routeDetail.title'), subtitle: t('headers.routeDetail.subtitle'), showBack: true };
     }
 
     switch (pathname) {
       case '/home':
         return { showNotifications: true, showProfile: true };
       case '/explore':
-        return { title: 'Explorar', subtitle: 'Catálogo P2P', showBack: true };
+        return { title: t('headers.explore.title'), subtitle: t('headers.explore.subtitle'), showBack: true };
       case '/publish':
-        return { title: 'Publicar', subtitle: 'Nuevo artículo', showBack: true };
+        return { title: t('headers.publish.title'), subtitle: t('headers.publish.subtitle'), showBack: true };
       case '/swaps':
       case '/trades':
-        return { title: 'Canjes', subtitle: 'Tus intercambios', showBack: true };
+        return { title: t('headers.swaps.title'), subtitle: t('headers.swaps.subtitle'), showBack: true };
       case '/profile':
         return {
-          title: 'Mi Perfil',
+          title: t('headers.profile.title'),
           subtitle: currentUser?.name || 'Alex Morales',
           showBack: true,
           showProfile: false,
         };
       case '/swap/configure':
-        return { title: 'Configurar Canje', subtitle: 'Tengo y Busco', showBack: true };
+        return { title: t('headers.configure.title'), subtitle: t('headers.configure.subtitle'), showBack: true };
       case '/swap/searching':
-        return { title: 'Buscando Rutas', subtitle: 'Red SmartSwap', showBack: true };
+        return { title: t('headers.searching.title'), subtitle: t('headers.searching.subtitle'), showBack: true };
       case '/swap/results':
-        return { title: 'Rutas Encontradas', subtitle: 'Cadenas Circulares', showBack: true };
+        return { title: t('headers.results.title'), subtitle: t('headers.results.subtitle'), showBack: true };
       case '/swap/proposal/confirm':
       case '/swap/confirm':
-        return { title: 'Confirmar Canje', subtitle: 'Revisión Final', showBack: true };
+        return { title: t('headers.confirm.title'), subtitle: t('headers.confirm.subtitle'), showBack: true };
       case '/swap/proposal/sent':
       case '/swap/sent':
-        return { title: 'Propuesta Enviada', subtitle: 'En Custodia', showBack: true };
+        return { title: t('headers.sent.title'), subtitle: t('headers.sent.subtitle'), showBack: true };
       case '/notifications':
-        return { title: 'Notificaciones', subtitle: 'Centro de Avisos', showBack: true, showNotifications: false };
+        return { title: t('headers.notifications.title'), subtitle: t('headers.notifications.subtitle'), showBack: true, showNotifications: false };
       default:
         return { showNotifications: true, showProfile: true };
     }

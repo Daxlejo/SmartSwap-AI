@@ -20,6 +20,51 @@ export const en: TranslationSchema = {
     verifiedUser: 'Verified user',
     inputAction: 'Field action',
   },
+  headers: {
+    routeDetail: {
+      title: 'Route details',
+      subtitle: 'Step by step',
+    },
+    explore: {
+      title: 'Explore',
+      subtitle: 'P2P catalog',
+    },
+    publish: {
+      title: 'Publish',
+      subtitle: 'New item',
+    },
+    swaps: {
+      title: 'Swaps',
+      subtitle: 'Your trades',
+    },
+    profile: {
+      title: 'My profile',
+    },
+    configure: {
+      title: 'Configure swap',
+      subtitle: 'I have & I want',
+    },
+    searching: {
+      title: 'Searching routes',
+      subtitle: 'SmartSwap network',
+    },
+    results: {
+      title: 'Routes found',
+      subtitle: 'Circular chains',
+    },
+    confirm: {
+      title: 'Confirm swap',
+      subtitle: 'Final review',
+    },
+    sent: {
+      title: 'Proposal sent',
+      subtitle: 'In custody',
+    },
+    notifications: {
+      title: 'Notifications',
+      subtitle: 'Notification center',
+    },
+  },
   auth: {
     errors: {
       missingCredentials: 'Please enter your email and password.',
