@@ -20,6 +20,12 @@ export const en: TranslationSchema = {
     verifiedUser: 'Verified user',
     inputAction: 'Field action',
   },
+  demo: {
+    title: 'Demo accounts',
+    description: 'Sign in with one tap as any circuit participant to show a live swap.',
+    signInAs: 'Sign in as {{name}}',
+    failed: 'Could not switch accounts. Make sure the seeder has run.',
+  },
   serverStatus: {
     waking: 'Waking up the server… the first load can take up to a minute.',
     offline: 'Cannot reach the server. Retrying…',

@@ -18,6 +18,12 @@ export const es = {
     verifiedUser: 'Usuario verificado',
     inputAction: 'Acción del campo',
   },
+  demo: {
+    title: 'Cuentas demo',
+    description: 'Entra con un toque como cualquier participante del circuito para mostrar un trueque en vivo.',
+    signInAs: 'Entrar como {{name}}',
+    failed: 'No se pudo cambiar de cuenta. Verifica que el seeder se haya ejecutado.',
+  },
   serverStatus: {
     waking: 'Despertando el servidor… la primera carga puede tardar hasta 1 minuto.',
     offline: 'Sin conexión con el servidor. Reintentando…',
