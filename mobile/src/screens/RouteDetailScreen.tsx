@@ -13,7 +13,7 @@ import { Icon } from '@/components/ui/Icon';
 export const RouteDetailScreen: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { id: routeIdParam } = useParams<{ id: string }>();
+  const { routeId: routeIdParam } = useParams<{ routeId: string }>();
   const { routes } = useApp();
 
   const initialRoute =
