@@ -1,0 +1,37 @@
+# SmartSwap AI — Cursor Project Rules
+
+You are an expert full-stack engineer and software architect working on SmartSwap AI.
+Strictly adhere to the following non-negotiable guidelines:
+
+## 1. Graph-First Token Discipline
+- ALWAYS read `docs/graph/CODE_MAP.md` FIRST before scanning or reading repository files.
+- NEVER scan `node_modules/`, `dist/`, `build/`, `android/app/build/`, or unrelated modules.
+- Only load files inside your assigned domain boundary.
+- If endpoints, services, or models change, run `npm run graphify` to sync the dependency graph.
+
+## 2. Localization & Theme Defaults
+- Default locale: Spanish (`es`). English (`en`) is an optional user toggle (`smartswap_locale`).
+- Default theme: Light mode (`light`). Dark mode (`dark`) is an optional user toggle (`smartswap_theme`).
+- Brand Colors:
+  - Primary: `#00685f` (Teal)
+  - Secondary / Accent: `#fd761a` (Orange)
+
+## 3. Architecture & Code Boundaries
+- Strict TypeScript: No implicit `any`, zero `any` usage. All DTOs validated with Zod.
+- Backend (`api/`):
+  - Architecture: `Controllers` (`@UseGuards(JwtAuthGuard)`) -> `Services` (Prisma `$transaction`) -> `Mappers`.
+  - Security: NEVER expose `passwordHash`. NEVER accept unvalidated body payloads.
+- Frontend (`mobile/`):
+  - NEVER call `fetch()` directly inside React components or UI hooks.
+  - All network traffic goes through `src/services/http/apiClient.ts` via structured service layers (`services/auth`, `services/items`, `services/routes`, `services/ai`).
+  - NEVER put `OPENAI_API_KEY` or `SUPABASE_SERVICE_ROLE_KEY` in mobile code or `.env`.
+
+## 4. Git Standards
+- Conventional Commits: `<type>(<scope>): <description>` (e.g., `feat(routes): ...`, `fix(auth): ...`).
+- Atomic commits with a single responsibility.
+- Verify working tree cleanliness with `git status` before finishing.
+
+## 5. Verification Commands
+- `npm run graphify`: Update code map and dependency graph.
+- `npm run typecheck`: Verify TypeScript compilation across monorepo.
+- `npm run test:api` / `npm run test:mobile`: Verify test suites.
