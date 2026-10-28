@@ -19,6 +19,7 @@ import switchImg from '@/assets/item-switch.svg';
 import headphonesImg from '@/assets/item-headphones.svg';
 import cameraImg from '@/assets/item-camera.svg';
 import lensImg from '@/assets/item-lens.svg';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
@@ -67,6 +68,7 @@ const DEFAULT_RECEIVED_PROPOSALS: ReceivedProposal[] = [
 
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     routes,
     currentUser,
@@ -126,7 +128,7 @@ export const TradesScreen: React.FC = () => {
           offeredItemImg: offered?.imageUrl || bikeImg,
           targetItemName: target?.name || 'Cámara Fujifilm X-T30 II',
           targetItemImg: target?.imageUrl || cameraImg,
-          timeAgo: 'Recién recibida',
+          timeAgo: t('trades.justReceived'),
           status,
         };
       });
@@ -137,7 +139,7 @@ export const TradesScreen: React.FC = () => {
         return [...apiProposals, ...prev.filter((p) => !apiIds.has(p.id))];
       });
     }
-  }, [routes, currentUser?.id]);
+  }, [routes, currentUser?.id, t]);
 
   const handleAcceptProposal = async (id: string) => {
     setProcessingId(id);
@@ -172,7 +174,7 @@ export const TradesScreen: React.FC = () => {
   const handleCancelSentProposal = async () => {
     setSentCancelled(true);
     try {
-      await respondToProposalReal(primaryActiveRoute.id, 'REJECTED', 'Propuesta cancelada');
+      await respondToProposalReal(primaryActiveRoute.id, 'REJECTED', t('trades.cancelledComment'));
     } catch {
       // Keep local cancelled state
     }
@@ -205,8 +207,8 @@ export const TradesScreen: React.FC = () => {
           img: item.imageUrl || bikeImg,
           user:
             idx === 0
-              ? 'Tú'
-              : primaryActiveRoute.participants[idx]?.name || `Paso ${idx + 1}`,
+              ? t('trades.you')
+              : primaryActiveRoute.participants[idx]?.name || t('trades.step', { count: idx + 1 }),
         }))
       : defaultChainSteps;
 
@@ -228,10 +230,10 @@ export const TradesScreen: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-          Mis Canjes
+          {t('trades.title')}
         </h1>
         <Badge variant="primary-subtle" icon="verified_user">
-          Modo Seguro
+          {t('trades.safeMode')}
         </Badge>
       </div>
 
@@ -246,7 +248,7 @@ export const TradesScreen: React.FC = () => {
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>Recibidas</span>
+          <span>{t('trades.tabs.received')}</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               activeTab === 'recibidas'
@@ -267,7 +269,7 @@ export const TradesScreen: React.FC = () => {
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>Enviadas</span>
+          <span>{t('trades.tabs.sent')}</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               activeTab === 'enviadas'
@@ -288,7 +290,7 @@ export const TradesScreen: React.FC = () => {
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>En Curso</span>
+          <span>{t('trades.tabs.inProgress')}</span>
           <span
             className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
               activeTab === 'en_curso'
@@ -342,7 +344,11 @@ export const TradesScreen: React.FC = () => {
                   <Badge
                     variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}
                   >
-                    {isAccepted ? 'Aceptado' : isDeclined ? 'Rechazado' : 'Pendiente'}
+                    {isAccepted
+                      ? t('trades.status.accepted')
+                      : isDeclined
+                        ? t('trades.status.declined')
+                        : t('trades.status.pending')}
                   </Badge>
                 </div>
 
@@ -357,7 +363,7 @@ export const TradesScreen: React.FC = () => {
                     />
                     <div className="flex flex-col min-w-0">
                       <span className="font-label-sm text-[10px] text-secondary font-bold uppercase tracking-wider">
-                        Ofrece:
+                        {t('trades.offers')}
                       </span>
                       <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
                         {proposal.offeredItemName}
@@ -376,7 +382,7 @@ export const TradesScreen: React.FC = () => {
                     />
                     <div className="flex flex-col min-w-0">
                       <span className="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider">
-                        A cambio de:
+                        {t('trades.inExchangeFor')}
                       </span>
                       <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
                         {proposal.targetItemName}
@@ -390,13 +396,13 @@ export const TradesScreen: React.FC = () => {
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary">
                     <Icon name="check_circle" size="sm" filled />
                     <span className="font-label-md text-label-md font-bold">
-                      ¡Aceptado! El canje continúa.
+                      {t('trades.acceptedMessage')}
                     </span>
                   </div>
                 ) : isDeclined ? (
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm">
                     <Icon name="cancel" size="sm" />
-                    <span>Propuesta rechazada</span>
+                    <span>{t('trades.declinedMessage')}</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-end gap-2 pt-1 border-t border-surface-container-low">
@@ -406,7 +412,7 @@ export const TradesScreen: React.FC = () => {
                       disabled={isBusy}
                       onClick={() => handleDeclineProposal(proposal.id)}
                     >
-                      Rechazar
+                      {t('trades.decline')}
                     </Button>
                     <Button
                       variant="primary"
@@ -414,7 +420,7 @@ export const TradesScreen: React.FC = () => {
                       disabled={isBusy}
                       onClick={() => handleAcceptProposal(proposal.id)}
                     >
-                      Aceptar
+                      {t('trades.accept')}
                     </Button>
                   </div>
                 )}
@@ -431,10 +437,10 @@ export const TradesScreen: React.FC = () => {
             <div className="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container-high/60 text-center">
               <Icon name="check_circle" size="lg" className="text-primary mb-2" />
               <p className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                Propuesta cancelada
+                {t('trades.cancelledTitle')}
               </p>
               <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                Tu artículo ha vuelto a estar disponible para otras propuestas circulares.
+                {t('trades.cancelledDescription')}
               </p>
               <Button
                 variant="outline"
@@ -442,7 +448,7 @@ export const TradesScreen: React.FC = () => {
                 className="mt-3"
                 onClick={() => setSentCancelled(false)}
               >
-                Deshacer
+                {t('trades.undo')}
               </Button>
             </div>
           ) : (
@@ -457,15 +463,15 @@ export const TradesScreen: React.FC = () => {
                   />
                   <div>
                     <h2 className="font-headline-sm text-[15px] font-bold text-on-surface">
-                      Tu oferta a Carlos V.
+                      {t('trades.offerTo', { name: 'Carlos V.' })}
                     </h2>
                     <span className="font-body-sm text-[11px] text-on-surface-variant">
-                      Enviada hace 1 hora
+                      {t('trades.sentAgo')}
                     </span>
                   </div>
                 </div>
 
-                <Badge variant="warning">En revisión</Badge>
+                <Badge variant="warning">{t('trades.inReview')}</Badge>
               </div>
 
               {/* Trade exchange flow: Bicicleta Trek -> Balón FIFA */}
@@ -478,7 +484,7 @@ export const TradesScreen: React.FC = () => {
                   />
                   <div className="flex flex-col min-w-0">
                     <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
-                      Ofreces
+                      {t('trades.youOffer')}
                     </span>
                     <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
                       Bicicleta Trek
@@ -498,7 +504,7 @@ export const TradesScreen: React.FC = () => {
                   />
                   <div className="flex flex-col min-w-0">
                     <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
-                      A cambio
+                      {t('trades.inExchange')}
                     </span>
                     <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
                       Balón FIFA
@@ -515,7 +521,7 @@ export const TradesScreen: React.FC = () => {
                   onClick={handleCancelSentProposal}
                   className="text-error hover:bg-error-container/20"
                 >
-                  Cancelar propuesta
+                  {t('trades.cancelProposal')}
                 </Button>
               </div>
             </div>
@@ -535,12 +541,12 @@ export const TradesScreen: React.FC = () => {
                 </span>
                 <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
                   {isPrimaryRouteCompleted
-                    ? `¡Circuito de ${totalStepsCount} pasos completado!`
-                    : `Paso ${acceptedStepsCount} de ${totalStepsCount} completado`}
+                    ? t('trades.circuitCompleted', { count: totalStepsCount })
+                    : t('trades.stepProgress', { done: acceptedStepsCount, total: totalStepsCount })}
                 </h2>
               </div>
               <Badge variant={isPrimaryRouteCompleted ? 'success' : 'primary'}>
-                {isPrimaryRouteCompleted ? 'Completado' : 'Activo'}
+                {isPrimaryRouteCompleted ? t('trades.completed') : t('trades.active')}
               </Badge>
             </div>
 
@@ -556,8 +562,8 @@ export const TradesScreen: React.FC = () => {
                 <span>Progreso: {progressPct}%</span>
                 <span>
                   {isPrimaryRouteCompleted
-                    ? 'Entrega confirmada'
-                    : `Faltan ${Math.max(0, totalStepsCount - acceptedStepsCount)} pasos`}
+                    ? t('trades.deliveryConfirmed')
+                    : t('trades.stepsLeft', { count: Math.max(0, totalStepsCount - acceptedStepsCount) })}
                 </span>
               </div>
             </div>
@@ -566,7 +572,7 @@ export const TradesScreen: React.FC = () => {
             <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
               <div className="flex items-center justify-between">
                 <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold">
-                  Cadena del Circuito:
+                  {t('trades.circuitChain')}
                 </span>
                 <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a]">
                   -{primaryActiveRoute.co2SavedKg ?? 42} kg CO₂
@@ -592,7 +598,7 @@ export const TradesScreen: React.FC = () => {
                           />
                           {idx === 0 && (
                             <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
-                              Tú
+                              {t('trades.you')}
                             </span>
                           )}
                         </div>
@@ -620,7 +626,7 @@ export const TradesScreen: React.FC = () => {
               <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-[12px] leading-snug">
                 <div className="flex items-center gap-1 text-primary font-label-sm text-[11px] font-bold mb-0.5">
                   <Icon name="auto_awesome" size="xs" filled />
-                  <span>Equidad IA</span>
+                  <span>{t('trades.aiFairness')}</span>
                 </div>
                 {primaryActiveRoute.aiExplanation}
               </div>
@@ -638,8 +644,8 @@ export const TradesScreen: React.FC = () => {
                   onClick={() => handleCompleteRoute(primaryActiveRoute.id)}
                 >
                   {processingId === primaryActiveRoute.id
-                    ? 'Completando...'
-                    : 'Completar Canje'}
+                    ? t('trades.completing')
+                    : t('trades.completeSwap')}
                 </Button>
               )}
               <Button
@@ -653,7 +659,7 @@ export const TradesScreen: React.FC = () => {
                   })
                 }
               >
-                Ver detalles
+                {t('trades.viewDetails')}
               </Button>
             </div>
           </div>
@@ -668,10 +674,10 @@ export const TradesScreen: React.FC = () => {
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-label-md text-label-md font-bold text-on-surface">
-              Impacto Ambiental
+              {t('trades.ecoImpact')}
             </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">
-              Ahorraste {currentUser?.co2SavedKg ?? 14.8} kg CO₂ con tus canjes
+              {t('trades.co2Saved', { kg: currentUser?.co2SavedKg ?? 0 })}
             </span>
           </div>
         </div>
