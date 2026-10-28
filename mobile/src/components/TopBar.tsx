@@ -5,6 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { Icon } from './ui/Icon';
 import { Avatar } from './ui/Avatar';
 import { ThemeToggle } from './ui/ThemeToggle';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export interface TopBarProps {
   title?: string;
@@ -25,6 +26,7 @@ export const TopBar = ({
 }: TopBarProps) => {
   const navigate = useNavigate();
   const { currentUser, unreadNotificationsCount } = useApp();
+  const { t } = useTranslation();
 
   const handleBack = () => {
     if (onBack) {
@@ -43,7 +45,7 @@ export const TopBar = ({
             <button
               type="button"
               onClick={handleBack}
-              aria-label="Volver atrás"
+              aria-label={t('nav.back')}
               className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 active:bg-surface-container-high/60 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon name="arrow_back" size="lg" />
@@ -73,7 +75,7 @@ export const TopBar = ({
             >
               <img
                 src={logoImg}
-                alt="Logotipo SmartSwap"
+                alt={t('nav.logo')}
                 className="h-8 w-8 object-contain"
               />
               <div className="flex flex-col">
@@ -81,7 +83,7 @@ export const TopBar = ({
                   SmartSwap
                 </span>
                 <span className="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider">
-                  Inicio
+                  {t('nav.home')}
                 </span>
               </div>
             </div>
@@ -96,13 +98,13 @@ export const TopBar = ({
             <button
               type="button"
               onClick={() => navigate('/notifications')}
-              aria-label="Notificaciones"
+              aria-label={t('nav.notifications')}
               className="relative w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon name="notifications" size="lg" />
               {unreadNotificationsCount > 0 && (
                 <span
-                  aria-label={`${unreadNotificationsCount} sin leer`}
+                  aria-label={t('nav.unreadCount', { count: unreadNotificationsCount })}
                   className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface"
                 />
               )}
@@ -113,7 +115,7 @@ export const TopBar = ({
             <button
               type="button"
               onClick={() => navigate('/profile')}
-              aria-label="Mi Perfil"
+              aria-label={t('nav.myProfile')}
               className="w-11 h-11 flex items-center justify-center rounded-full p-0.5 hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Avatar
