@@ -189,5 +189,33 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.fairnessScore).toBeGreaterThanOrEqual(85);
       expect(result.fairnessScore).toBeLessThanOrEqual(100);
     });
+
+    it('generates the explanation in English when locale is en', async () => {
+      const result = await explainerService.explainSwapRoute({
+        objectiveText: 'Mirrorless camera',
+        locale: 'en',
+        steps: [
+          {
+            userName: 'Alex',
+            givesItemName: 'Trek bike',
+            givesItemValue: 450,
+            receivesItemName: 'Fujifilm camera',
+            receivesItemValue: 470,
+          },
+          {
+            userName: 'Valeria',
+            givesItemName: 'Fujifilm camera',
+            givesItemValue: 470,
+            receivesItemName: 'Trek bike',
+            receivesItemValue: 450,
+          },
+        ],
+      });
+
+      expect(result.source).toBe('fallback');
+      expect(result.explanation).toContain('circular route');
+      expect(result.explanation).toContain('CO₂ emissions');
+      expect(result.explanation).not.toContain('Esta ruta');
+    });
   });
 });
