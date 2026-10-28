@@ -1,20 +1,22 @@
 import { useCallback } from 'react';
 import { useTranslation as useI18nextTranslation } from 'react-i18next';
-import { LANGUAGE_STORAGE_KEY } from '@/i18n';
+import {
+  preferencesStorage,
+  type LocalePreference,
+} from '@/services/storage/preferencesStorage';
 
-export type SupportedLanguage = 'es' | 'en';
+export type SupportedLanguage = LocalePreference;
 
 export const useTranslation = (ns?: string) => {
   const { t, i18n } = useI18nextTranslation(ns);
 
+  const language: SupportedLanguage = i18n.language?.startsWith('en') ? 'en' : 'es';
+
   const changeLanguage = useCallback(
     async (lang: SupportedLanguage) => {
-      try {
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-      } catch (e) {
-        console.warn('Unable to persist language preference:', e);
-      }
+      preferencesStorage.setLocale(lang);
       await i18n.changeLanguage(lang);
+      document.documentElement.lang = lang;
     },
     [i18n],
   );
@@ -22,6 +24,7 @@ export const useTranslation = (ns?: string) => {
   return {
     t,
     i18n,
+    language,
     changeLanguage,
   };
 };
