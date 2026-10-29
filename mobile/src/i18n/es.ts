@@ -28,6 +28,28 @@ export const es = {
     waking: 'Despertando el servidor… la primera carga puede tardar hasta 1 minuto.',
     offline: 'Sin conexión con el servidor. Reintentando…',
   },
+  location: {
+    title: 'Tu ubicación',
+    useMyLocation: 'Usar mi ubicación',
+    detecting: 'Buscando tu ubicación…',
+    detected: 'Ubicación detectada: {{label}}',
+    selected: 'Seleccionado: {{label}}',
+    orManual: 'o elígela manualmente',
+    department: 'Departamento',
+    departmentPlaceholder: 'Selecciona tu departamento',
+    municipality: 'Municipio',
+    municipalityPlaceholder: 'Selecciona tu municipio',
+    loadingMunicipalities: 'Cargando municipios…',
+    privacy: 'Solo guardamos tu municipio, nunca tu ubicación exacta.',
+    required: 'Elige tu municipio para continuar.',
+    errors: {
+      denied: 'No pudimos acceder a tu ubicación. Revisa el permiso o elígela manualmente.',
+      timeout: 'Tardó demasiado en responder. Intenta de nuevo o elígela manualmente.',
+      unavailable: 'No pudimos detectar tu ubicación. Elígela manualmente.',
+      outside: 'Tu ubicación parece estar fuera de Colombia. Elígela manualmente.',
+      loadFailed: 'No pudimos cargar la lista. Revisa tu conexión e inténtalo de nuevo.',
+    },
+  },
   headers: {
     routeDetail: {
       title: 'Detalle de Ruta',

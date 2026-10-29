@@ -30,6 +30,28 @@ export const en: TranslationSchema = {
     waking: 'Waking up the server… the first load can take up to a minute.',
     offline: 'Cannot reach the server. Retrying…',
   },
+  location: {
+    title: 'Your location',
+    useMyLocation: 'Use my location',
+    detecting: 'Finding your location…',
+    detected: 'Detected location: {{label}}',
+    selected: 'Selected: {{label}}',
+    orManual: 'or choose it manually',
+    department: 'Department',
+    departmentPlaceholder: 'Select your department',
+    municipality: 'Municipality',
+    municipalityPlaceholder: 'Select your municipality',
+    loadingMunicipalities: 'Loading municipalities…',
+    privacy: 'We only save your municipality, never your exact location.',
+    required: 'Choose your municipality to continue.',
+    errors: {
+      denied: 'We could not access your location. Check the permission or choose it manually.',
+      timeout: 'It took too long to respond. Try again or choose it manually.',
+      unavailable: 'We could not detect your location. Choose it manually.',
+      outside: 'Your location seems to be outside Colombia. Choose it manually.',
+      loadFailed: 'We could not load the list. Check your connection and try again.',
+    },
+  },
   headers: {
     routeDetail: {
       title: 'Route details',
