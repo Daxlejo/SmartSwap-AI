@@ -51,7 +51,13 @@ export const ObjectCard = ({
               <div className="flex items-center gap-1.5 mt-1 text-on-surface-variant font-body-sm text-body-sm">
                 <span className="flex items-center gap-0.5">
                   <Icon name="location_on" size="xs" />
-                  <span className="truncate">{owner.location}</span>
+                  <span className="truncate">
+                    {item.distanceKm === null || item.distanceKm === undefined
+                      ? owner.location
+                      : item.distanceKm < 1
+                        ? t('location.distance.sameMunicipality')
+                        : t('location.distance.km', { km: Math.round(item.distanceKm) })}
+                  </span>
                 </span>
                 <span>•</span>
                 <span className="font-semibold text-on-surface truncate">
