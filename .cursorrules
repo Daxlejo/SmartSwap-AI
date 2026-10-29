@@ -12,6 +12,7 @@ Strictly adhere to the following non-negotiable guidelines:
 ## 2. Localization & Theme Defaults
 - Default locale: Spanish (`es`). English (`en`) is an optional user toggle (`smartswap_locale`).
 - Default theme: Light mode (`light`). Dark mode (`dark`) is an optional user toggle (`smartswap_theme`).
+- Colombia-only: prices are whole Colombian pesos (COP) formatted with `formatCop`; locations are DANE municipality codes (`api/src/modules/geo`), never GPS coordinates.
 - Brand Colors:
   - Primary: `#00685f` (Teal)
   - Secondary / Accent: `#fd761a` (Orange)
