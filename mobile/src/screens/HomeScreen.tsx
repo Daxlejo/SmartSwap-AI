@@ -5,6 +5,8 @@ import { useApp } from '@/context/AppContext';
 import { getCurrentUser, getItems, getRecommendedRoutes } from '@/services/swapService';
 import { mockSwapRoute } from '@/data/mockData';
 import { formatMatchScore } from '@/services/routes/routes.service';
+import { LocationPrompt } from '@/components/LocationPrompt';
+import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 import { formatRelativeTime } from '@/utils/relativeTime';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -92,6 +94,8 @@ export const HomeScreen = () => {
 
   return (
     <div className="flex flex-col w-full px-margin pt-4 pb-8 space-y-5">
+      <LocationPrompt />
+
       {/* Greeting & Environmental Impact Pill */}
       <section className="flex items-start justify-between gap-space-sm">
         <div className="flex flex-col min-w-0">
@@ -421,6 +425,9 @@ export const HomeScreen = () => {
             </Chip>
           </div>
         </div>
+
+        <LocationScopeSelector />
+
 
         {/* Data Loading State */}
         {isLoading && (
