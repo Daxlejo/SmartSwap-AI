@@ -18,6 +18,7 @@ export const ObjectCard = ({
   className,
 }: ObjectCardProps) => {
   const { t } = useTranslation();
+  const hasDistance = item.distanceKm !== null && item.distanceKm !== undefined;
   return (
     <article
       className={`flex flex-col rounded-2xl bg-surface-container-lowest p-3.5 shadow-sm space-y-3 hover:shadow-md transition-shadow border border-surface-container-high/60 ${className ?? ''}`}
@@ -47,22 +48,26 @@ export const ObjectCard = ({
               </Badge>
             </div>
 
-            {owner && (
+            {(owner || hasDistance) && (
               <div className="flex items-center gap-1.5 mt-1 text-on-surface-variant font-body-sm text-body-sm">
-                <span className="flex items-center gap-0.5">
+                <span className="flex items-center gap-0.5 min-w-0">
                   <Icon name="location_on" size="xs" />
                   <span className="truncate">
-                    {item.distanceKm === null || item.distanceKm === undefined
-                      ? owner.location
-                      : item.distanceKm < 1
+                    {!hasDistance
+                      ? owner?.location
+                      : (item.distanceKm as number) < 1
                         ? t('location.distance.sameMunicipality')
-                        : t('location.distance.km', { km: Math.round(item.distanceKm) })}
+                        : t('location.distance.km', { km: Math.round(item.distanceKm as number) })}
                   </span>
                 </span>
-                <span>•</span>
-                <span className="font-semibold text-on-surface truncate">
-                  {owner.name} (★ {owner.rating})
-                </span>
+                {owner && (
+                  <>
+                    <span>•</span>
+                    <span className="font-semibold text-on-surface truncate">
+                      {owner.name} (★ {owner.rating})
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>
