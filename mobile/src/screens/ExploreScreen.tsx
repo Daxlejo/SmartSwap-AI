@@ -15,6 +15,8 @@ import { ApiError } from '@/services/http/apiClient';
 import alexAvatar from '@/assets/avatar-alex.svg';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
+import { LocationPrompt } from '@/components/LocationPrompt';
+import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 
 interface CategoryOption {
   id: string;
@@ -59,7 +61,15 @@ const SORT_OPTIONS = [
 export const ExploreScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { items, currentUser, isItemsLoading, refreshItems, deleteItemReal } = useApp();
+  const {
+    items,
+    currentUser,
+    isItemsLoading,
+    refreshItems,
+    deleteItemReal,
+    locationScope,
+    setLocationScope,
+  } = useApp();
 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -210,11 +220,20 @@ export const ExploreScreen = () => {
   const isSelectedItemMine =
     Boolean(selectedItem && currentUser && selectedItem.ownerId === currentUser.id);
   const showSkeleton = isItemsLoading && items.length === 0;
+  const hasMunicipality = Boolean(currentUser?.municipalityCode);
+  const widenTarget =
+    hasMunicipality && locationScope === 'nearby'
+      ? 'department'
+      : hasMunicipality && locationScope === 'department'
+        ? 'country'
+        : null;
 
   return (
     <div className="flex flex-col flex-1 w-full pb-6">
       {/* Sticky Header: Search Bar + Category Chips */}
       <div className="sticky top-16 z-30 bg-surface/90 backdrop-blur-xl border-b border-surface-container-high/50 px-margin pt-3 pb-3 space-y-3 transition-colors">
+        <LocationPrompt />
+        <LocationScopeSelector />
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">
@@ -388,10 +407,27 @@ export const ExploreScreen = () => {
           <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[45vh]">
             <EmptyState
               iconName="search_off"
-              title={t('explore.emptyTitle')}
-              description={t('explore.emptyDescription')}
+              title={
+                !hasActiveFilters && widenTarget ? t('location.empty.title') : t('explore.emptyTitle')
+              }
+              description={
+                !hasActiveFilters && widenTarget
+                  ? t('location.empty.description')
+                  : t('explore.emptyDescription')
+              }
               action={
-                hasActiveFilters ? (
+                !hasActiveFilters && widenTarget ? (
+                  <Button
+                    variant="tonal"
+                    size="sm"
+                    leftIcon={widenTarget === 'department' ? 'map' : 'public'}
+                    onClick={() => setLocationScope(widenTarget)}
+                  >
+                    {widenTarget === 'department'
+                      ? t('location.empty.widenDepartment')
+                      : t('location.empty.widenCountry')}
+                  </Button>
+                ) : hasActiveFilters ? (
                   <Button
                     variant="tonal"
                     size="sm"
