@@ -30,7 +30,7 @@ export const mockUsers: User[] = [
     email: 'alex.morales@smartswap.io',
     avatarUrl: alexAvatar,
     rating: 4.9,
-    location: 'Madrid Centro',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 14.2,
   },
@@ -40,7 +40,7 @@ export const mockUsers: User[] = [
     email: 'carlos.r@correo.es',
     avatarUrl: carlosAvatar,
     rating: 4.8,
-    location: 'Madrid, Retiro (1.8 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 28.5,
   },
@@ -50,7 +50,7 @@ export const mockUsers: User[] = [
     email: 'laura.m@correo.es',
     avatarUrl: lauraAvatar,
     rating: 4.9,
-    location: 'Madrid, Chamberí (2.4 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 19.4,
   },
@@ -60,7 +60,7 @@ export const mockUsers: User[] = [
     email: 'diego.s@correo.es',
     avatarUrl: diegoAvatar,
     rating: 4.7,
-    location: 'Madrid, Salamanca (3.1 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 32.1,
   },
@@ -70,7 +70,7 @@ export const mockUsers: User[] = [
     email: 'sofia.v@correo.es',
     avatarUrl: sofiaAvatar,
     rating: 5.0,
-    location: 'Madrid, Malasaña (1.1 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 45.0,
   },
@@ -80,7 +80,7 @@ export const mockUsers: User[] = [
     email: 'mateo.r@correo.es',
     avatarUrl: mateoAvatar,
     rating: 4.8,
-    location: 'Madrid, Arganzuela (2.5 km)',
+    location: 'Pasto, Nariño',
     verified: false,
     co2SavedKg: 12.8,
   },
@@ -90,7 +90,7 @@ export const mockUsers: User[] = [
     email: 'elena.m@correo.es',
     avatarUrl: elenaAvatar,
     rating: 4.9,
-    location: 'Madrid Centro (1.2 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 22.0,
   },
@@ -100,7 +100,7 @@ export const mockUsers: User[] = [
     email: 'david.k@correo.es',
     avatarUrl: davidAvatar,
     rating: 5.0,
-    location: 'Madrid, Moncloa (3.1 km)',
+    location: 'Pasto, Nariño',
     verified: true,
     co2SavedKg: 37.6,
   },
@@ -117,7 +117,7 @@ export const mockItems: Item[] = [
     imageUrl: bikeImg,
     wants: ['item-camera', 'item-ipad'],
     description: 'Rodado 29" • Talle M • Frenos hidráulicos Shimano. Revisión hecha hace 1 mes.',
-    estimatedValue: 780,
+    estimatedValue: 3120000,
   },
   // Item 2 - Carlos (chain link 1 -> 2)
   {
@@ -129,7 +129,7 @@ export const mockItems: Item[] = [
     imageUrl: ballImg,
     wants: ['item-bike'],
     description: 'Balón oficial de torneo FIFA Quality Pro, cuero compuesto de alto rendimiento.',
-    estimatedValue: 120,
+    estimatedValue: 480000,
   },
   // Item 3 - Laura (chain link 2 -> 3)
   {
@@ -141,7 +141,7 @@ export const mockItems: Item[] = [
     imageUrl: headphonesImg,
     wants: ['item-ball'],
     description: 'Auriculares inalámbricos con cancelación de ruido activa líder y estuche original.',
-    estimatedValue: 390,
+    estimatedValue: 1560000,
   },
   // Item 4 - Diego (chain link 3 -> 4)
   {
@@ -153,7 +153,7 @@ export const mockItems: Item[] = [
     imageUrl: laptopImg,
     wants: ['item-headphones', 'item-monitor'],
     description: '8GB RAM, 256GB SSD, color Medianoche. Batería con 98% de salud.',
-    estimatedValue: 850,
+    estimatedValue: 3400000,
   },
   // Item 5 - Sofia (chain link 4 -> 5 -> loops to item-bike)
   {
@@ -165,7 +165,7 @@ export const mockItems: Item[] = [
     imageUrl: cameraImg,
     wants: ['item-laptop', 'item-switch'],
     description: 'Kit con lente 15-45mm. Menos de 2,000 disparos, incluye batería extra.',
-    estimatedValue: 790,
+    estimatedValue: 3160000,
   },
   // Item 6 - Mateo
   {
@@ -177,7 +177,7 @@ export const mockItems: Item[] = [
     imageUrl: switchImg,
     wants: ['item-bike', 'item-guitar'],
     description: 'Consola blanca completa con dock y cables, pantalla sin rayones.',
-    estimatedValue: 310,
+    estimatedValue: 1240000,
   },
   // Item 7 - Carlos
   {
@@ -189,7 +189,7 @@ export const mockItems: Item[] = [
     imageUrl: keyboardImg,
     wants: ['item-headphones'],
     description: 'Switches Banana táctiles, chasis de aluminio CNC, inalámbrico Bluetooth.',
-    estimatedValue: 210,
+    estimatedValue: 840000,
   },
   // Item 8 - Elena
   {
@@ -201,7 +201,7 @@ export const mockItems: Item[] = [
     imageUrl: ipadImg,
     wants: ['item-keyboard', 'item-vintage-bike'],
     description: '128GB Wi-Fi color azul espacial, incluye funda Smart Folio.',
-    estimatedValue: 720,
+    estimatedValue: 2880000,
   },
   // Item 9 - David
   {
@@ -213,7 +213,7 @@ export const mockItems: Item[] = [
     imageUrl: guitarImg,
     wants: ['item-ipad'],
     description: 'Tapa de abeto macizo, afinación perfecta, incluye funda acolchada.',
-    estimatedValue: 280,
+    estimatedValue: 1120000,
   },
   // Item 10 - Sofia
   {
@@ -225,7 +225,7 @@ export const mockItems: Item[] = [
     imageUrl: lensImg,
     wants: ['item-smartwatch'],
     description: 'Óptica nítida para retratos, montura E, sin hongos ni marcas.',
-    estimatedValue: 190,
+    estimatedValue: 760000,
   },
   // Item 11 - Alex (current user secondary item)
   {
@@ -237,7 +237,7 @@ export const mockItems: Item[] = [
     imageUrl: smartwatchImg,
     wants: ['item-lens'],
     description: 'Reloj GPS para corredores con monitor de frecuencia cardíaca.',
-    estimatedValue: 240,
+    estimatedValue: 960000,
   },
   // Item 12 - Diego
   {
@@ -249,7 +249,7 @@ export const mockItems: Item[] = [
     imageUrl: monitorImg,
     wants: ['item-ipad'],
     description: 'Resolución 4K USB-C Hub con calibración de color precisa.',
-    estimatedValue: 460,
+    estimatedValue: 1840000,
   },
   // Item 13 - David
   {
@@ -261,7 +261,7 @@ export const mockItems: Item[] = [
     imageUrl: vintageBikeImg,
     wants: ['item-laptop'],
     description: 'Cuadro de acero Columbus original en verde esmeralda con sillín de cuero.',
-    estimatedValue: 650,
+    estimatedValue: 2600000,
   },
 ];
 
