@@ -15,6 +15,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import { AiExplainerService } from '../ai/services/ai-explainer.service';
 import { ProposeRouteDto } from './dto/propose-route.dto';
+import { GeoService } from '../geo/geo.service';
 import { RouteScoringStrategy } from './engine/route-scoring.strategy';
 import { SwapGraphEngine } from './engine/swap-graph.engine';
 import { RouteMapper, SwapRouteWithRelations } from './mappers/route.mapper';
@@ -339,6 +340,9 @@ describe('RoutesService', () => {
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
     $transaction: jest.fn(
       async <T>(callback: (tx: typeof mockTx) => Promise<T>): Promise<T> =>
         callback(mockTx),
@@ -364,6 +368,7 @@ describe('RoutesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RoutesService,
+        GeoService,
         RouteMapper,
         SwapGraphEngine,
         RouteScoringStrategy,
@@ -394,6 +399,7 @@ describe('RoutesService', () => {
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
+        scope: 'country',
       });
 
       expect(mockPrismaService.item.findMany).toHaveBeenCalledWith(
@@ -420,6 +426,64 @@ describe('RoutesService', () => {
       expect(discovered.steps[0].givesItem.condition).toBe('EXCELLENT');
     });
 
+    it('limits the catalog to the radius around the searcher municipality for the nearby scope', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        municipalityCode: '52001',
+        departmentCode: '52',
+      });
+      mockPrismaService.item.findMany.mockResolvedValue(buildCatalogRows());
+
+      await routesService.searchRoutes(userAId, {
+        objectiveText: 'Monitor Ultrawide LG',
+        maxSteps: 4,
+        valueTolerancePct: 45,
+        locale: 'es',
+        scope: 'nearby',
+        radiusKm: 70,
+      });
+
+      const where = mockPrismaService.item.findMany.mock.calls[0][0].where;
+      expect(where.status).toBe(ItemStatus.AVAILABLE);
+      expect(where.municipalityCode.in).toEqual(expect.arrayContaining(['52001', '52356']));
+      expect(where.municipalityCode.in).not.toContain('05001');
+    });
+
+    it('limits the catalog to the searcher department for the department scope', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        municipalityCode: '52001',
+        departmentCode: '52',
+      });
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+
+      await routesService.searchRoutes(userAId, {
+        objectiveText: 'Monitor',
+        maxSteps: 4,
+        valueTolerancePct: 45,
+        locale: 'es',
+        scope: 'department',
+      });
+
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where.departmentCode).toBe('52');
+    });
+
+    it('asks users without a registered municipality to set it before a scoped search', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        municipalityCode: null,
+        departmentCode: null,
+      });
+
+      await expect(
+        routesService.searchRoutes(userAId, {
+          objectiveText: 'Monitor',
+          maxSteps: 4,
+          valueTolerancePct: 45,
+          locale: 'es',
+          scope: 'nearby',
+        }),
+      ).rejects.toThrow('Set your municipality');
+      expect(mockPrismaService.item.findMany).not.toHaveBeenCalled();
+    });
+
     it('requests route explanations in the locale of the search', async () => {
       mockPrismaService.item.findMany.mockResolvedValue(buildCatalogRows());
 
@@ -428,6 +492,7 @@ describe('RoutesService', () => {
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'en',
+        scope: 'country',
       });
 
       expect(aiExplainerService.explainSwapRoute).toHaveBeenCalledWith(

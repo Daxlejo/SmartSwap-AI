@@ -31,6 +31,9 @@ export const searchRoutesSchema = z
       .max(70, 'valueTolerancePct must be at most 70')
       .default(45),
     locale: aiLocaleSchema.default(DEFAULT_AI_LOCALE),
+    /** Where to look for participants, relative to the searcher's registered municipality. */
+    scope: z.enum(['nearby', 'department', 'country']).default('country'),
+    radiusKm: z.coerce.number().min(1).max(300).optional(),
   })
   .strict();
 
