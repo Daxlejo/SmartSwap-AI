@@ -8,6 +8,9 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { buildSwaggerConfig } from './config/swagger.config';
 
+// Origins used by the Capacitor WebView; allowed even when CORS_ORIGIN is restricted.
+const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost', 'http://localhost'];
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -27,7 +30,11 @@ async function bootstrap() {
     origin:
       corsOrigin === '*'
         ? true
-        : corsOrigin.split(',').map((origin) => origin.trim()),
+        : [
+            ...corsOrigin.split(',').map((origin) => origin.trim()),
+            // The Capacitor WebView of the Android/iOS app always sends one of these origins
+            ...CAPACITOR_ORIGINS,
+          ],
     credentials: true,
   });
 
