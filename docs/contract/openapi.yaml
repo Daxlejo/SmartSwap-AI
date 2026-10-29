@@ -199,7 +199,7 @@ paths:
       parameters: []
       responses:
         '200':
-          description: Departments ordered by DANE code
+          description: Departments in alphabetical order
       tags:
         - Geo
   /api/v1/geo/municipalities:

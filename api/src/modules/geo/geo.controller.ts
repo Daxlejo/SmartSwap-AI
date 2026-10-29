@@ -18,7 +18,7 @@ export class GeoController {
 
   @Get('departments')
   @ApiOperation({ summary: 'List the departments of Colombia' })
-  @ApiResponse({ status: 200, description: 'Departments ordered by DANE code' })
+  @ApiResponse({ status: 200, description: 'Departments in alphabetical order' })
   listDepartments(): GeoDepartment[] {
     return this.geoService.listDepartments();
   }

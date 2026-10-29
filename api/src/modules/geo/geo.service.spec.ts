@@ -11,6 +11,14 @@ describe('GeoService', () => {
       expect(geo.listMunicipalities({ limit: 5000 })).toHaveLength(1122);
     });
 
+    it('lists departments alphabetically so they are easy to scan in a dropdown', () => {
+      const names = geo.listDepartments().map((d) => d.name);
+
+      expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'es')));
+      expect(names[0]).toBe('Amazonas');
+      expect(names).toContain('San Andrés y Providencia');
+    });
+
     it('has unique municipality codes that all belong to a listed department', () => {
       const departmentCodes = new Set(geo.listDepartments().map((d) => d.code));
       const municipalities = geo.listMunicipalities({ limit: 5000 });

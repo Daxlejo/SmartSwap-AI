@@ -44,8 +44,11 @@ export class GeoService {
     this.municipalities.map((municipality) => [municipality.code, municipality]),
   );
 
+  /** Alphabetical (Spanish collation), the order users scan a dropdown in. */
   listDepartments(): GeoDepartment[] {
-    return this.departments.map((department) => ({ ...department }));
+    return this.departments
+      .map((department) => ({ ...department }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }
 
   /**
