@@ -7,6 +7,10 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeoService } from '../geo/geo.service';
+import {
+  AVATAR_MAX_BYTES,
+  SupabaseStorageService,
+} from '../storage/supabase-storage.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PublicUserProfile, UserMapper } from './mappers/user.mapper';
 
@@ -40,6 +44,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly geoService: GeoService,
+    private readonly storage: SupabaseStorageService,
   ) {}
 
   async findByEmail(email: string): Promise<User | null> {
@@ -118,6 +123,25 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: updateData,
+    });
+  }
+
+  /** Stores a profile photo under avatars/<userId>/ and points the user's avatarUrl at it. */
+  async uploadAvatar(
+    userId: string,
+    imageBase64: string,
+    mimeType?: string,
+  ): Promise<User> {
+    await this.findByIdOrThrow(userId);
+    const { url } = await this.storage.uploadBase64Image(
+      userId,
+      imageBase64,
+      mimeType,
+      { folder: 'avatars', maxBytes: AVATAR_MAX_BYTES },
+    );
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
     });
   }
 

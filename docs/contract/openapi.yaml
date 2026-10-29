@@ -192,6 +192,39 @@ paths:
         - users
       security:
         - bearerAuth: []
+  /api/v1/users/me/avatar:
+    post:
+      operationId: UsersController_uploadAvatar
+      summary: Upload the authenticated user profile photo
+      parameters: []
+      responses:
+        '201':
+          description: Updated user public profile
+        '400':
+          description: Invalid image payload
+        '401':
+          description: Unauthorized
+        '413':
+          description: Image larger than 2 MB
+      tags:
+        - users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageBase64:
+                  type: string
+                  minLength: 1
+                mimeType:
+                  type: string
+              required:
+                - imageBase64
+              additionalProperties: false
   /api/v1/geo/departments:
     get:
       operationId: GeoController_listDepartments

@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeoService } from '../geo/geo.service';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 import { CreateUserInput, UsersService } from './users.service';
 
 describe('UsersService', () => {
@@ -48,6 +49,10 @@ describe('UsersService', () => {
     },
   };
 
+  const mockStorage = {
+    uploadBase64Image: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -55,6 +60,10 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         GeoService,
+        {
+          provide: SupabaseStorageService,
+          useValue: mockStorage,
+        },
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -419,6 +428,38 @@ describe('UsersService', () => {
 
       // Verify passwordHash is never returned
       expect((response.user as any).passwordHash).toBeUndefined();
+    });
+  });
+  describe('uploadAvatar', () => {
+    it('stores the image under avatars/ with a 2 MB cap and saves the public URL', async () => {
+      const url = 'https://x.supabase.co/storage/v1/object/public/item-images/avatars/u/a.jpg';
+      mockStorage.uploadBase64Image.mockResolvedValue({ url });
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.user.update.mockResolvedValue({ ...mockUser, avatarUrl: url });
+
+      const result = await usersService.uploadAvatar(mockUser.id, 'data:image/jpeg;base64,AAAA');
+
+      expect(mockStorage.uploadBase64Image).toHaveBeenCalledWith(
+        mockUser.id,
+        'data:image/jpeg;base64,AAAA',
+        undefined,
+        { folder: 'avatars', maxBytes: 2 * 1024 * 1024 },
+      );
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: { avatarUrl: url },
+      });
+      expect(result.avatarUrl).toBe(url);
+    });
+
+    it('does not touch the user when the upload fails', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockStorage.uploadBase64Image.mockRejectedValue(new Error('boom'));
+
+      await expect(
+        usersService.uploadAvatar(mockUser.id, 'data:image/jpeg;base64,AAAA'),
+      ).rejects.toThrow('boom');
+      expect(mockPrismaService.user.update).not.toHaveBeenCalled();
     });
   });
 });

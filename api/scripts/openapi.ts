@@ -27,6 +27,7 @@ import { proposeRouteSchema } from '../src/modules/routes/dto/propose-route.dto'
 import { respondRouteSchema } from '../src/modules/routes/dto/respond-route.dto';
 import { searchRoutesSchema } from '../src/modules/routes/dto/search-routes.dto';
 import { updateProfileSchema } from '../src/modules/users/dto/update-profile.dto';
+import { uploadAvatarSchema } from '../src/modules/users/dto/upload-avatar.dto';
 
 export const CONTRACT_PATH = resolve(__dirname, '../../docs/contract/openapi.yaml');
 const PREFIX = '/api/v1';
@@ -43,6 +44,7 @@ const BODY_SCHEMAS: Record<string, ZodTypeAny> = {
   'POST /auth/register': registerSchema,
   'POST /auth/login': loginSchema,
   'PATCH /users/me': updateProfileSchema,
+  'POST /users/me/avatar': uploadAvatarSchema,
   'POST /items': createItemSchema,
   'PATCH /items/{id}': updateItemSchema,
   'POST /items/upload-image': uploadImageSchema,

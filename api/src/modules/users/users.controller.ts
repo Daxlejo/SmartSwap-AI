@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,6 +22,10 @@ import {
   UpdateProfileDto,
   updateProfileSchema,
 } from './dto/update-profile.dto';
+import {
+  UploadAvatarDto,
+  uploadAvatarSchema,
+} from './dto/upload-avatar.dto';
 import { PublicUserProfile, UserMapper } from './mappers/user.mapper';
 import { UserStatsResponse, UsersService } from './users.service';
 
@@ -69,6 +74,24 @@ export class UsersController {
     const updatedUser = await this.usersService.updateProfile(
       currentUser.sub,
       dto,
+    );
+    return UserMapper.toPublicProfile(updatedUser);
+  }
+
+  @Post('me/avatar')
+  @ApiOperation({ summary: 'Upload the authenticated user profile photo' })
+  @ApiResponse({ status: 201, description: 'Updated user public profile' })
+  @ApiResponse({ status: 400, description: 'Invalid image payload' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 413, description: 'Image larger than 2 MB' })
+  async uploadAvatar(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body(new ZodValidationPipe(uploadAvatarSchema)) dto: UploadAvatarDto,
+  ): Promise<PublicUserProfile> {
+    const updatedUser = await this.usersService.uploadAvatar(
+      currentUser.sub,
+      dto.imageBase64,
+      dto.mimeType,
     );
     return UserMapper.toPublicProfile(updatedUser);
   }
