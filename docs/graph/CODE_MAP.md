@@ -12,11 +12,14 @@
 | Method | Route | Controller | Handler | Summary |
 |:---|:---|:---|:---|:---|
 | `POST` | `/ai/analyze-photo` | `AiController` | `analyzePhoto` | Analyze an item photo and/or hint text to generate structured catalog metadata |
-| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate fair circular swap value (USD) for an item |
+| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate fair circular swap value (COP) for an item |
 | `POST` | `/ai/explain-route` | `AiController` | `explainRoute` | Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route |
 | `POST` | `/auth/login` | `AuthController` | `login` | Authenticate with email and password |
 | `GET` | `/auth/me` | `AuthController` | `getMe` | Get current authenticated user profile |
 | `POST` | `/auth/register` | `AuthController` | `register` | Register a new user account |
+| `GET` | `/geo/departments` | `GeoController` | `listDepartments` | List the departments of Colombia |
+| `GET` | `/geo/municipalities` | `GeoController` | `listMunicipalities` | List or search municipalities (accent-insensitive name search) |
+| `GET` | `/geo/resolve` | `GeoController` | `resolveLocation` | Resolve a GPS position to the closest municipality |
 | `GET` | `/health` | `HealthController` | `getHealth` | Healthcheck probe |
 | `GET` | `/items` | `ItemsController` | `findAll` | List public items with optional search and filters |
 | `POST` | `/items` | `ItemsController` | `create` | Create a new item and synchronize its wants |

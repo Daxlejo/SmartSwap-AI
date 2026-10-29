@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-28T20:39:08.925Z",
+  "generatedAt": "2026-10-29T05:01:44.076Z",
   "stats": {
-    "totalFiles": 119,
-    "apiFiles": 56,
+    "totalFiles": 126,
+    "apiFiles": 63,
     "mobileFiles": 63,
-    "endpointsCount": 41
+    "endpointsCount": 44
   },
   "endpoints": [
     {
@@ -20,7 +20,7 @@
       "path": "/ai/estimate-value",
       "controller": "AiController",
       "handler": "estimateValue",
-      "summary": "Estimate fair circular swap value (USD) for an item",
+      "summary": "Estimate fair circular swap value (COP) for an item",
       "file": "api/src/modules/ai/ai.controller.ts"
     },
     {
@@ -54,6 +54,30 @@
       "handler": "register",
       "summary": "Register a new user account",
       "file": "api/src/modules/auth/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/departments",
+      "controller": "GeoController",
+      "handler": "listDepartments",
+      "summary": "List the departments of Colombia",
+      "file": "api/src/modules/geo/geo.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/municipalities",
+      "controller": "GeoController",
+      "handler": "listMunicipalities",
+      "summary": "List or search municipalities (accent-insensitive name search)",
+      "file": "api/src/modules/geo/geo.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/resolve",
+      "controller": "GeoController",
+      "handler": "resolveLocation",
+      "summary": "Resolve a GPS position to the closest municipality",
+      "file": "api/src/modules/geo/geo.controller.ts"
     },
     {
       "method": "GET",
@@ -372,6 +396,15 @@
       "api/src/modules/auth/dto/login.dto.ts",
       "api/src/modules/auth/dto/register.dto.ts"
     ],
+    "api/geo": [
+      "api/src/modules/geo/data/colombia-municipalities.ts",
+      "api/src/modules/geo/dto/geo-query.dto.ts",
+      "api/src/modules/geo/geo.controller.ts",
+      "api/src/modules/geo/geo.module.ts",
+      "api/src/modules/geo/geo.service.ts",
+      "api/src/modules/geo/geo.types.ts",
+      "api/src/modules/geo/geo.utils.ts"
+    ],
     "api/health": [
       "api/src/modules/health/health.controller.ts",
       "api/src/modules/health/health.module.ts"
@@ -522,6 +555,7 @@
         "./config/env.validation",
         "./modules/ai/ai.module",
         "./modules/auth/auth.module",
+        "./modules/geo/geo.module",
         "./modules/health/health.module",
         "./modules/items/items.module",
         "./modules/notifications/notifications.module",
@@ -644,7 +678,7 @@
           "path": "/ai/estimate-value",
           "controller": "AiController",
           "handler": "estimateValue",
-          "summary": "Estimate fair circular swap value (USD) for an item",
+          "summary": "Estimate fair circular swap value (COP) for an item",
           "file": "api/src/modules/ai/ai.controller.ts"
         },
         {
@@ -869,6 +903,109 @@
         "zod"
       ]
     },
+    "api/src/modules/geo/data/colombia-municipalities.ts": {
+      "module": "api/geo",
+      "exports": [
+        "RAW_DEPARTMENTS",
+        "RAW_MUNICIPALITIES"
+      ],
+      "imports": []
+    },
+    "api/src/modules/geo/dto/geo-query.dto.ts": {
+      "module": "api/geo",
+      "exports": [
+        "QueryMunicipalitiesDto",
+        "ResolveLocationDto",
+        "queryMunicipalitiesSchema",
+        "resolveLocationSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/geo/geo.controller.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoController"
+      ],
+      "imports": [
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/geo-query.dto",
+        "./geo.service",
+        "./geo.types",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/geo/departments",
+          "controller": "GeoController",
+          "handler": "listDepartments",
+          "summary": "List the departments of Colombia",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/geo/municipalities",
+          "controller": "GeoController",
+          "handler": "listMunicipalities",
+          "summary": "List or search municipalities (accent-insensitive name search)",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/geo/resolve",
+          "controller": "GeoController",
+          "handler": "resolveLocation",
+          "summary": "Resolve a GPS position to the closest municipality",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/geo/geo.module.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoModule"
+      ],
+      "imports": [
+        "./geo.controller",
+        "./geo.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/geo/geo.service.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoService"
+      ],
+      "imports": [
+        "./data/colombia-municipalities",
+        "./geo.types",
+        "./geo.utils",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/geo/geo.types.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoDepartment",
+        "GeoMunicipality",
+        "GeoScope",
+        "MunicipalityDto",
+        "NEARBY_RADIUS_KM",
+        "NearbyMunicipality"
+      ],
+      "imports": []
+    },
+    "api/src/modules/geo/geo.utils.ts": {
+      "module": "api/geo",
+      "exports": [
+        "haversineKm",
+        "normalizeSearchText"
+      ],
+      "imports": []
+    },
     "api/src/modules/health/health.controller.ts": {
       "module": "api/health",
       "exports": [
@@ -1054,6 +1191,7 @@
       ],
       "imports": [
         "../ai/ai.module",
+        "../geo/geo.module",
         "./items.controller",
         "./items.service",
         "./mappers/item.mapper",
@@ -1069,6 +1207,8 @@
       "imports": [
         "../../prisma/prisma.service",
         "../ai/services/ai-embedding.service",
+        "../geo/geo.service",
+        "../geo/geo.types",
         "./dto/create-item.dto",
         "./dto/query-items.dto",
         "./dto/update-item.dto",
@@ -1499,6 +1639,7 @@
       ],
       "imports": [
         "../ai/ai.module",
+        "../geo/geo.module",
         "./engine/route-scoring.strategy",
         "./engine/swap-graph.engine",
         "./mappers/route.mapper",
@@ -1519,6 +1660,8 @@
         "../ai/dto/ai-locale.dto",
         "../ai/services/ai-embedding.service",
         "../ai/services/ai-explainer.service",
+        "../geo/geo.service",
+        "../geo/geo.types",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1530,7 +1673,8 @@
       ],
       "prismaModels": [
         "Item",
-        "SwapRoute"
+        "SwapRoute",
+        "User"
       ]
     },
     "api/src/modules/users/dto/update-profile.dto.ts": {
@@ -1602,6 +1746,7 @@
         "UsersModule"
       ],
       "imports": [
+        "../geo/geo.module",
         "./mappers/user.mapper",
         "./users.controller",
         "./users.service",
@@ -1618,6 +1763,7 @@
       ],
       "imports": [
         "../../prisma/prisma.service",
+        "../geo/geo.service",
         "./dto/update-profile.dto",
         "./mappers/user.mapper",
         "@nestjs/common",
