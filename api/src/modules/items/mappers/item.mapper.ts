@@ -36,6 +36,10 @@ export interface ItemResponseDto {
   description: string;
   estimatedValue: number;
   location: string;
+  departmentCode: string | null;
+  municipalityCode: string | null;
+  /** Distance from the viewer's municipality; set only when a viewer location is given. */
+  distanceKm: number | null;
   status: string;
   images: string[];
   image: string | null;
@@ -74,6 +78,9 @@ export class ItemMapper {
       description: item.description ?? '',
       estimatedValue: item.estimatedValue ?? 0,
       location: item.location ?? item.owner?.location ?? 'Colombia',
+      departmentCode: item.departmentCode ?? null,
+      municipalityCode: item.municipalityCode ?? null,
+      distanceKm: null,
       status: ItemMapper.mapStatus(item.status),
       images,
       image: images[0] ?? null,

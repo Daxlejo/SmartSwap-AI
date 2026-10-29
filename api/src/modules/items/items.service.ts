@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -7,6 +8,8 @@ import {
 import { ItemStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
+import { GeoService } from '../geo/geo.service';
+import { NEARBY_RADIUS_KM } from '../geo/geo.types';
 import {
   CreateItemDto,
   toPrismaItemCondition,
@@ -71,10 +74,23 @@ export class ItemsService {
     private readonly prisma: PrismaService,
     private readonly supabaseStorageService: SupabaseStorageService,
     private readonly aiEmbeddingService: AiEmbeddingService,
+    private readonly geoService: GeoService,
   ) {}
 
   async findAll(query: QueryItemsDto = {}): Promise<ItemResponseDto[]> {
     const where: Prisma.ItemWhereInput = {};
+
+    const viewer = this.resolveViewer(query);
+    const scope = query.scope ?? 'country';
+    if (viewer && scope === 'nearby') {
+      where.municipalityCode = {
+        in: this.geoService
+          .municipalitiesWithin(viewer.code, query.radiusKm ?? NEARBY_RADIUS_KM)
+          .map((entry) => entry.code),
+      };
+    } else if (viewer && scope === 'department') {
+      where.departmentCode = viewer.departmentCode;
+    }
 
     const effectiveStatus = query.status?.trim() || 'ACTIVE';
     if (effectiveStatus.toUpperCase() !== 'ALL') {
@@ -110,6 +126,30 @@ export class ItemsService {
         : limit
           ? (page - 1) * limit
           : undefined;
+
+    if (viewer) {
+      // Nearest first: sort and paginate in memory because distance is not a database column.
+      const found = await this.prisma.item.findMany({
+        where,
+        include: ITEM_RELATIONS_INCLUDE,
+        orderBy: { createdAt: 'desc' },
+      });
+      const withDistance = ItemMapper.toResponseList(found as ItemWithRelations[]).map(
+        (dto) => ({
+          ...dto,
+          distanceKm: dto.municipalityCode
+            ? this.roundDistance(this.geoService.distanceKm(viewer.code, dto.municipalityCode))
+            : null,
+        }),
+      );
+      withDistance.sort(
+        (a, b) =>
+          (a.distanceKm ?? Number.POSITIVE_INFINITY) -
+          (b.distanceKm ?? Number.POSITIVE_INFINITY),
+      );
+      const start = skip ?? 0;
+      return limit !== undefined ? withDistance.slice(start, start + limit) : withDistance;
+    }
 
     const items = await this.prisma.item.findMany({
       where,
@@ -165,7 +205,11 @@ export class ItemsService {
     const trimmedDescription = dto.description.trim();
 
     const resolvedImages = await this.resolveImages(userId, dto.images);
-    const resolvedLocation = await this.resolveLocation(userId, dto.location);
+    const resolvedLocation = await this.resolveLocation(
+      userId,
+      dto.location,
+      dto.municipalityCode,
+    );
     const prismaCondition = toPrismaItemCondition(dto.condition);
     const normalizedWants = dto.wants.map((want) => want.trim());
 
@@ -194,7 +238,9 @@ export class ItemsService {
           condition: prismaCondition,
           description: trimmedDescription,
           estimatedValue: dto.estimatedValue,
-          location: resolvedLocation,
+          location: resolvedLocation.location,
+          departmentCode: resolvedLocation.departmentCode,
+          municipalityCode: resolvedLocation.municipalityCode,
           images: resolvedImages,
           aiTags,
           embedding: itemEmbedding,
@@ -456,19 +502,53 @@ export class ItemsService {
     );
   }
 
+  /**
+   * An item is located where it is published: the municipality sent with the item, otherwise the
+   * owner's own municipality.
+   */
   private async resolveLocation(
     userId: string,
     explicitLocation?: string,
-  ): Promise<string> {
-    if (explicitLocation && explicitLocation.trim().length > 0) {
-      return explicitLocation.trim();
+    explicitMunicipalityCode?: string,
+  ): Promise<{
+    location: string;
+    departmentCode: string | null;
+    municipalityCode: string | null;
+  }> {
+    if (explicitMunicipalityCode) {
+      const municipality = this.geoService.requireMunicipality(explicitMunicipalityCode);
+      return {
+        location: this.geoService.label(municipality),
+        departmentCode: municipality.departmentCode,
+        municipalityCode: municipality.code,
+      };
     }
 
     const owner = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { location: true },
+      select: { location: true, departmentCode: true, municipalityCode: true },
     });
 
-    return owner?.location?.trim() || 'Colombia';
+    return {
+      location: explicitLocation?.trim() || owner?.location?.trim() || 'Colombia',
+      departmentCode: owner?.departmentCode ?? null,
+      municipalityCode: owner?.municipalityCode ?? null,
+    };
+  }
+
+  private resolveViewer(query: QueryItemsDto) {
+    if (!query.municipalityCode) {
+      if (query.scope && query.scope !== 'country') {
+        throw new BadRequestException(
+          `municipalityCode is required for the "${query.scope}" scope`,
+        );
+      }
+      return undefined;
+    }
+    return this.geoService.requireMunicipality(query.municipalityCode);
+  }
+
+  private roundDistance(distanceKm: number | null): number | null {
+    return distanceKm === null ? null : Math.round(distanceKm * 10) / 10;
   }
 }

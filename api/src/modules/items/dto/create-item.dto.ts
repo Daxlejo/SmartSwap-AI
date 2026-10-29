@@ -94,6 +94,11 @@ export const createItemSchema = z
       .min(1, 'Location cannot be empty')
       .max(120, 'Location must be at most 120 characters long')
       .optional(),
+    municipalityCode: z
+      .string()
+      .trim()
+      .regex(/^\d{5}$/, 'municipalityCode must be a 5-digit DANE code')
+      .optional(),
     imageUrl: z.string().trim().min(1).optional(),
     images: z
       .array(z.string().trim().min(1, 'Image entry cannot be empty'))
