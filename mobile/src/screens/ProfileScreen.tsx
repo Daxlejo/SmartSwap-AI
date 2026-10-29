@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { mockUsers } from '@/data/mockData';
@@ -18,6 +18,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { compressImageToDataUrl } from '@/utils/imageCompressor';
 
 const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
   <button
@@ -49,6 +50,7 @@ export const ProfileScreen = () => {
     refreshItems,
     deleteItemReal,
     updateProfileReal,
+    uploadAvatarReal,
     logout,
   } = useApp();
 
@@ -70,6 +72,12 @@ export const ProfileScreen = () => {
     currentUser?.municipalityCode ?? null,
   );
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // Profile photo picked in the sheet but not uploaded yet (compressed square JPEG data URL)
+  const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     refreshItems().catch(() => {});
@@ -117,11 +125,47 @@ export const ProfileScreen = () => {
     }
   };
 
+  const closeEditSheet = () => {
+    setIsEditOpen(false);
+    setPendingAvatar(null);
+    setSheetError(null);
+  };
+
+  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setIsProcessingPhoto(true);
+    setSheetError(null);
+    try {
+      setPendingAvatar(
+        await compressImageToDataUrl(file, { maxDimension: 512, quality: 0.85, square: true }),
+      );
+    } catch {
+      setSheetError(t('profile.photoReadError'));
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSavingProfile || !editName.trim()) return;
     setIsSavingProfile(true);
     setErrorBanner(null);
+    setSheetError(null);
+    if (pendingAvatar) {
+      try {
+        await uploadAvatarReal(pendingAvatar);
+        setPendingAvatar(null);
+      } catch (err) {
+        setSheetError(
+          err instanceof ApiError && err.message ? err.message : t('profile.photoUploadError'),
+        );
+        setIsSavingProfile(false);
+        return;
+      }
+    }
     try {
       await updateProfileReal({
         name: editName.trim(),
@@ -129,13 +173,9 @@ export const ProfileScreen = () => {
           ? { municipalityCode: editMunicipalityCode }
           : {}),
       });
-      setIsEditOpen(false);
+      closeEditSheet();
     } catch (err) {
-      if (err instanceof ApiError) {
-        setErrorBanner(err.message);
-      } else {
-        setErrorBanner(t('profile.updateError'));
-      }
+      setSheetError(err instanceof ApiError && err.message ? err.message : t('profile.updateError'));
     } finally {
       setIsSavingProfile(false);
     }
@@ -556,10 +596,57 @@ export const ProfileScreen = () => {
       {/* Edit Profile BottomSheet connected to PATCH /users/me */}
       <BottomSheet
         isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
+        onClose={closeEditSheet}
         title={t('profile.editProfile')}
       >
         <form onSubmit={handleSaveProfile} className="flex flex-col space-y-4">
+          <div className="flex flex-col items-center gap-3">
+            <Avatar
+              src={pendingAvatar ?? currentUser?.avatarUrl}
+              alt={editName || currentUser?.name || ''}
+              size="xl"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isLoading={isProcessingPhoto}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                {t('profile.takePhoto')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                isLoading={isProcessingPhoto}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                {t('profile.chooseFromGallery')}
+              </Button>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
+              {t('profile.photoHint')}
+            </p>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              className="hidden"
+              onChange={handlePhotoSelected}
+              data-testid="avatar-camera-input"
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoSelected}
+              data-testid="avatar-gallery-input"
+            />
+          </div>
           <Input
             label={t('profile.fullName')}
             value={editName}
@@ -575,13 +662,18 @@ export const ProfileScreen = () => {
               onChange={(municipality) => setEditMunicipalityCode(municipality?.code ?? null)}
             />
           </div>
+          {sheetError && (
+            <p role="alert" className="font-body-sm text-body-sm text-error">
+              {sheetError}
+            </p>
+          )}
           <div className="flex items-center gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               size="md"
               className="flex-1"
-              onClick={() => setIsEditOpen(false)}
+              onClick={closeEditSheet}
             >
               {t('profile.cancel')}
             </Button>
