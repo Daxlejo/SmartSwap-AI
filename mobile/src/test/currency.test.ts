@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { formatCop, formatCopDigits, sanitizeCopDigits } from '@/utils/currency';
 
-/** Intl separates the symbol with a non-breaking space; normalize it for readable assertions. */
-const plain = (value: string): string => value.replace(/ /g, ' ');
+/** Intl separates the symbol with a non-breaking space; \s matches it, so assertions read plainly. */
+const plain = (value: string): string => value.replace(/\s/g, ' ');
 
 describe('currency (Colombian pesos)', () => {
   it('formats amounts with the peso sign and dot thousand separators', () => {
