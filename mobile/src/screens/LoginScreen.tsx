@@ -9,6 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { ApiError } from '@/services/http/apiClient';
 import { useTranslation } from '@/hooks/useTranslation';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
+import { LocationPicker } from '@/components/LocationPicker';
 
 type AuthMode = 'login' | 'register';
 
@@ -27,7 +28,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [location, setLocation] = useState('');
+  const [municipalityCode, setMunicipalityCode] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | undefined>();
   const [showPassword, setShowPassword] = useState(false);
 
   // Async & Error states
@@ -50,7 +52,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
 
     const trimmedEmail = email.trim();
     const trimmedName = name.trim();
-    const trimmedLocation = location.trim();
 
     if (!trimmedEmail || !password) {
       setErrorMessage(t('auth.errors.missingCredentials'));
@@ -66,6 +67,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
         setErrorMessage(t('auth.errors.passwordTooShort'));
         return;
       }
+      if (!municipalityCode) {
+        setLocationError(t('location.required'));
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -77,7 +82,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           name: trimmedName,
           email: trimmedEmail,
           password,
-          location: trimmedLocation || t('auth.defaultLocation'),
+          municipalityCode: municipalityCode as string,
         });
       }
       navigate('/home', { replace: true });
@@ -257,17 +262,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           />
 
           {mode === 'register' && (
-            <Input
-              label={t('auth.location')}
-              id="auth-location"
-              type="text"
-              placeholder={t('auth.locationPlaceholder')}
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              leftIcon="location_on"
-              required
-              autoComplete="address-level2"
-            />
+            <div className="flex flex-col gap-1.5">
+              <span className="font-label-md text-label-md text-on-surface">
+                {t('location.title')}
+              </span>
+              <LocationPicker
+                municipalityCode={municipalityCode}
+                onChange={(municipality) => {
+                  setMunicipalityCode(municipality?.code ?? null);
+                  setLocationError(undefined);
+                }}
+                error={locationError}
+              />
+            </div>
           )}
 
           {/* Primary Submit CTA */}
