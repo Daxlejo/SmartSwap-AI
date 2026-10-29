@@ -2,6 +2,8 @@ export interface ImageCompressionOptions {
   maxDimension?: number;
   quality?: number;
   mimeType?: 'image/jpeg' | 'image/webp';
+  /** Centre-crop to a maxDimension x maxDimension square (profile photos). */
+  square?: boolean;
 }
 
 const DEFAULT_MAX_DIMENSION = 1024;
@@ -33,6 +35,15 @@ export const calculateTargetDimensions = (
     width: Math.max(1, Math.round(width * ratio)),
     height: maxDimension,
   };
+};
+
+/** Largest centred square inside a width x height image. */
+export const calculateSquareCrop = (
+  width: number,
+  height: number,
+): { sx: number; sy: number; side: number } => {
+  const side = Math.max(1, Math.min(width, height));
+  return { sx: Math.round((width - side) / 2), sy: Math.round((height - side) / 2), side };
 };
 
 const readFileAsDataUrl = (file: File): Promise<string> => {
@@ -74,11 +85,14 @@ export const compressImageToDataUrl = async (
 
     img.onload = () => {
       try {
-        const { width, height } = calculateTargetDimensions(
-          img.naturalWidth || img.width || maxDimension,
-          img.naturalHeight || img.height || maxDimension,
-          maxDimension,
-        );
+        const sourceWidth = img.naturalWidth || img.width || maxDimension;
+        const sourceHeight = img.naturalHeight || img.height || maxDimension;
+        const crop = options.square
+          ? calculateSquareCrop(sourceWidth, sourceHeight)
+          : { sx: 0, sy: 0, side: 0 };
+        const { width, height } = options.square
+          ? { width: Math.min(maxDimension, crop.side), height: Math.min(maxDimension, crop.side) }
+          : calculateTargetDimensions(sourceWidth, sourceHeight, maxDimension);
 
         const canvas = document.createElement('canvas');
         canvas.width = width;
@@ -93,7 +107,11 @@ export const compressImageToDataUrl = async (
         // Fill white background for transparent PNGs converted to JPEG
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
+        if (options.square) {
+          ctx.drawImage(img, crop.sx, crop.sy, crop.side, crop.side, 0, 0, width, height);
+        } else {
+          ctx.drawImage(img, 0, 0, width, height);
+        }
 
         const compressedDataUrl = canvas.toDataURL(mimeType, quality);
         if (compressedDataUrl && compressedDataUrl.startsWith('data:image/')) {
