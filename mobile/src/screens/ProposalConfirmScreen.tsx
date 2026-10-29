@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export const ProposalConfirmScreen: React.FC = () => {
   const location = useLocation();
@@ -77,11 +78,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3.5">
-            <img
-              src={offeredItem.imageUrl}
-              alt={offeredItem.name}
-              className="w-16 h-16 rounded-xl object-cover bg-surface-container-low border border-surface-container-high/60 shrink-0"
-            />
+            <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
             <div className="flex-1 min-w-0 space-y-1">
               <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
                 {offeredItem.name}
@@ -127,11 +124,7 @@ export const ProposalConfirmScreen: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3.5">
-            <img
-              src={targetItem.imageUrl}
-              alt={targetItem.name}
-              className="w-16 h-16 rounded-xl object-cover bg-surface-container-low border border-surface-container-high/60 shrink-0"
-            />
+            <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
             <div className="flex-1 min-w-0 space-y-1">
               <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
                 {targetItem.name}

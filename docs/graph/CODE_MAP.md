@@ -54,6 +54,7 @@
 | `POST` | `/routes/search` | `RoutesController` | `searchRoutes` | Discover optimal 2-, 3-, and 4-hop circular swap routes matching the user objective |
 | `GET` | `/users/me` | `UsersController` | `getMe` | Get authenticated user profile |
 | `PATCH` | `/users/me` | `UsersController` | `updateMe` | Update authenticated user profile |
+| `POST` | `/users/me/avatar` | `UsersController` | `uploadAvatar` | Upload the authenticated user profile photo |
 | `GET` | `/users/me/stats` | `UsersController` | `getMeStats` | Get authenticated user statistics and operational metrics |
 
 ## 3. Backend Modules (`api/src/modules/`)

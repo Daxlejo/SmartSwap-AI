@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-29T05:16:33.825Z",
+  "generatedAt": "2026-10-29T05:43:37.036Z",
   "stats": {
-    "totalFiles": 133,
-    "apiFiles": 63,
-    "mobileFiles": 70,
-    "endpointsCount": 44
+    "totalFiles": 138,
+    "apiFiles": 65,
+    "mobileFiles": 73,
+    "endpointsCount": 45
   },
   "endpoints": [
     {
@@ -352,6 +352,14 @@
       "file": "api/src/modules/users/users.controller.ts"
     },
     {
+      "method": "POST",
+      "path": "/users/me/avatar",
+      "controller": "UsersController",
+      "handler": "uploadAvatar",
+      "summary": "Upload the authenticated user profile photo",
+      "file": "api/src/modules/users/users.controller.ts"
+    },
+    {
       "method": "GET",
       "path": "/users/me/stats",
       "controller": "UsersController",
@@ -417,8 +425,7 @@
       "api/src/modules/items/items.controller.ts",
       "api/src/modules/items/items.module.ts",
       "api/src/modules/items/items.service.ts",
-      "api/src/modules/items/mappers/item.mapper.ts",
-      "api/src/modules/items/storage/supabase-storage.service.ts"
+      "api/src/modules/items/mappers/item.mapper.ts"
     ],
     "api/notifications": [
       "api/src/modules/notifications/dto/query-notifications.dto.ts",
@@ -439,8 +446,13 @@
       "api/src/modules/routes/routes.module.ts",
       "api/src/modules/routes/routes.service.ts"
     ],
+    "api/storage": [
+      "api/src/modules/storage/storage.module.ts",
+      "api/src/modules/storage/supabase-storage.service.ts"
+    ],
     "api/users": [
       "api/src/modules/users/dto/update-profile.dto.ts",
+      "api/src/modules/users/dto/upload-avatar.dto.ts",
       "api/src/modules/users/mappers/user.mapper.ts",
       "api/src/modules/users/users.controller.ts",
       "api/src/modules/users/users.module.ts",
@@ -473,6 +485,7 @@
       "mobile/src/components/ui/EmptyState.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
+      "mobile/src/components/ui/ItemImage.tsx",
       "mobile/src/components/ui/Select.tsx",
       "mobile/src/components/ui/ThemeToggle.tsx"
     ],
@@ -546,6 +559,8 @@
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
+      "mobile/src/utils/avatarArt.ts",
+      "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts"
@@ -1199,10 +1214,10 @@
       "imports": [
         "../ai/ai.module",
         "../geo/geo.module",
+        "../storage/storage.module",
         "./items.controller",
         "./items.service",
         "./mappers/item.mapper",
-        "./storage/supabase-storage.service",
         "@nestjs/common"
       ]
     },
@@ -1216,11 +1231,11 @@
         "../ai/services/ai-embedding.service",
         "../geo/geo.service",
         "../geo/geo.types",
+        "../storage/supabase-storage.service",
         "./dto/create-item.dto",
         "./dto/query-items.dto",
         "./dto/update-item.dto",
         "./mappers/item.mapper",
-        "./storage/supabase-storage.service",
         "@nestjs/common",
         "@prisma/client"
       ],
@@ -1243,16 +1258,6 @@
         "../dto/create-item.dto",
         "@nestjs/common",
         "@prisma/client"
-      ]
-    },
-    "api/src/modules/items/storage/supabase-storage.service.ts": {
-      "module": "api/items",
-      "exports": [
-        "SupabaseStorageService"
-      ],
-      "imports": [
-        "@nestjs/common",
-        "crypto"
       ]
     },
     "api/src/modules/notifications/dto/query-notifications.dto.ts": {
@@ -1684,11 +1689,44 @@
         "User"
       ]
     },
+    "api/src/modules/storage/storage.module.ts": {
+      "module": "api/storage",
+      "exports": [
+        "StorageModule"
+      ],
+      "imports": [
+        "./supabase-storage.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/storage/supabase-storage.service.ts": {
+      "module": "api/storage",
+      "exports": [
+        "AVATAR_MAX_BYTES",
+        "ITEM_IMAGE_MAX_BYTES",
+        "SupabaseStorageService",
+        "UploadImageOptions"
+      ],
+      "imports": [
+        "@nestjs/common",
+        "crypto"
+      ]
+    },
     "api/src/modules/users/dto/update-profile.dto.ts": {
       "module": "api/users",
       "exports": [
         "UpdateProfileDto",
         "updateProfileSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/users/dto/upload-avatar.dto.ts": {
+      "module": "api/users",
+      "exports": [
+        "UploadAvatarDto",
+        "uploadAvatarSchema"
       ],
       "imports": [
         "zod"
@@ -1715,6 +1753,7 @@
         "../../common/guards/jwt-auth.guard",
         "../../common/pipes/zod-validation.pipe",
         "./dto/update-profile.dto",
+        "./dto/upload-avatar.dto",
         "./mappers/user.mapper",
         "./users.service",
         "@nestjs/common",
@@ -1744,6 +1783,14 @@
           "handler": "updateMe",
           "summary": "Update authenticated user profile",
           "file": "api/src/modules/users/users.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/users/me/avatar",
+          "controller": "UsersController",
+          "handler": "uploadAvatar",
+          "summary": "Upload the authenticated user profile photo",
+          "file": "api/src/modules/users/users.controller.ts"
         }
       ]
     },
@@ -1754,6 +1801,7 @@
       ],
       "imports": [
         "../geo/geo.module",
+        "../storage/storage.module",
         "./mappers/user.mapper",
         "./users.controller",
         "./users.service",
@@ -1771,6 +1819,7 @@
       "imports": [
         "../../prisma/prisma.service",
         "../geo/geo.service",
+        "../storage/supabase-storage.service",
         "./dto/update-profile.dto",
         "./mappers/user.mapper",
         "@nestjs/common",
@@ -1899,6 +1948,7 @@
         "./ui/Badge",
         "./ui/Button",
         "./ui/Icon",
+        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types"
       ]
@@ -1913,6 +1963,7 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
+        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types",
         "react"
@@ -1928,6 +1979,7 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types",
         "react"
@@ -1943,6 +1995,7 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types",
         "react"
@@ -1970,7 +2023,6 @@
         "./ui/Avatar",
         "./ui/Icon",
         "./ui/ThemeToggle",
-        "@/assets/avatar-alex.svg",
         "@/assets/logo.svg",
         "@/context/AppContext",
         "@/hooks/useTranslation",
@@ -1986,7 +2038,9 @@
       "imports": [
         "./Icon",
         "@/hooks/useTranslation",
-        "clsx"
+        "@/utils/avatarArt",
+        "clsx",
+        "react"
       ]
     },
     "mobile/src/components/ui/Badge.tsx": {
@@ -2067,6 +2121,19 @@
       "imports": [
         "./Icon",
         "@/hooks/useTranslation",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/ItemImage.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ItemImage",
+        "ItemImageProps"
+      ],
+      "imports": [
+        "./Icon",
+        "@/utils/categoryIcon",
         "clsx",
         "react"
       ]
@@ -2331,6 +2398,7 @@
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/swapService",
@@ -2356,7 +2424,6 @@
         "ExploreScreen"
       ],
       "imports": [
-        "@/assets/avatar-alex.svg",
         "@/components/LocationPrompt",
         "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
@@ -2367,6 +2434,7 @@
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
@@ -2390,6 +2458,7 @@
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
@@ -2447,7 +2516,6 @@
         "ProfileScreen"
       ],
       "imports": [
-        "@/assets/avatar-alex.svg",
         "@/components/DemoAccountSwitcher",
         "@/components/LocationPicker",
         "@/components/ui/Avatar",
@@ -2458,6 +2526,7 @@
         "@/components/ui/EmptyState",
         "@/components/ui/Icon",
         "@/components/ui/Input",
+        "@/components/ui/ItemImage",
         "@/components/ui/ThemeToggle",
         "@/context/AppContext",
         "@/data/mockData",
@@ -2465,6 +2534,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/utils/currency",
+        "@/utils/imageCompressor",
         "react",
         "react-router-dom"
       ]
@@ -2479,6 +2549,7 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
@@ -2498,6 +2569,7 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/data/mockData",
         "@/hooks/useTranslation",
         "@/types",
@@ -2512,8 +2584,6 @@
         "mergeUniqueWants"
       ],
       "imports": [
-        "@/assets/avatar-alex.svg",
-        "@/assets/item-bike.svg",
         "@/components/LocationPicker",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
@@ -2521,6 +2591,7 @@
         "@/components/ui/Chip",
         "@/components/ui/Icon",
         "@/components/ui/Input",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/ai/ai.service",
@@ -2554,6 +2625,7 @@
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
@@ -2589,12 +2661,9 @@
         "SearchingScreen"
       ],
       "imports": [
-        "@/assets/item-ball.svg",
-        "@/assets/item-bike.svg",
-        "@/assets/item-camera.svg",
-        "@/assets/item-headphones.svg",
         "@/components/ui/Button",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
@@ -2621,20 +2690,12 @@
         "TradesScreen"
       ],
       "imports": [
-        "@/assets/avatar-carlos.svg",
-        "@/assets/avatar-mateo.svg",
-        "@/assets/avatar-sofia.svg",
-        "@/assets/item-ball.svg",
-        "@/assets/item-bike.svg",
-        "@/assets/item-camera.svg",
-        "@/assets/item-headphones.svg",
-        "@/assets/item-lens.svg",
-        "@/assets/item-switch.svg",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
         "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/data/mockData",
         "@/hooks/useTranslation",
@@ -2670,7 +2731,6 @@
         "normalizeUser"
       ],
       "imports": [
-        "@/assets/avatar-alex.svg",
         "@/services/http/apiClient",
         "@/services/storage/tokenStorage",
         "@/types"
@@ -2742,8 +2802,6 @@
         "toDisplayCondition"
       ],
       "imports": [
-        "@/assets/avatar-alex.svg",
-        "@/assets/item-bike.svg",
         "@/services/http/apiClient",
         "@/services/storage/preferencesStorage",
         "@/types",
@@ -2861,6 +2919,24 @@
       ],
       "imports": []
     },
+    "mobile/src/utils/avatarArt.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "AvatarTraits",
+        "avatarDataUri",
+        "avatarTraitsFor",
+        "buildAvatarSvg",
+        "hashName"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/categoryIcon.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "categoryIcon"
+      ],
+      "imports": []
+    },
     "mobile/src/utils/currency.ts": {
       "module": "mobile/utils",
       "exports": [
@@ -2874,6 +2950,7 @@
       "module": "mobile/utils",
       "exports": [
         "ImageCompressionOptions",
+        "calculateSquareCrop",
         "calculateTargetDimensions",
         "compressImage",
         "compressImageToDataUrl"

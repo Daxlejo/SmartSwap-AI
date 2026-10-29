@@ -24,7 +24,7 @@ import { GeoModule } from './modules/geo/geo.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 60,
+        limit: 120,
       },
     ]),
     PrismaModule,

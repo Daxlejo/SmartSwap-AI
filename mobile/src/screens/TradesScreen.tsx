@@ -11,17 +11,7 @@ import { ApiError } from '@/services/http/apiClient';
 import { formatRelativeTime } from '@/utils/relativeTime';
 
 // Mock avatars
-import mateoAvatar from '@/assets/avatar-mateo.svg';
-import sofiaAvatar from '@/assets/avatar-sofia.svg';
-import carlosAvatar from '@/assets/avatar-carlos.svg';
-
-// Mock item images
-import bikeImg from '@/assets/item-bike.svg';
-import ballImg from '@/assets/item-ball.svg';
-import switchImg from '@/assets/item-switch.svg';
-import headphonesImg from '@/assets/item-headphones.svg';
-import cameraImg from '@/assets/item-camera.svg';
-import lensImg from '@/assets/item-lens.svg';
+import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
@@ -29,45 +19,18 @@ type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 interface ReceivedProposal {
   id: string;
   senderName: string;
-  senderAvatar: string;
+  senderAvatar?: string;
   senderRating: number;
   senderVerified: boolean;
   offeredItemName: string;
-  offeredItemImg: string;
+  offeredItemImg?: string;
+  offeredItemCategory?: string;
   targetItemName: string;
-  targetItemImg: string;
+  targetItemImg?: string;
+  targetItemCategory?: string;
   timeAgo: string;
   status: 'pending' | 'accepted' | 'declined';
 }
-
-const DEFAULT_RECEIVED_PROPOSALS: ReceivedProposal[] = [
-  {
-    id: 'prop-recv-1',
-    senderName: 'Mateo R.',
-    senderAvatar: mateoAvatar,
-    senderRating: 4.8,
-    senderVerified: false,
-    offeredItemName: 'Nintendo Switch OLED',
-    offeredItemImg: switchImg,
-    targetItemName: 'Bicicleta Trek Marlin 7',
-    targetItemImg: bikeImg,
-    timeAgo: 'hace 2 horas',
-    status: 'pending',
-  },
-  {
-    id: 'prop-recv-2',
-    senderName: 'Sofía V.',
-    senderAvatar: sofiaAvatar,
-    senderRating: 5.0,
-    senderVerified: true,
-    offeredItemName: 'Lente Fujinon 35mm f/1.4',
-    offeredItemImg: lensImg,
-    targetItemName: 'Bicicleta Trek Marlin 7',
-    targetItemImg: bikeImg,
-    timeAgo: 'hace 5 horas',
-    status: 'pending',
-  },
-];
 
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -83,9 +46,7 @@ export const TradesScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('recibidas');
 
   // Recibidas state
-  const [receivedProposals, setReceivedProposals] = useState<ReceivedProposal[]>(
-    DEFAULT_RECEIVED_PROPOSALS,
-  );
+  const [receivedProposals, setReceivedProposals] = useState<ReceivedProposal[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -99,8 +60,6 @@ export const TradesScreen: React.FC = () => {
 
   // Synchronize any real backend routes where user is a participant into Recibidas
   useEffect(() => {
-    if (!routes || routes.length === 0) return;
-
     const apiProposals: ReceivedProposal[] = routes
       .filter((r) => r.id !== mockSwapRoute.id && r.initiatorId !== currentUser?.id)
       .map((r) => {
@@ -123,25 +82,22 @@ export const TradesScreen: React.FC = () => {
 
         return {
           id: r.id,
-          senderName: initiator?.name || 'Carlos R.',
-          senderAvatar: initiator?.avatarUrl || carlosAvatar,
-          senderRating: initiator?.rating ?? 4.9,
-          senderVerified: initiator?.verified ?? true,
-          offeredItemName: offered?.name || 'Bicicleta Trek Marlin 7',
-          offeredItemImg: offered?.imageUrl || bikeImg,
-          targetItemName: target?.name || 'Cámara Fujifilm X-T30 II',
-          targetItemImg: target?.imageUrl || cameraImg,
+          senderName: initiator?.name || '—',
+          senderAvatar: initiator?.avatarUrl,
+          senderRating: initiator?.rating ?? 0,
+          senderVerified: initiator?.verified ?? false,
+          offeredItemName: offered?.name ?? '',
+          offeredItemImg: offered?.imageUrl,
+          offeredItemCategory: offered?.category,
+          targetItemName: target?.name ?? '',
+          targetItemImg: target?.imageUrl,
+          targetItemCategory: target?.category,
           timeAgo: t('trades.justReceived'),
           status,
         };
       });
 
-    if (apiProposals.length > 0) {
-      setReceivedProposals((prev) => {
-        const apiIds = new Set(apiProposals.map((p) => p.id));
-        return [...apiProposals, ...prev.filter((p) => !apiIds.has(p.id))];
-      });
-    }
+    setReceivedProposals(apiProposals);
   }, [routes, currentUser?.id, t]);
 
   const describeError = (error: unknown): string =>
@@ -203,25 +159,18 @@ export const TradesScreen: React.FC = () => {
     }
   };
 
-  // Fallback 4 items for chain visual in En Curso if route has default items
-  const defaultChainSteps = [
-    { name: 'Bicicleta', img: bikeImg, user: 'Tú' },
-    { name: 'Balón', img: ballImg, user: 'Carlos V.' },
-    { name: 'Audífonos', img: headphonesImg, user: 'Laura M.' },
-    { name: 'Cámara', img: cameraImg, user: 'Sofía V.' },
-  ];
-
   const chainSteps =
     primaryActiveRoute && primaryActiveRoute.chainItems.length >= 2
       ? primaryActiveRoute.chainItems.slice(0, 4).map((item, idx) => ({
           name: item.name.split(' ')[0],
-          img: item.imageUrl || bikeImg,
+          img: item.imageUrl,
+          category: item.category,
           user:
             idx === 0
               ? t('trades.you')
               : primaryActiveRoute.participants[idx]?.name || t('trades.step', { count: idx + 1 }),
         }))
-      : defaultChainSteps;
+      : [];
 
   const isPrimaryRouteCompleted =
     Boolean(completedRouteIds[primaryActiveRoute.id]) ||
@@ -384,11 +333,7 @@ export const TradesScreen: React.FC = () => {
                 <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-surface-container-low border border-surface-container-high/50">
                   {/* Offers */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <img
-                      src={proposal.offeredItemImg}
-                      alt={proposal.offeredItemName}
-                      className="w-11 h-11 rounded-lg object-cover bg-surface-container shrink-0"
-                    />
+                    <ItemImage src={proposal.offeredItemImg} alt={proposal.offeredItemName} category={proposal.offeredItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
                       <span className="font-label-sm text-[10px] text-secondary font-bold uppercase tracking-wider">
                         {t('trades.offers')}
@@ -403,11 +348,7 @@ export const TradesScreen: React.FC = () => {
 
                   {/* Wants */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <img
-                      src={proposal.targetItemImg}
-                      alt={proposal.targetItemName}
-                      className="w-11 h-11 rounded-lg object-cover bg-surface-container shrink-0"
-                    />
+                    <ItemImage src={proposal.targetItemImg} alt={proposal.targetItemName} category={proposal.targetItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
                       <span className="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider">
                         {t('trades.inExchangeFor')}
@@ -518,11 +459,7 @@ export const TradesScreen: React.FC = () => {
 
                   <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <img
-                        src={offered?.imageUrl || bikeImg}
-                        alt={offered?.name ?? ''}
-                        className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
-                      />
+                      <ItemImage src={offered?.imageUrl} alt={offered?.name ?? ''} category={offered?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
                           {t('trades.youOffer')}
@@ -538,11 +475,7 @@ export const TradesScreen: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <img
-                        src={target?.imageUrl || cameraImg}
-                        alt={target?.name ?? ''}
-                        className="w-12 h-12 rounded-lg object-cover bg-surface-container shrink-0"
-                      />
+                      <ItemImage src={target?.imageUrl} alt={target?.name ?? ''} category={target?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
                           {t('trades.inExchange')}
@@ -643,11 +576,7 @@ export const TradesScreen: React.FC = () => {
                             idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
                           }`}
                         >
-                          <img
-                            src={step.img}
-                            alt={step.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
                           {idx === 0 && (
                             <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
                               {t('trades.you')}

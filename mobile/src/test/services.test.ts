@@ -108,7 +108,8 @@ describe('Domain Services & Utilities', () => {
 
     expect(user.id).toBe('user-99');
     expect(user.initials).toBe('SV');
-    expect(user.verified).toBe(true);
+    expect(user.verified).toBe(false);
+    expect(user.avatarUrl).toBeUndefined();
     expect(user.co2SavedKg).toBe(21.4);
   });
 

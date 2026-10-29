@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import clsx from 'clsx';
 import { Icon } from './Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { avatarDataUri } from '@/utils/avatarArt';
 
 export interface AvatarProps {
   src?: string;
@@ -25,27 +27,21 @@ export const Avatar = ({
   className,
 }: AvatarProps) => {
   const { t } = useTranslation();
+  const [failedSrc, setFailedSrc] = useState<string | undefined>();
+  // A missing or broken photo falls back to the illustration generated from the name.
+  const resolvedSrc = src && src !== failedSrc ? src : avatarDataUri(alt);
+
   return (
     <div className={clsx('relative inline-flex shrink-0 select-none', className)}>
-      {src ? (
-        <img
-          src={src}
-          alt={alt}
-          className={clsx(
-            'rounded-full object-cover bg-surface-container-high',
-            sizeClasses[size],
-          )}
-        />
-      ) : (
-        <div
-          className={clsx(
-            'rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-headline-sm text-headline-sm',
-            sizeClasses[size],
-          )}
-        >
-          {alt.slice(0, 2).toUpperCase()}
-        </div>
-      )}
+      <img
+        src={resolvedSrc}
+        alt={alt}
+        onError={() => setFailedSrc(src)}
+        className={clsx(
+          'rounded-full object-cover bg-surface-container-high',
+          sizeClasses[size],
+        )}
+      />
       {verified && (
         <span
           className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center ring-2 ring-surface shadow-xs"

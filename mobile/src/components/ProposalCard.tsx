@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export interface ProposalCardProps {
   proposal: Proposal;
@@ -49,11 +50,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
           <span className="font-label-sm text-[10px] uppercase tracking-wider text-secondary font-bold mb-1">
             {isReceived ? t('cards.theyOffer') : t('cards.youOffer')}
           </span>
-          <img
-            src={offeredItem.imageUrl}
-            alt={offeredItem.name}
-            className="w-14 h-14 rounded-lg object-cover mb-1.5 border border-surface-container-high/60 bg-surface-container-highest"
-          />
+          <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />
           <span className="font-body-sm text-body-sm font-medium text-on-surface text-center line-clamp-1">
             {offeredItem.name}
           </span>
@@ -73,11 +70,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
           <span className="font-label-sm text-[10px] uppercase tracking-wider text-primary font-bold mb-1">
             {isReceived ? t('cards.yourItem') : t('cards.youWant')}
           </span>
-          <img
-            src={targetItem.imageUrl}
-            alt={targetItem.name}
-            className="w-14 h-14 rounded-lg object-cover mb-1.5 border border-surface-container-high/60 bg-surface-container-highest"
-          />
+          <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />
           <span className="font-body-sm text-body-sm font-medium text-on-surface text-center line-clamp-1">
             {targetItem.name}
           </span>

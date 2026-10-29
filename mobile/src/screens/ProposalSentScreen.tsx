@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export const ProposalSentScreen: React.FC = () => {
   const location = useLocation();
@@ -79,11 +80,7 @@ export const ProposalSentScreen: React.FC = () => {
                       isLast ? 'ring-2 ring-primary ring-offset-1' : ''
                     }`}
                   >
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                     {isFirst && (
                       <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
                         {t('proposalSent.you')}

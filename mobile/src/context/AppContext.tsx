@@ -48,6 +48,7 @@ export interface AppContextValue {
   createItemReal: (payload: CreateItemPayload) => Promise<Item>;
   deleteItemReal: (id: string) => Promise<void>;
   updateProfileReal: (payload: UpdateProfilePayload) => Promise<User>;
+  uploadAvatarReal: (imageDataUrl: string) => Promise<User>;
   searchRoutesReal: (params: SearchRoutesPayload) => Promise<SwapRoute[]>;
   proposeRouteReal: (route: SwapRoute | ProposeRoutePayload) => Promise<SwapRoute>;
   respondToProposalReal: (
@@ -615,6 +616,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return updatedUser;
   }, [reloadMarketplace]);
 
+  const uploadAvatarReal = useCallback(async (imageDataUrl: string): Promise<User> => {
+    const updatedUser = await authService.uploadAvatar(imageDataUrl);
+    setCurrentUser(updatedUser);
+    return updatedUser;
+  }, []);
+
   const searchRoutesReal = useCallback(
     async (params: SearchRoutesPayload): Promise<SwapRoute[]> => {
       // Users with a registered municipality search inside the area they chose; others, nationwide
@@ -801,6 +808,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createItemReal,
       deleteItemReal,
       updateProfileReal,
+      uploadAvatarReal,
       searchRoutesReal,
       proposeRouteReal,
       respondToProposalReal,
@@ -832,6 +840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createItemReal,
       deleteItemReal,
       updateProfileReal,
+      uploadAvatarReal,
       searchRoutesReal,
       proposeRouteReal,
       respondToProposalReal,
@@ -876,6 +885,7 @@ const fallbackContextValue: AppContextValue = {
   createItemReal: async (payload) => itemsService.createItem(payload),
   deleteItemReal: async (id) => itemsService.deleteItem(id),
   updateProfileReal: async (payload) => authService.updateProfile(payload),
+  uploadAvatarReal: async (imageDataUrl) => authService.uploadAvatar(imageDataUrl),
   searchRoutesReal: async (params) => routesService.searchRoutes(params),
   proposeRouteReal: async (routeOrPayload) =>
     routesService.proposeRoute(toProposePayload(routeOrPayload)),
