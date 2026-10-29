@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import logoImg from '@/assets/logo.svg';
-import alexAvatar from '@/assets/avatar-alex.svg';
 import { useApp } from '@/context/AppContext';
 import { Icon } from './ui/Icon';
 import { Avatar } from './ui/Avatar';
@@ -119,7 +118,7 @@ export const TopBar = ({
               className="w-11 h-11 flex items-center justify-center rounded-full p-0.5 hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Avatar
-                src={currentUser?.avatarUrl || alexAvatar}
+                src={currentUser?.avatarUrl}
                 alt={currentUser?.name || 'Alex Morales'}
                 size="sm"
               />

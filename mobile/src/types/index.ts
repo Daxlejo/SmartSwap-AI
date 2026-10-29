@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   rating: number;
   location: string;
   /** DANE codes of the user's registered municipality (set at registration). */
@@ -33,7 +33,8 @@ export interface Item {
   category: string;
   condition: string;
   ownerId: string;
-  imageUrl: string;
+  /** Cover photo; undefined when the item has none (the UI shows a category placeholder). */
+  imageUrl?: string;
   images?: string[];
   wants: string[];
   description?: string;

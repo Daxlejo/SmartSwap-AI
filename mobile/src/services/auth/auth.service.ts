@@ -1,7 +1,6 @@
 import { apiClient, ApiError } from '@/services/http/apiClient';
 import { tokenStorage } from '@/services/storage/tokenStorage';
 import type { User } from '@/types';
-import alexAvatar from '@/assets/avatar-alex.svg';
 
 export interface LoginPayload {
   email: string;
@@ -65,7 +64,7 @@ export const normalizeUser = (raw: RawUserDto): User => {
     name,
     email: raw.email,
     initials: raw.initials || computedInitials,
-    avatarUrl: raw.avatarUrl || alexAvatar,
+    avatarUrl: raw.avatarUrl || undefined,
     location: raw.location || 'Colombia',
     departmentCode: raw.departmentCode ?? undefined,
     municipalityCode: raw.municipalityCode ?? undefined,
@@ -73,7 +72,7 @@ export const normalizeUser = (raw: RawUserDto): User => {
     rating: typeof raw.rating === 'number' ? raw.rating : 5.0,
     tradesCompleted: typeof raw.tradesCompleted === 'number' ? raw.tradesCompleted : 0,
     co2SavedKg: typeof raw.co2SavedKg === 'number' ? raw.co2SavedKg : 0,
-    verified: typeof raw.verified === 'boolean' ? raw.verified : true,
+    verified: typeof raw.verified === 'boolean' ? raw.verified : false,
     createdAt:
       typeof raw.createdAt === 'string'
         ? raw.createdAt
@@ -153,6 +152,14 @@ export const authService = {
 
   async updateProfile(payload: UpdateProfilePayload): Promise<User> {
     const raw = await apiClient.patch<RawUserDto>('/users/me', payload);
+    return normalizeUser(raw);
+  },
+
+  /** Sends an already compressed profile photo (data URL); the API stores it and returns the profile. */
+  async uploadAvatar(imageDataUrl: string): Promise<User> {
+    const raw = await apiClient.post<RawUserDto>('/users/me/avatar', {
+      imageBase64: imageDataUrl,
+    });
     return normalizeUser(raw);
   },
 
