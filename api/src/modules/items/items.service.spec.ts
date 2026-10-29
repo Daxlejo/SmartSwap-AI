@@ -11,7 +11,7 @@ import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { GeoService } from '../geo/geo.service';
 import { ItemsService } from './items.service';
-import { SupabaseStorageService } from './storage/supabase-storage.service';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 describe('ItemsService', () => {
   let itemsService: ItemsService;

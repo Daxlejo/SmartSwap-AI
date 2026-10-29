@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
 import { GeoModule } from '../geo/geo.module';
+import { StorageModule } from '../storage/storage.module';
 import { ItemsController } from './items.controller';
 import { ItemsService } from './items.service';
 import { ItemMapper } from './mappers/item.mapper';
-import { SupabaseStorageService } from './storage/supabase-storage.service';
 
 @Module({
-  imports: [AiModule, GeoModule],
+  imports: [AiModule, GeoModule, StorageModule],
   controllers: [ItemsController],
-  providers: [ItemsService, ItemMapper, SupabaseStorageService],
-  exports: [ItemsService, ItemMapper, SupabaseStorageService],
+  providers: [ItemsService, ItemMapper],
+  exports: [ItemsService, ItemMapper],
 })
 export class ItemsModule {}

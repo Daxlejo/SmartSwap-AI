@@ -24,7 +24,7 @@ import {
   ItemResponseDto,
   ItemWithRelations,
 } from './mappers/item.mapper';
-import { SupabaseStorageService } from './storage/supabase-storage.service';
+import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 const ITEM_RELATIONS_INCLUDE = {
   owner: {
