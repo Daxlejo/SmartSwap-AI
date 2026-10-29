@@ -48,6 +48,11 @@ export interface ValueEstimationResult extends Record<string, unknown> {
   source: 'openai' | 'fallback';
 }
 
+/** All money in SmartSwap is Colombian pesos (COP), always whole numbers. */
+const COP_ROUNDING_STEP = 10_000;
+const MIN_ESTIMATED_VALUE_COP = 40_000;
+const MIN_RANGE_VALUE_COP = 20_000;
+
 const CONDITION_LABELS: Record<ItemConditionType, ConditionLabelEs> = {
   LIKE_NEW: 'Como nuevo',
   EXCELLENT: 'Excelente',
@@ -83,7 +88,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'EXCELLENT',
     description:
       'Instrumento musical en excelente estado de conservación, calibrado y listo para estudio o presentaciones en vivo.',
-    baseValue: 240,
+    baseValue: 960_000,
     aiTags: ['musica', 'instrumento', 'audio', 'estudio', 'creatividad'],
     suggestedWants: ['Interfaz de audio USB', 'Monitores de estudio', 'Tablet o iPad'],
     en: {
@@ -100,7 +105,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'EXCELLENT',
     description:
       'Computador portátil ideal para desarrollo de software, diseño y productividad académica con batería en óptimo estado.',
-    baseValue: 520,
+    baseValue: 2_080_000,
     aiTags: ['tecnologia', 'laptop', 'computacion', 'productividad', 'universidad'],
     suggestedWants: ['Monitor 4K UltraWide', 'Bicicleta urbana', 'Cámara Mirrorless'],
     en: {
@@ -117,7 +122,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'LIKE_NEW',
     description:
       'Monitor de alta resolución con panel IPS, excelente fidelidad de color y soporte ergonómico ajustable.',
-    baseValue: 310,
+    baseValue: 1_240_000,
     aiTags: ['monitor', 'setup', 'productividad', 'tecnologia', 'diseno'],
     suggestedWants: ['Silla ergonómica', 'Teclado mecánico inalámbrico', 'Audífonos ANC'],
     en: {
@@ -134,7 +139,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'EXCELLENT',
     description:
       'Cámara digital compacta de lentes intercambiables con sensor de alta sensibilidad, ideal para fotografía y video 4K.',
-    baseValue: 460,
+    baseValue: 1_840_000,
     aiTags: ['fotografia', 'camara', 'video', 'creacion-contenido', 'optica'],
     suggestedWants: ['Laptop ligera', 'Estabilizador Gimbal', 'Drone compacto'],
     en: {
@@ -151,7 +156,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'GOOD',
     description:
       'Bicicleta con cuadro ligero de aluminio, frenos de disco y transmisión recién ajustada para movilidad sostenible.',
-    baseValue: 290,
+    baseValue: 1_160_000,
     aiTags: ['deportes', 'ciclismo', 'movilidad', 'outdoor', 'ecologico'],
     suggestedWants: ['Reloj GPS deportivo', 'Cámara de acción', 'Audífonos inalámbricos'],
     en: {
@@ -168,7 +173,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'LIKE_NEW',
     description:
       'Audífonos Bluetooth de alta fidelidad con cancelación activa de ruido (ANC) y estuche de transporte original.',
-    baseValue: 185,
+    baseValue: 740_000,
     aiTags: ['audio', 'bluetooth', 'anc', 'musica', 'portatil'],
     suggestedWants: ['Teclado mecánico', 'Kindle Paperwhite', 'Mochila impermeable'],
     en: {
@@ -185,7 +190,7 @@ const ARCHETYPES: ArchetypeTemplate[] = [
     condition: 'EXCELLENT',
     description:
       'Consola de videojuegos con controles originales y accesorios completos en excelente estado funcional.',
-    baseValue: 270,
+    baseValue: 1_080_000,
     aiTags: ['gaming', 'consola', 'entretenimiento', 'videojuegos'],
     suggestedWants: ['Monitor Gaming 144Hz', 'Audífonos inalámbricos', 'Tablet'],
     en: {
@@ -212,7 +217,8 @@ export class AiVisionService {
       this.buildFallbackVisionResult(dto.hintText, dto.imageBase64, locale);
 
     const systemPrompt = [
-      'Eres el motor de visión artificial y tasación circular de SmartSwap.',
+      'Eres el motor de visión artificial y tasación circular de SmartSwap, una app de trueque en Colombia.',
+      'Todos los valores monetarios van en pesos colombianos (COP), como enteros sin puntos ni decimales (por ejemplo 1500000).',
       'Analiza el artículo de la imagen y/o descripción proporcionada y devuelve ÚNICAMENTE un objeto JSON estricto con estas claves exactas:',
       '{',
       `  "name": "Nombre comercial conciso en ${language} (máx 60 caracteres)",`,
@@ -220,9 +226,9 @@ export class AiVisionService {
       '  "condition": "LIKE_NEW | EXCELLENT | GOOD | FOR_PARTS",',
       '  "conditionLabel": "Como nuevo | Excelente | Bueno | Para piezas",',
       `  "description": "Descripción atractiva y honesta en ${language} de 1 a 2 oraciones destacando su estado y utilidad.",`,
-      '  "estimatedValue": numero_entero_en_USD,',
-      '  "minValue": numero_entero_en_USD,',
-      '  "maxValue": numero_entero_en_USD,',
+      '  "estimatedValue": numero_entero_en_COP,',
+      '  "minValue": numero_entero_en_COP,',
+      '  "maxValue": numero_entero_en_COP,',
       '  "aiTags": ["5 etiquetas semánticas en minúsculas"],',
       `  "suggestedWants": ["3 artículos sugeridos en ${language} de valor similar para trueque"],`,
       '  "confidence": numero_entre_0_y_1',
@@ -260,20 +266,20 @@ export class AiVisionService {
   }
 
   /**
-   * Estimates the fair market swap value (USD) of an item based on its name, category, condition, and description.
+   * Estimates the fair market swap value (COP) of an item based on its name, category, condition, and description.
    */
   async estimateValue(dto: EstimateValueDto): Promise<ValueEstimationResult> {
     const fallbackFactory = (): ValueEstimationResult =>
       this.buildFallbackValueEstimate(dto);
 
     const systemPrompt = [
-      'Eres un tasador experto de economía circular y trueque tecnológico en Latinoamérica.',
-      'Calcula el valor estimado de intercambio en USD según el nombre, categoría, condición y descripción.',
+      'Eres un tasador experto de economía circular y trueque tecnológico en Colombia.',
+      'Calcula el valor estimado de intercambio en pesos colombianos (COP) según el nombre, categoría, condición y descripción, con precios del mercado de segunda mano colombiano. Responde enteros sin puntos ni decimales (por ejemplo 1500000).',
       'Devuelve ÚNICAMENTE un JSON válido con esta estructura:',
       '{',
-      '  "estimatedValue": numero_entero_USD,',
-      '  "minValue": numero_entero_USD,',
-      '  "maxValue": numero_entero_USD,',
+      '  "estimatedValue": numero_entero_COP,',
+      '  "minValue": numero_entero_COP,',
+      '  "maxValue": numero_entero_COP,',
       '  "condition": "LIKE_NEW | EXCELLENT | GOOD | FOR_PARTS",',
       '  "conditionLabel": "Como nuevo | Excelente | Bueno | Para piezas",',
       '  "reasoning": "Explicación breve de 1 oración en español sobre la valoración.",',
@@ -302,22 +308,22 @@ export class AiVisionService {
       typeof rawResult.estimatedValue === 'number' &&
       Number.isFinite(rawResult.estimatedValue) &&
       rawResult.estimatedValue > 0
-        ? Math.round(rawResult.estimatedValue)
+        ? this.roundCop(rawResult.estimatedValue)
         : fallback.estimatedValue;
 
     const minValue =
       typeof rawResult.minValue === 'number' &&
       Number.isFinite(rawResult.minValue) &&
       rawResult.minValue > 0
-        ? Math.round(rawResult.minValue)
-        : Math.max(10, Math.round(estimatedValue * 0.85));
+        ? this.roundCop(rawResult.minValue)
+        : this.roundCop(estimatedValue * 0.85);
 
     const maxValue =
       typeof rawResult.maxValue === 'number' &&
       Number.isFinite(rawResult.maxValue) &&
       rawResult.maxValue >= estimatedValue
-        ? Math.round(rawResult.maxValue)
-        : Math.round(estimatedValue * 1.15);
+        ? this.roundCop(rawResult.maxValue)
+        : this.roundCop(estimatedValue * 1.15);
 
     return {
       estimatedValue,
@@ -402,8 +408,8 @@ export class AiVisionService {
         conditionLabel: CONDITION_LABELS[matched.condition],
         description: copyFor(matched).description,
         estimatedValue,
-        minValue: Math.round(estimatedValue * 0.85),
-        maxValue: Math.round(estimatedValue * 1.15),
+        minValue: this.roundCop(estimatedValue * 0.85),
+        maxValue: this.roundCop(estimatedValue * 1.15),
         aiTags: matched.aiTags,
         suggestedWants: copyFor(matched).suggestedWants,
         confidence: 0.86,
@@ -432,8 +438,8 @@ export class AiVisionService {
       conditionLabel: CONDITION_LABELS[selected.condition],
       description: copyFor(selected).description,
       estimatedValue,
-      minValue: Math.round(estimatedValue * 0.85),
-      maxValue: Math.round(estimatedValue * 1.15),
+      minValue: this.roundCop(estimatedValue * 0.85),
+      maxValue: this.roundCop(estimatedValue * 1.15),
       aiTags: selected.aiTags,
       suggestedWants: copyFor(selected).suggestedWants,
       confidence: 0.82,
@@ -456,11 +462,11 @@ export class AiVisionService {
 
     const multiplier = CONDITION_MULTIPLIERS[dto.condition] ?? 1.0;
     const estimatedValue = Math.max(
-      15,
-      Math.round((baseCategoryValue * multiplier) / 5) * 5,
+      MIN_ESTIMATED_VALUE_COP,
+      this.roundCop(baseCategoryValue * multiplier),
     );
-    const minValue = Math.max(10, Math.round(estimatedValue * 0.85));
-    const maxValue = Math.round(estimatedValue * 1.15);
+    const minValue = this.roundCop(estimatedValue * 0.85);
+    const maxValue = this.roundCop(estimatedValue * 1.15);
     const conditionLabel = CONDITION_LABELS[dto.condition];
 
     return {
@@ -490,15 +496,23 @@ export class AiVisionService {
     };
   }
 
+  /** Rounds a peso amount to a tidy step (never below the minimum). */
+  private roundCop(value: number): number {
+    return Math.max(
+      MIN_RANGE_VALUE_COP,
+      Math.round(value / COP_ROUNDING_STEP) * COP_ROUNDING_STEP,
+    );
+  }
+
   private inferCategoryBaseValue(category: string): number {
     const lower = category.toLowerCase();
-    if (lower.includes('tecnolog') || lower.includes('comput')) return 320;
-    if (lower.includes('fotograf') || lower.includes('camara')) return 380;
-    if (lower.includes('music') || lower.includes('audio')) return 210;
-    if (lower.includes('deport') || lower.includes('bici')) return 240;
-    if (lower.includes('gaming') || lower.includes('consol')) return 250;
-    if (lower.includes('libro') || lower.includes('educa')) return 45;
-    return 150;
+    if (lower.includes('tecnolog') || lower.includes('comput')) return 1_280_000;
+    if (lower.includes('fotograf') || lower.includes('camara')) return 1_520_000;
+    if (lower.includes('music') || lower.includes('audio')) return 840_000;
+    if (lower.includes('deport') || lower.includes('bici')) return 960_000;
+    if (lower.includes('gaming') || lower.includes('consol')) return 1_000_000;
+    if (lower.includes('libro') || lower.includes('educa')) return 180_000;
+    return 600_000;
   }
 
   private sanitizeVisionResult(
@@ -514,22 +528,22 @@ export class AiVisionService {
       typeof raw.estimatedValue === 'number' &&
       Number.isFinite(raw.estimatedValue) &&
       raw.estimatedValue > 0
-        ? Math.round(raw.estimatedValue)
+        ? this.roundCop(raw.estimatedValue)
         : fallback.estimatedValue;
 
     const minValue =
       typeof raw.minValue === 'number' &&
       Number.isFinite(raw.minValue) &&
       raw.minValue > 0
-        ? Math.round(raw.minValue)
-        : Math.max(10, Math.round(estimatedValue * 0.85));
+        ? this.roundCop(raw.minValue)
+        : this.roundCop(estimatedValue * 0.85);
 
     const maxValue =
       typeof raw.maxValue === 'number' &&
       Number.isFinite(raw.maxValue) &&
       raw.maxValue >= estimatedValue
-        ? Math.round(raw.maxValue)
-        : Math.round(estimatedValue * 1.15);
+        ? this.roundCop(raw.maxValue)
+        : this.roundCop(estimatedValue * 1.15);
 
     return {
       name:
