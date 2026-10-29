@@ -3,18 +3,21 @@ import { ItemCondition, ItemStatus, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { AiEmbeddingService } from '../src/modules/ai/services/ai-embedding.service';
 import { OpenAiClientService } from '../src/modules/ai/services/openai-client.service';
+import { GeoService } from '../src/modules/geo/geo.service';
 
 const prisma = new PrismaClient();
 const configService = new ConfigService();
 const openAiClient = new OpenAiClientService(configService);
 const embeddingService = new AiEmbeddingService(openAiClient);
+const geoService = new GeoService();
 
 interface SeedUserSpec {
   id: string;
   email: string;
   name: string;
   initials: string;
-  location: string;
+  /** 5-digit DANE municipality code; department and label are derived from it. */
+  municipalityCode: string;
   level: number;
   rating: number;
   tradesCompleted: number;
@@ -29,8 +32,8 @@ interface SeedItemSpec {
   category: string;
   condition: ItemCondition;
   description: string;
+  /** Colombian pesos (COP). */
   estimatedValue: number;
-  location: string;
   images: string[];
   aiTags: string[];
   wants: string[];
@@ -42,7 +45,7 @@ const DEMO_USERS: SeedUserSpec[] = [
     email: 'alex@smartswap.co',
     name: 'Alex Rivera',
     initials: 'AR',
-    location: 'Pasto, Colombia',
+    municipalityCode: '52001',
     level: 3, // Nivel Oro
     rating: 4.9,
     tradesCompleted: 14,
@@ -54,7 +57,7 @@ const DEMO_USERS: SeedUserSpec[] = [
     email: 'valeria@smartswap.co',
     name: 'Valeria Gómez',
     initials: 'VG',
-    location: 'Medellín, Colombia',
+    municipalityCode: '05001',
     level: 2, // Nivel Plata
     rating: 4.8,
     tradesCompleted: 9,
@@ -66,7 +69,7 @@ const DEMO_USERS: SeedUserSpec[] = [
     email: 'mateo@smartswap.co',
     name: 'Mateo Vargas',
     initials: 'MV',
-    location: 'Bogotá, Colombia',
+    municipalityCode: '11001',
     level: 3, // Nivel Oro
     rating: 5.0,
     tradesCompleted: 19,
@@ -78,7 +81,7 @@ const DEMO_USERS: SeedUserSpec[] = [
     email: 'camila@smartswap.co',
     name: 'Camila Torres',
     initials: 'CT',
-    location: 'Cali, Colombia',
+    municipalityCode: '76001',
     level: 1, // Nivel Bronce
     rating: 4.7,
     tradesCompleted: 5,
@@ -96,8 +99,7 @@ const DEMO_ITEMS: SeedItemSpec[] = [
     condition: ItemCondition.NEW, // EXCELLENT
     description:
       'Portátil Apple MacBook Air con chip M1, 8GB RAM y 256GB SSD. Batería al 94%, incluye cargador USB-C original.',
-    estimatedValue: 650,
-    location: 'Pasto, Colombia',
+    estimatedValue: 2_600_000,
     images: [
       'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=900&q=80',
     ],
@@ -112,8 +114,7 @@ const DEMO_ITEMS: SeedItemSpec[] = [
     condition: ItemCondition.LIKE_NEW,
     description:
       'Cámara mirrorless Sony Alpha a6400 grabación 4K con lente kit 16-50mm OSS, correa, batería original y bolso.',
-    estimatedValue: 680,
-    location: 'Medellín, Colombia',
+    estimatedValue: 2_720_000,
     images: [
       'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=900&q=80',
     ],
@@ -128,8 +129,7 @@ const DEMO_ITEMS: SeedItemSpec[] = [
     condition: ItemCondition.LIKE_NEW,
     description:
       'Consola Nintendo Switch modelo OLED edición blanca con dock, controles Joy-Con impecables y juego físico Zelda Tears of the Kingdom.',
-    estimatedValue: 340,
-    location: 'Bogotá, Colombia',
+    estimatedValue: 1_360_000,
     images: [
       'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=900&q=80',
     ],
@@ -144,8 +144,7 @@ const DEMO_ITEMS: SeedItemSpec[] = [
     condition: ItemCondition.NEW, // EXCELLENT
     description:
       'Bicicleta gravel Specialized Diverge cuadro de aluminio ligero, horquilla de carbono y transmisión Shimano Claris recién ajustada.',
-    estimatedValue: 690,
-    location: 'Bogotá, Colombia',
+    estimatedValue: 2_760_000,
     images: [
       'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=900&q=80',
     ],
@@ -160,8 +159,7 @@ const DEMO_ITEMS: SeedItemSpec[] = [
     condition: ItemCondition.LIKE_NEW,
     description:
       'Monitor curvo UltraWide LG de 34 pulgadas resolución WQHD (3440x1440), panel IPS HDR10 ideal para diseño y multitarea.',
-    estimatedValue: 640,
-    location: 'Cali, Colombia',
+    estimatedValue: 2_560_000,
     images: [
       'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=900&q=80',
     ],
@@ -174,13 +172,21 @@ async function main(): Promise<void> {
   const passwordHash = await bcrypt.hash('SmartSwap2026!', 10);
   const userByEmail = new Map<string, string>();
 
+  const municipalityByUserId = new Map<
+    string,
+    ReturnType<GeoService['requireMunicipality']>
+  >();
+
   for (const userSpec of DEMO_USERS) {
+    const municipality = geoService.requireMunicipality(userSpec.municipalityCode);
     const user = await prisma.user.upsert({
       where: { email: userSpec.email },
       update: {
         name: userSpec.name,
         initials: userSpec.initials,
-        location: userSpec.location,
+        location: geoService.label(municipality),
+        departmentCode: municipality.departmentCode,
+        municipalityCode: municipality.code,
         level: userSpec.level,
         rating: userSpec.rating,
         tradesCompleted: userSpec.tradesCompleted,
@@ -194,7 +200,9 @@ async function main(): Promise<void> {
         passwordHash,
         name: userSpec.name,
         initials: userSpec.initials,
-        location: userSpec.location,
+        location: geoService.label(municipality),
+        departmentCode: municipality.departmentCode,
+        municipalityCode: municipality.code,
         level: userSpec.level,
         rating: userSpec.rating,
         tradesCompleted: userSpec.tradesCompleted,
@@ -204,6 +212,7 @@ async function main(): Promise<void> {
     });
 
     userByEmail.set(userSpec.email, user.id);
+    municipalityByUserId.set(user.id, municipality);
   }
 
   for (const itemSpec of DEMO_ITEMS) {
@@ -211,6 +220,16 @@ async function main(): Promise<void> {
     if (!ownerId) {
       throw new Error(`Owner ${itemSpec.ownerEmail} not found during seeding`);
     }
+
+    const ownerMunicipality = municipalityByUserId.get(ownerId);
+    if (!ownerMunicipality) {
+      throw new Error(`Municipality for owner ${itemSpec.ownerEmail} not resolved`);
+    }
+    const itemLocation = {
+      location: geoService.label(ownerMunicipality),
+      departmentCode: ownerMunicipality.departmentCode,
+      municipalityCode: ownerMunicipality.code,
+    };
 
     const itemEmbedding = await embeddingService.generateEmbedding(
       `${itemSpec.name} ${itemSpec.category} ${itemSpec.description}`,
@@ -225,7 +244,7 @@ async function main(): Promise<void> {
         condition: itemSpec.condition,
         description: itemSpec.description,
         estimatedValue: itemSpec.estimatedValue,
-        location: itemSpec.location,
+        ...itemLocation,
         status: ItemStatus.AVAILABLE,
         images: itemSpec.images,
         aiTags: itemSpec.aiTags,
@@ -239,7 +258,7 @@ async function main(): Promise<void> {
         condition: itemSpec.condition,
         description: itemSpec.description,
         estimatedValue: itemSpec.estimatedValue,
-        location: itemSpec.location,
+        ...itemLocation,
         status: ItemStatus.AVAILABLE,
         images: itemSpec.images,
         aiTags: itemSpec.aiTags,
