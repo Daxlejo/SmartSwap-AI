@@ -63,7 +63,7 @@ export const normalizeUser = (raw: RawUserDto): User => {
     email: raw.email,
     initials: raw.initials || computedInitials,
     avatarUrl: raw.avatarUrl || alexAvatar,
-    location: raw.location || 'Madrid, España',
+    location: raw.location || 'Colombia',
     level: typeof raw.level === 'number' ? raw.level : 1,
     rating: typeof raw.rating === 'number' ? raw.rating : 5.0,
     tradesCompleted: typeof raw.tradesCompleted === 'number' ? raw.tradesCompleted : 0,

@@ -14,6 +14,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ApiError } from '@/services/http/apiClient';
 import alexAvatar from '@/assets/avatar-alex.svg';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
 
 interface CategoryOption {
   id: string;
@@ -442,7 +443,7 @@ export const ExploreScreen = () => {
                   {/* Estimated Value Overlay Pill on Item Thumbnail */}
                   {item.estimatedValue !== undefined && (
                     <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-[10px] text-inverse-on-surface font-bold shadow-xs">
-                      {t('explore.estimatedShort', { value: item.estimatedValue })}
+                      {t('explore.estimatedShort', { value: formatCop(item.estimatedValue) })}
                     </span>
                   )}
                 </div>
@@ -478,7 +479,7 @@ export const ExploreScreen = () => {
               {selectedItem.estimatedValue !== undefined && (
                 <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md border border-surface-container-high shadow-xs">
                   <span className="font-label-md text-label-md text-primary font-bold">
-                    {t('explore.estimatedValue', { value: selectedItem.estimatedValue })}
+                    {t('explore.estimatedValue', { value: formatCop(selectedItem.estimatedValue) })}
                   </span>
                 </div>
               )}

@@ -1,5 +1,8 @@
 import { apiClient } from '@/services/http/apiClient';
 
+/** Used only when the API answers without a valuation (Colombian pesos). */
+const DEFAULT_ESTIMATED_VALUE_COP = 500_000;
+
 export interface AnalyzeItemPhotoPayload {
   imageBase64?: string;
   hintText?: string;
@@ -72,7 +75,7 @@ const normalizePhotoAnalysisResponse = (
   const estimatedValue =
     typeof raw.estimatedValue === 'number' && raw.estimatedValue > 0
       ? Math.round(raw.estimatedValue)
-      : 100;
+      : DEFAULT_ESTIMATED_VALUE_COP;
 
   const minValue =
     typeof raw.minValue === 'number' && raw.minValue > 0
@@ -120,7 +123,7 @@ const normalizeValueEstimateResponse = (
   const estimatedValue =
     typeof raw.estimatedValue === 'number' && raw.estimatedValue > 0
       ? Math.round(raw.estimatedValue)
-      : 100;
+      : DEFAULT_ESTIMATED_VALUE_COP;
 
   const minValue =
     typeof raw.minValue === 'number' && raw.minValue > 0

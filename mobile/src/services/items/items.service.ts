@@ -145,7 +145,7 @@ export const normalizeItem = (raw: RawItemDto): Item => {
       email: raw.owner.email,
       avatarUrl: raw.owner.avatarUrl || alexAvatar,
       rating: typeof raw.owner.rating === 'number' ? raw.owner.rating : 5.0,
-      location: raw.owner.location || raw.location || 'Madrid, España',
+      location: raw.owner.location || raw.location || 'Colombia',
       verified: typeof raw.owner.verified === 'boolean' ? raw.owner.verified : true,
       co2SavedKg: typeof raw.owner.co2SavedKg === 'number' ? raw.owner.co2SavedKg : 0,
     };

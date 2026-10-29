@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
 
 interface TargetPreset {
   id: string;
@@ -87,7 +88,11 @@ export const ConfigureSwapScreen = () => {
                 matchRate: t('configure.matchRate', { percent: 96 }),
                 details:
                   matchedItem.description ||
-                  t('configure.details.estimatedRange', { value: matchedItem.estimatedValue ?? 500 }),
+                  (matchedItem.estimatedValue !== undefined
+                    ? t('configure.details.estimatedRange', {
+                        value: formatCop(matchedItem.estimatedValue),
+                      })
+                    : t('configure.details.adequateFit')),
                 imageUrl: matchedItem.imageUrl,
                 co2Saved: '38 kg',
                 routesCount: 6,
@@ -113,7 +118,13 @@ export const ConfigureSwapScreen = () => {
                 name: 'Cámara Fujifilm X-T30 II',
                 title: cameraItem.name + ' + 15-45mm',
                 matchRate: t('configure.matchRate', { percent: 98 }),
-                details: t('configure.details.cameraRange'),
+                details:
+                  cameraItem.estimatedValue !== undefined
+                    ? t('configure.details.valueRange', {
+                        min: formatCop(cameraItem.estimatedValue * 0.95),
+                        max: formatCop(cameraItem.estimatedValue * 1.05),
+                      })
+                    : t('configure.details.adequateFit'),
                 imageUrl: cameraItem.imageUrl,
                 co2Saved: '42 kg',
                 routesCount: 7,
@@ -250,7 +261,7 @@ export const ConfigureSwapScreen = () => {
                           {t('configure.estimatedValue')}
                         </span>
                         <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                          ${selectedOfferItem.estimatedValue ?? 780} USD
+                          {formatCop(selectedOfferItem.estimatedValue)}
                         </span>
                       </div>
                     </div>

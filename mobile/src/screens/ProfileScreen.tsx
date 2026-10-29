@@ -15,6 +15,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 
 const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
@@ -320,7 +321,7 @@ export const ProfileScreen = () => {
 
                       {item.estimatedValue !== undefined && (
                         <p className="font-label-md text-label-md font-bold text-primary mt-2">
-                          {t('profile.estimatedValue', { value: item.estimatedValue })}
+                          {t('profile.estimatedValue', { value: formatCop(item.estimatedValue) })}
                         </p>
                       )}
                     </div>
