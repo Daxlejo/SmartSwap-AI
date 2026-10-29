@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-29T05:01:44.076Z",
+  "generatedAt": "2026-10-29T05:16:33.825Z",
   "stats": {
-    "totalFiles": 126,
+    "totalFiles": 133,
     "apiFiles": 63,
-    "mobileFiles": 63,
+    "mobileFiles": 70,
     "endpointsCount": 44
   },
   "endpoints": [
@@ -456,6 +456,9 @@
     "mobile/components": [
       "mobile/src/components/BottomNav.tsx",
       "mobile/src/components/DemoAccountSwitcher.tsx",
+      "mobile/src/components/LocationPicker.tsx",
+      "mobile/src/components/LocationPrompt.tsx",
+      "mobile/src/components/LocationScopeSelector.tsx",
       "mobile/src/components/ObjectCard.tsx",
       "mobile/src/components/ProposalCard.tsx",
       "mobile/src/components/RouteCard.tsx",
@@ -470,6 +473,7 @@
       "mobile/src/components/ui/EmptyState.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
+      "mobile/src/components/ui/Select.tsx",
       "mobile/src/components/ui/ThemeToggle.tsx"
     ],
     "mobile/config": [
@@ -527,6 +531,8 @@
     "mobile/services": [
       "mobile/src/services/ai/ai.service.ts",
       "mobile/src/services/auth/auth.service.ts",
+      "mobile/src/services/geo/geo.service.ts",
+      "mobile/src/services/geo/geolocation.ts",
       "mobile/src/services/health/health.service.ts",
       "mobile/src/services/http/apiClient.ts",
       "mobile/src/services/items/items.service.ts",
@@ -540,6 +546,7 @@
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
+      "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts"
     ]
@@ -1837,6 +1844,51 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/components/LocationPicker.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationPicker",
+        "LocationPickerProps"
+      ],
+      "imports": [
+        "./ui/Button",
+        "./ui/Icon",
+        "./ui/Select",
+        "@/hooks/useTranslation",
+        "@/services/geo/geo.service",
+        "@/services/geo/geolocation",
+        "@/services/http/apiClient",
+        "react"
+      ]
+    },
+    "mobile/src/components/LocationPrompt.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationPrompt"
+      ],
+      "imports": [
+        "./ui/Button",
+        "./ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/components/LocationScopeSelector.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationScopeSelector",
+        "LocationScopeSelectorProps"
+      ],
+      "imports": [
+        "./ui/Chip",
+        "./ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "@/services/storage/preferencesStorage",
+        "clsx"
+      ]
+    },
     "mobile/src/components/ObjectCard.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -2019,6 +2071,19 @@
         "react"
       ]
     },
+    "mobile/src/components/ui/Select.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Select",
+        "SelectOption",
+        "SelectProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
     "mobile/src/components/ui/ThemeToggle.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -2063,6 +2128,7 @@
         "@/services/items/items.service",
         "@/services/notifications/notifications.service",
         "@/services/routes/routes.service",
+        "@/services/storage/preferencesStorage",
         "@/services/storage/tokenStorage",
         "@/types",
         "react"
@@ -2259,6 +2325,8 @@
         "ConfigureSwapScreen"
       ],
       "imports": [
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2267,6 +2335,7 @@
         "@/hooks/useTranslation",
         "@/services/swapService",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2288,6 +2357,8 @@
       ],
       "imports": [
         "@/assets/avatar-alex.svg",
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
@@ -2301,6 +2372,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2311,6 +2383,8 @@
         "HomeScreen"
       ],
       "imports": [
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ui/Badge",
         "@/components/ui/Button",
@@ -2336,6 +2410,7 @@
       "imports": [
         "@/assets/logo.svg",
         "@/components/DemoAccountSwitcher",
+        "@/components/LocationPicker",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
@@ -2374,6 +2449,7 @@
       "imports": [
         "@/assets/avatar-alex.svg",
         "@/components/DemoAccountSwitcher",
+        "@/components/LocationPicker",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
@@ -2388,6 +2464,7 @@
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2407,6 +2484,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2436,6 +2514,7 @@
       "imports": [
         "@/assets/avatar-alex.svg",
         "@/assets/item-bike.svg",
+        "@/components/LocationPicker",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
@@ -2447,6 +2526,7 @@
         "@/services/ai/ai.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
+        "@/utils/currency",
         "@/utils/imageCompressor",
         "clsx",
         "react",
@@ -2479,6 +2559,7 @@
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2595,6 +2676,32 @@
         "@/types"
       ]
     },
+    "mobile/src/services/geo/geo.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "Department",
+        "Municipality",
+        "ResolvedLocation",
+        "SearchMunicipalitiesParams",
+        "geoService"
+      ],
+      "imports": [
+        "@/services/http/apiClient"
+      ]
+    },
+    "mobile/src/services/geo/geolocation.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "Coordinates",
+        "GeolocationError",
+        "GeolocationFailure",
+        "getApproximatePosition"
+      ],
+      "imports": [
+        "@capacitor/core",
+        "@capacitor/geolocation"
+      ]
+    },
     "mobile/src/services/health/health.service.ts": {
       "module": "mobile/services",
       "exports": [
@@ -2638,6 +2745,7 @@
         "@/assets/avatar-alex.svg",
         "@/assets/item-bike.svg",
         "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
         "@/types",
         "@/utils/imageCompressor"
       ]
@@ -2685,16 +2793,20 @@
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/services/storage/preferencesStorage",
-        "@/types"
+        "@/types",
+        "@/utils/currency"
       ]
     },
     "mobile/src/services/storage/preferencesStorage.ts": {
       "module": "mobile/services",
       "exports": [
         "DEFAULT_LOCALE",
+        "DEFAULT_LOCATION_SCOPE",
         "DEFAULT_THEME",
         "LOCALE_STORAGE_KEY",
+        "LOCATION_SCOPE_STORAGE_KEY",
         "LocalePreference",
+        "LocationScopePreference",
         "THEME_STORAGE_KEY",
         "ThemePreference",
         "preferencesStorage"
@@ -2746,6 +2858,15 @@
         "SwapRoute",
         "SwapStep",
         "User"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/currency.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "formatCop",
+        "formatCopDigits",
+        "sanitizeCopDigits"
       ],
       "imports": []
     },

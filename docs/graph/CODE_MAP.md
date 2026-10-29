@@ -63,11 +63,12 @@
 - **`routes/`**: `routes.controller.ts`, `routes.service.ts`, `engine/swap-graph.engine.ts`, `engine/route-scoring.strategy.ts` — Bounded DFS cycle finder (k=2,3,4) & atomic swap consensus.
 - **`ai/`**: `ai.controller.ts`, `services/ai-vision.service.ts`, `services/ai-explainer.service.ts`, `services/openai-client.service.ts` — OpenAI vision, valuation, and route explanation.
 - **`health/`**: `health.controller.ts` — DB probe and service liveness check.
+- **`geo/`**: `geo.controller.ts`, `geo.service.ts`, `data/colombia-municipalities.ts` (DANE, generated) — public municipality lookup, GPS resolve and radius queries; users and items carry `departmentCode`/`municipalityCode`.
 - **`notifications/`**: `notifications.controller.ts`, `notifications.service.ts`, `mappers/notification.mapper.ts` — In-app notification center (list, unread count, read, delete).
 - **`common/` & `prisma/`**: `jwt-auth.guard.ts`, `zod-validation.pipe.ts`, `prisma.service.ts` (soft-delete/logging).
 
 ## 4. Mobile Architecture (`mobile/src/`)
-- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale).
+- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `geo/` (departments, municipalities, GPS resolve), `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale/search area). Prices: `utils/currency.ts` (COP). Location UI: `components/LocationPicker.tsx`, `LocationScopeSelector.tsx`.
 - **State (`context/`)**: `AppContext.tsx` (swaps, active routes, mock fallback), `ThemeContext.tsx` (default `light`).
 - **Screens (`screens/`)**: `SplashScreen`, `LoginScreen`, `RegisterScreen`, `HomeScreen`, `ExploreScreen`, `PublishScreen`, `SearchingScreen`, `RouteResultsScreen`, `RouteDetailScreen`, `ConfigureSwapScreen`, `ProposalConfirmScreen`, `TradesScreen`, `NotificationsScreen`, `ProfileScreen`.
 - **i18n & Theme**: `i18n/es.ts` (source of truth, `TranslationSchema`) + `i18n/en.ts`; default `es`/`light`, persisted as `smartswap_locale` / `smartswap_theme`; use `hooks/useTranslation.ts`. Catalog values stay Spanish, labels via `catalog.*`. Brand: Primary `#00685f`, Accent `#fd761a`.
