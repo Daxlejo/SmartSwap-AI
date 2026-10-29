@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { mockUsers } from '@/data/mockData';
 import alexAvatar from '@/assets/avatar-alex.svg';
@@ -13,6 +13,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
+import { LocationPicker } from '@/components/LocationPicker';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
@@ -38,6 +39,7 @@ const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
 
 export const ProfileScreen = () => {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { isDark } = useTheme();
   const { t, language, changeLanguage } = useTranslation();
   const {
@@ -64,12 +66,23 @@ export const ProfileScreen = () => {
   // Edit profile modal state
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editName, setEditName] = useState(currentUser?.name ?? '');
-  const [editLocation, setEditLocation] = useState(currentUser?.location ?? '');
+  const [editMunicipalityCode, setEditMunicipalityCode] = useState<string | null>(
+    currentUser?.municipalityCode ?? null,
+  );
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     refreshItems().catch(() => {});
   }, [refreshItems]);
+
+  // Opened from the "add your location" prompt: jump straight to the edit sheet
+  useEffect(() => {
+    if ((routerLocation.state as { editLocation?: boolean } | null)?.editLocation) {
+      setEditMunicipalityCode(currentUser?.municipalityCode ?? null);
+      setIsEditOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routerLocation.state]);
 
   const handleRefreshMyItems = async () => {
     if (isRefreshing) return;
@@ -112,7 +125,9 @@ export const ProfileScreen = () => {
     try {
       await updateProfileReal({
         name: editName.trim(),
-        location: editLocation.trim() || undefined,
+        ...(editMunicipalityCode && editMunicipalityCode !== currentUser?.municipalityCode
+          ? { municipalityCode: editMunicipalityCode }
+          : {}),
       });
       setIsEditOpen(false);
     } catch (err) {
@@ -463,7 +478,7 @@ export const ProfileScreen = () => {
             type="button"
             onClick={() => {
               setEditName(currentUser?.name ?? '');
-              setEditLocation(currentUser?.location ?? '');
+              setEditMunicipalityCode(currentUser?.municipalityCode ?? null);
               setIsEditOpen(true);
             }}
             className="w-full flex justify-between items-center py-3 text-left group transition-colors"
@@ -573,12 +588,14 @@ export const ProfileScreen = () => {
             leftIcon="person"
             required
           />
-          <Input
-            label={t('profile.location')}
-            value={editLocation}
-            onChange={(e) => setEditLocation(e.target.value)}
-            leftIcon="location_on"
-          />
+          <div className="flex flex-col gap-1.5">
+            <span className="font-label-md text-label-md text-on-surface">{t('profile.location')}</span>
+            <LocationPicker
+              municipalityCode={editMunicipalityCode}
+              departmentCode={currentUser?.departmentCode}
+              onChange={(municipality) => setEditMunicipalityCode(municipality?.code ?? null)}
+            />
+          </div>
           <div className="flex items-center gap-3 pt-2">
             <Button
               type="button"
