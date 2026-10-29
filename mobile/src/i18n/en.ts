@@ -256,8 +256,6 @@ export const en: TranslationSchema = {
     disabled: 'Off',
     account: 'Account',
     editProfile: 'Edit profile',
-    identityVerification: 'Identity verification',
-    verified: 'Verified',
     swapHistory: 'Swap history',
     publishNewItem: 'Publish new item',
     logout: 'Sign out',

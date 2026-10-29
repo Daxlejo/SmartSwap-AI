@@ -493,22 +493,6 @@ export const ProfileScreen = () => {
             />
           </button>
 
-          {/* Verificación de identidad */}
-          <div className="flex justify-between items-center py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                <Icon name="verified_user" size="sm" />
-              </div>
-              <span className="font-body-md text-body-md font-medium text-on-surface">
-                {t('profile.identityVerification')}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="success">{t('profile.verified')}</Badge>
-              <Icon name="chevron_right" size="sm" className="text-on-surface-variant" />
-            </div>
-          </div>
-
           {/* Historial de canjes */}
           <button
             type="button"

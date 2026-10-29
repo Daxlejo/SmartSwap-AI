@@ -254,8 +254,6 @@ export const es = {
     disabled: 'Desactivadas',
     account: 'Cuenta',
     editProfile: 'Editar perfil',
-    identityVerification: 'Verificación de identidad',
-    verified: 'Verificado',
     swapHistory: 'Historial de canjes',
     publishNewItem: 'Publicar nuevo artículo',
     logout: 'Cerrar sesión',
