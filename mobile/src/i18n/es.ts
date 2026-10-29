@@ -567,7 +567,6 @@ export const es = {
       'Buen estado': 'Detalles estéticos normales',
       'Para repuesto': 'Requiere reparación o partes',
     },
-    defaultLocation: 'Bogotá, Colombia',
     ai: {
       assistant: 'Asistente IA SmartSwap',
       analyzing: 'Analizando objeto con IA...',
@@ -625,8 +624,8 @@ export const es = {
       valuePlaceholder: '1.500.000',
       reference: 'Referencial',
       location: 'Ubicación',
-      locationPlaceholder: 'Ej. Bogotá, Colombia',
-      locationHelper: 'Zona de entrega o punto de encuentro',
+      locationHelper: 'Tu artículo aparecerá a quienes estén cerca de este municipio.',
+      locationChange: 'Cambiar',
     },
     wants: {
       title: '¿Qué artículos aceptarías a cambio?',

@@ -569,7 +569,6 @@ export const en: TranslationSchema = {
       'Buen estado': 'Normal cosmetic wear',
       'Para repuesto': 'Needs repair or parts',
     },
-    defaultLocation: 'Bogotá, Colombia',
     ai: {
       assistant: 'SmartSwap AI assistant',
       analyzing: 'Analyzing item with AI...',
@@ -627,8 +626,8 @@ export const en: TranslationSchema = {
       valuePlaceholder: '1,500,000',
       reference: 'Reference',
       location: 'Location',
-      locationPlaceholder: 'e.g. Bogotá, Colombia',
-      locationHelper: 'Delivery area or meeting point',
+      locationHelper: 'Your item will show up for people near this municipality.',
+      locationChange: 'Change',
     },
     wants: {
       title: 'Which items would you accept in exchange?',

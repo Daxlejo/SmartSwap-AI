@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { LocationPicker } from '@/components/LocationPicker';
 import { formatCop, formatCopDigits, sanitizeCopDigits } from '@/utils/currency';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
@@ -215,7 +216,12 @@ export const PublishScreen: React.FC = () => {
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('Excelente estado');
   const [estimatedValue, setEstimatedValue] = useState('');
-  const [location, setLocation] = useState(currentUser?.location || t('publish.defaultLocation'));
+  // Items are located where they are published: the owner's municipality unless changed here
+  const [municipalityCode, setMunicipalityCode] = useState<string | null>(
+    currentUser?.municipalityCode ?? null,
+  );
+  const [locationLabel, setLocationLabel] = useState(currentUser?.location ?? '');
+  const [isChangingLocation, setIsChangingLocation] = useState(!currentUser?.municipalityCode);
 
   // Step 3: Wanted items state
   const [wantedItems, setWantedItems] = useState<string[]>([]);
@@ -443,7 +449,7 @@ export const PublishScreen: React.FC = () => {
     if (!estimatedValue || isNaN(parsedVal) || parsedVal <= 0) {
       nextErrors.estimatedValue = t('publish.errors.valueInvalid');
     }
-    if (!location.trim()) {
+    if (!municipalityCode) {
       nextErrors.location = t('publish.errors.locationRequired');
     }
 
@@ -518,7 +524,7 @@ export const PublishScreen: React.FC = () => {
         condition,
         description: description.trim(),
         estimatedValue: Number(estimatedValue),
-        location: location.trim(),
+        municipalityCode: municipalityCode ?? undefined,
         imageUrl: primaryImage,
         images: uploadedImages.length > 0 ? uploadedImages : [primaryImage],
         wants: wantedItems,
@@ -1160,18 +1166,39 @@ export const PublishScreen: React.FC = () => {
           </div>
 
           {/* Ubicación */}
-          <Input
-            label={t('publish.info.location')}
-            leftIcon="location_on"
-            placeholder={t('publish.info.locationPlaceholder')}
-            value={location}
-            onChange={(e) => {
-              setLocation(e.target.value);
-              if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
-            }}
-            error={errors.location}
-            helperText={t('publish.info.locationHelper')}
-          />
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="font-label-md text-label-md text-on-surface">
+              {t('publish.info.location')}
+            </span>
+            {municipalityCode && !isChangingLocation ? (
+              <div className="flex items-center justify-between gap-3 min-h-[52px] px-4 rounded-2xl bg-surface-container-low">
+                <span className="flex items-center gap-2 font-body-md text-body-md text-on-surface">
+                  <Icon name="location_on" size="md" className="text-primary" />
+                  {locationLabel}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setIsChangingLocation(true)}>
+                  {t('publish.info.locationChange')}
+                </Button>
+              </div>
+            ) : (
+              <LocationPicker
+                municipalityCode={municipalityCode}
+                departmentCode={currentUser?.departmentCode}
+                onChange={(municipality) => {
+                  setMunicipalityCode(municipality?.code ?? null);
+                  setLocationLabel(municipality?.label ?? '');
+                  if (municipality) {
+                    setIsChangingLocation(false);
+                    if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
+                  }
+                }}
+                error={errors.location}
+              />
+            )}
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {t('publish.info.locationHelper')}
+            </span>
+          </div>
         </div>
       )}
 
@@ -1359,7 +1386,7 @@ export const PublishScreen: React.FC = () => {
 
                 <div className="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
                   <Icon name="location_on" size="sm" />
-                  <span>{location}</span>
+                  <span>{locationLabel}</span>
                 </div>
               </div>
             </div>
