@@ -1,6 +1,18 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { User, Item, SwapRoute, Proposal } from '@/types';
 import { tokenStorage } from '@/services/storage/tokenStorage';
+import {
+  preferencesStorage,
+  type LocationScopePreference,
+} from '@/services/storage/preferencesStorage';
 import { ApiError, setOnUnauthorizedHandler } from '@/services/http/apiClient';
 import { authService, type RegisterPayload, type UpdateProfilePayload } from '@/services/auth/auth.service';
 import { itemsService, type CreateItemPayload } from '@/services/items/items.service';
@@ -49,6 +61,9 @@ export interface AppContextValue {
   markNotificationReadReal: (id: string) => Promise<void>;
   markAllNotificationsReadReal: () => Promise<void>;
   refreshNotificationsReal: () => Promise<AppNotification[]>;
+  /** How far from the user's municipality the catalog and route searches reach. */
+  locationScope: LocationScopePreference;
+  setLocationScope: (scope: LocationScopePreference) => void;
 }
 
 const defaultUser: User = mockUsers.find((u) => u.id === 'user-alex') || mockUsers[0];
@@ -217,6 +232,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<AppNotification[]>(() =>
     tokenStorage.hasToken() ? [] : defaultNotifications,
   );
+  const [locationScope, setLocationScopeState] = useState<LocationScopePreference>(() =>
+    preferencesStorage.getLocationScope(),
+  );
+
+  // Latest viewer location for callbacks that must stay stable (kept in sync after every render)
+  const viewerRef = useRef<{ scope: LocationScopePreference; municipalityCode?: string }>({
+    scope: locationScope,
+  });
+  useEffect(() => {
+    viewerRef.current = {
+      scope: locationScope,
+      municipalityCode: isAuthenticated ? currentUser?.municipalityCode : undefined,
+    };
+  }, [locationScope, currentUser?.municipalityCode, isAuthenticated]);
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter((n) => n.unread).length;
@@ -287,11 +316,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  const loadMarketplaceAndUserItems = useCallback(async (hasActiveToken: boolean) => {
+  const loadMarketplaceAndUserItems = useCallback(
+    async (hasActiveToken: boolean, viewerMunicipalityCode?: string) => {
     setIsItemsLoading(true);
     try {
+      const municipalityCode = viewerMunicipalityCode ?? viewerRef.current.municipalityCode;
       const [allItemsResult, myItemsResult, myRoutesResult] = await Promise.allSettled([
-        itemsService.listItems(),
+        itemsService.listItems(
+          municipalityCode
+            ? { scope: viewerRef.current.scope, municipalityCode }
+            : undefined,
+        ),
         hasActiveToken ? itemsService.listMyItems() : Promise.resolve<Item[]>([]),
         hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
       ]);
@@ -321,7 +356,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsItemsLoading(false);
     }
+    },
+    [],
+  );
+
+  // Reloads only the marketplace (e.g. after the user widens the search area)
+  const reloadMarketplace = useCallback(async () => {
+    const { scope, municipalityCode } = viewerRef.current;
+    setIsItemsLoading(true);
+    try {
+      setItems(
+        await itemsService.listItems(municipalityCode ? { scope, municipalityCode } : undefined),
+      );
+    } catch {
+      // Keep the items already on screen
+    } finally {
+      setIsItemsLoading(false);
+    }
   }, []);
+
+  const setLocationScope = useCallback(
+    (scope: LocationScopePreference) => {
+      preferencesStorage.setLocationScope(scope);
+      viewerRef.current = { ...viewerRef.current, scope };
+      setLocationScopeState(scope);
+      if (viewerRef.current.municipalityCode) {
+        void reloadMarketplace();
+      }
+    },
+    [reloadMarketplace],
+  );
 
   useEffect(() => {
     setOnUnauthorizedHandler(() => {
@@ -355,7 +419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAuthenticated(true);
 
         await Promise.allSettled([
-          loadMarketplaceAndUserItems(true),
+          loadMarketplaceAndUserItems(true, user.municipalityCode),
           notificationsService.listNotifications().then((list) => {
             if (isMounted) {
               setNotifications(list);
@@ -484,7 +548,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(session.user);
       setIsAuthenticated(true);
       await Promise.all([
-        loadMarketplaceAndUserItems(true),
+        loadMarketplaceAndUserItems(true, session.user.municipalityCode),
         loadSessionRoutes(session.user.id),
       ]);
       try {
@@ -504,7 +568,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(session.user);
       setIsAuthenticated(true);
       await Promise.all([
-        loadMarketplaceAndUserItems(true),
+        loadMarketplaceAndUserItems(true, session.user.municipalityCode),
         loadSessionRoutes(session.user.id),
       ]);
       try {
@@ -544,12 +608,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateProfileReal = useCallback(async (payload: UpdateProfilePayload): Promise<User> => {
     const updatedUser = await authService.updateProfile(payload);
     setCurrentUser(updatedUser);
+    if (payload.municipalityCode) {
+      viewerRef.current = { ...viewerRef.current, municipalityCode: updatedUser.municipalityCode };
+      void reloadMarketplace();
+    }
     return updatedUser;
-  }, []);
+  }, [reloadMarketplace]);
 
   const searchRoutesReal = useCallback(
     async (params: SearchRoutesPayload): Promise<SwapRoute[]> => {
-      return routesService.searchRoutes(params);
+      // Users with a registered municipality search inside the area they chose; others, nationwide
+      const { scope, municipalityCode } = viewerRef.current;
+      return routesService.searchRoutes({
+        scope: municipalityCode ? scope : 'country',
+        ...params,
+      });
     },
     [],
   );
@@ -733,6 +806,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       respondToProposalReal,
       completeSwapReal,
       cancelRouteReal,
+      locationScope,
+      setLocationScope,
       refreshRoutesReal,
       markNotificationReadReal,
       markAllNotificationsReadReal,
@@ -762,6 +837,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       respondToProposalReal,
       completeSwapReal,
       cancelRouteReal,
+      locationScope,
+      setLocationScope,
       refreshRoutesReal,
       markNotificationReadReal,
       markAllNotificationsReadReal,
@@ -806,6 +883,8 @@ const fallbackContextValue: AppContextValue = {
     routesService.respondToRoute(routeId, decision, comment),
   completeSwapReal: async (routeId) => routesService.completeRoute(routeId),
   cancelRouteReal: async (routeId) => routesService.cancelRoute(routeId),
+  locationScope: 'country',
+  setLocationScope: () => undefined,
   refreshRoutesReal: async () => routesService.listMyRoutes(),
   markNotificationReadReal: async (id: string) => {
     await notificationsService.markAsRead(id);

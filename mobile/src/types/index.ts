@@ -39,6 +39,10 @@ export interface Item {
   description?: string;
   estimatedValue?: number;
   location?: string;
+  departmentCode?: string;
+  municipalityCode?: string;
+  /** Distance from the viewer's municipality, when the API could compute it. */
+  distanceKm?: number | null;
   status?: string;
   aiTags?: string[];
   owner?: ItemOwnerSummary;

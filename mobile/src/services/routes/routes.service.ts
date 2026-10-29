@@ -61,6 +61,9 @@ export interface SearchRoutesPayload {
   valueTolerancePct?: number;
   /** Language for AI route explanations; defaults to the user's app locale. */
   locale?: LocalePreference;
+  /** Where to look for participants, relative to the user's registered municipality. */
+  scope?: 'nearby' | 'department' | 'country';
+  radiusKm?: number;
 }
 
 export interface ProposeRouteStepInput {
