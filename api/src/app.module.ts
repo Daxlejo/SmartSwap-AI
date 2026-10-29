@@ -12,6 +12,7 @@ import { ItemsModule } from './modules/items/items.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { GeoModule } from './modules/geo/geo.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     RoutesModule,
     AiModule,
     NotificationsModule,
+    GeoModule,
   ],
   providers: [
     {

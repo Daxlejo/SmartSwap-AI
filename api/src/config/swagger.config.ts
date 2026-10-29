@@ -28,4 +28,5 @@ export const buildSwaggerConfig = (): Omit<OpenAPIObject, 'paths'> =>
     .addTag('Routes', 'Circular multi-step swap route engine')
     .addTag('AI', 'AI embeddings, matching, and explanations')
     .addTag('Notifications', 'User notification center')
+    .addTag('Geo', 'Colombian departments and municipalities, GPS resolution')
     .build();
