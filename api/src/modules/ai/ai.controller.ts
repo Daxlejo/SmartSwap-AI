@@ -67,7 +67,7 @@ export class AiController {
   @Post('estimate-value')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Estimate fair circular swap value (USD) for an item',
+    summary: 'Estimate fair circular swap value (COP) for an item',
   })
   @ApiResponse({
     status: 200,

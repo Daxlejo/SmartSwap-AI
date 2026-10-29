@@ -75,6 +75,9 @@ paths:
                   minLength: 2
                 location:
                   type: string
+                municipalityCode:
+                  type: string
+                  pattern: ^\d{5}$
               required:
                 - email
                 - password
@@ -168,6 +171,9 @@ paths:
                 location:
                   type: string
                   maxLength: 120
+                municipalityCode:
+                  type: string
+                  pattern: ^\d{5}$
                 avatarUrl:
                   type: string
                   format: uri
@@ -186,6 +192,66 @@ paths:
         - users
       security:
         - bearerAuth: []
+  /api/v1/geo/departments:
+    get:
+      operationId: GeoController_listDepartments
+      summary: List the departments of Colombia
+      parameters: []
+      responses:
+        '200':
+          description: Departments in alphabetical order
+      tags:
+        - Geo
+  /api/v1/geo/municipalities:
+    get:
+      operationId: GeoController_listMunicipalities
+      summary: List or search municipalities (accent-insensitive name search)
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: q
+          required: false
+          in: query
+          description: Name search, e.g. "popayan"
+          schema: {}
+        - name: department
+          required: false
+          in: query
+          description: 2-digit DANE department code
+          schema: {}
+      responses:
+        '200':
+          description: Matching municipalities
+        '400':
+          description: Validation error
+      tags:
+        - Geo
+  /api/v1/geo/resolve:
+    get:
+      operationId: GeoController_resolveLocation
+      summary: Resolve a GPS position to the closest municipality
+      description: The coordinates are used only to find the municipality and are never stored.
+      parameters:
+        - name: lon
+          required: true
+          in: query
+          schema:
+            type: number
+        - name: lat
+          required: true
+          in: query
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Closest municipality and distance to its center
+        '400':
+          description: Position outside Colombia
+      tags:
+        - Geo
   /api/v1/items:
     get:
       operationId: ItemsController_findAll
@@ -240,6 +306,28 @@ paths:
           schema:
             type: integer
             minimum: 0
+        - name: municipalityCode
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^\d{5}$
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - nearby
+              - department
+              - country
+        - name: radiusKm
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 300
       responses:
         '200':
           description: Filtered list of catalog items
@@ -289,6 +377,9 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 120
+                municipalityCode:
+                  type: string
+                  pattern: ^\d{5}$
                 imageUrl:
                   type: string
                   minLength: 1
@@ -576,7 +667,7 @@ paths:
   /api/v1/ai/estimate-value:
     post:
       operationId: AiController_estimateValue
-      summary: Estimate fair circular swap value (USD) for an item
+      summary: Estimate fair circular swap value (COP) for an item
       parameters: []
       responses:
         '200':
@@ -734,6 +825,17 @@ paths:
                     - es
                     - en
                   default: es
+                scope:
+                  type: string
+                  enum:
+                    - nearby
+                    - department
+                    - country
+                  default: country
+                radiusKm:
+                  type: number
+                  minimum: 1
+                  maximum: 300
               required:
                 - objectiveText
               additionalProperties: false
@@ -787,6 +889,17 @@ paths:
                     - es
                     - en
                   default: es
+                scope:
+                  type: string
+                  enum:
+                    - nearby
+                    - department
+                    - country
+                  default: country
+                radiusKm:
+                  type: number
+                  minimum: 1
+                  maximum: 300
               required:
                 - objectiveText
               additionalProperties: false
@@ -1407,6 +1520,8 @@ tags:
     description: AI embeddings, matching, and explanations
   - name: Notifications
     description: User notification center
+  - name: Geo
+    description: Colombian departments and municipalities, GPS resolution
 servers:
   - url: http://localhost:3000
     description: Local development

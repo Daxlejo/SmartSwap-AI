@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
+import { GeoModule } from '../geo/geo.module';
 import { RouteScoringStrategy } from './engine/route-scoring.strategy';
 import { SwapGraphEngine } from './engine/swap-graph.engine';
 import { RouteMapper } from './mappers/route.mapper';
@@ -8,7 +9,7 @@ import { RoutesController } from './routes.controller';
 import { RoutesService } from './routes.service';
 
 @Module({
-  imports: [AiModule],
+  imports: [AiModule, GeoModule],
   controllers: [RoutesController, ProposalsController],
   providers: [
     RoutesService,

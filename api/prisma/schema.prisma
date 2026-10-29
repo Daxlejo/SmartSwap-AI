@@ -39,19 +39,21 @@ enum StepAcceptance {
 }
 
 model User {
-  id              String          @id @default(uuid())
-  email           String          @unique
-  passwordHash    String
-  name            String
-  initials        String
-  avatarUrl       String?
-  location        String?
-  level           Int             @default(1)
-  rating          Float           @default(5.0)
-  tradesCompleted Int             @default(0)
-  co2SavedKg      Float           @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String
+  name             String
+  initials         String
+  avatarUrl        String?
+  location         String?
+  departmentCode   String?
+  municipalityCode String?
+  level            Int      @default(1)
+  rating           Float    @default(5.0)
+  tradesCompleted  Int      @default(0)
+  co2SavedKg       Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   items           Item[]
   wants           Want[]
@@ -63,42 +65,46 @@ model User {
 }
 
 model Item {
-  id             String          @id @default(uuid())
-  ownerId        String
-  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name           String
-  category       String
-  condition      ItemCondition   @default(GOOD)
-  description    String?
-  estimatedValue Float?
-  location       String?
-  status         ItemStatus      @default(AVAILABLE)
-  images         String[]
-  aiTags         String[]
-  embedding      Float[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id               String        @id @default(uuid())
+  ownerId          String
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name             String
+  category         String
+  condition        ItemCondition @default(GOOD)
+  description      String?
+  estimatedValue   Float?
+  location         String?
+  departmentCode   String?
+  municipalityCode String?
+  status           ItemStatus    @default(AVAILABLE)
+  images           String[]
+  aiTags           String[]
+  embedding        Float[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  wants          Want[]
-  stepsGives     SwapRouteStep[] @relation("StepGivesItem")
-  stepsReceives  SwapRouteStep[] @relation("StepReceivesItem")
+  wants         Want[]
+  stepsGives    SwapRouteStep[] @relation("StepGivesItem")
+  stepsReceives SwapRouteStep[] @relation("StepReceivesItem")
 
   @@index([ownerId])
+  @@index([municipalityCode])
+  @@index([departmentCode])
   @@map("items")
 }
 
 model Want {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemId     String?
-  item       Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
-  queryText  String
-  category   String?
-  minValue   Float?
-  maxValue   Float?
-  embedding  Float[]
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String?
+  item      Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  queryText String
+  category  String?
+  minValue  Float?
+  maxValue  Float?
+  embedding Float[]
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([itemId])
@@ -106,18 +112,18 @@ model Want {
 }
 
 model SwapRoute {
-  id            String          @id @default(uuid())
-  code          String          @unique
+  id            String      @id @default(uuid())
+  code          String      @unique
   initiatorId   String
-  initiator     User            @relation("RouteInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  initiator     User        @relation("RouteInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
   objectiveText String
   matchScore    Float
-  status        RouteStatus     @default(SUGGESTED)
+  status        RouteStatus @default(SUGGESTED)
   aiExplanation String?
-  co2SavedKg    Float           @default(0)
+  co2SavedKg    Float       @default(0)
   expiresAt     DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   steps         SwapRouteStep[]
   notifications Notification[]

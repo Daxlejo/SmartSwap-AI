@@ -42,6 +42,7 @@ export class AuthService {
       passwordHash,
       name: dto.name,
       location: dto.location,
+      municipalityCode: dto.municipalityCode,
     });
 
     const accessToken = await this.signAccessToken(user);

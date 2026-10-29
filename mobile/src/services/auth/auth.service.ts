@@ -12,12 +12,13 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
-  location?: string;
+  /** 5-digit DANE municipality code chosen with the location picker. */
+  municipalityCode: string;
 }
 
 export interface UpdateProfilePayload {
   name?: string;
-  location?: string;
+  municipalityCode?: string;
   avatarUrl?: string;
 }
 
@@ -28,6 +29,8 @@ export interface RawUserDto {
   initials?: string;
   avatarUrl?: string | null;
   location?: string | null;
+  departmentCode?: string | null;
+  municipalityCode?: string | null;
   level?: number;
   rating?: number;
   tradesCompleted?: number;
@@ -63,7 +66,9 @@ export const normalizeUser = (raw: RawUserDto): User => {
     email: raw.email,
     initials: raw.initials || computedInitials,
     avatarUrl: raw.avatarUrl || alexAvatar,
-    location: raw.location || 'Madrid, España',
+    location: raw.location || 'Colombia',
+    departmentCode: raw.departmentCode ?? undefined,
+    municipalityCode: raw.municipalityCode ?? undefined,
     level: typeof raw.level === 'number' ? raw.level : 1,
     rating: typeof raw.rating === 'number' ? raw.rating : 5.0,
     tradesCompleted: typeof raw.tradesCompleted === 'number' ? raw.tradesCompleted : 0,
@@ -110,7 +115,7 @@ export const authService = {
       name: payload.name.trim(),
       email: payload.email.trim(),
       password: payload.password,
-      ...(payload.location?.trim() ? { location: payload.location.trim() } : {}),
+      municipalityCode: payload.municipalityCode,
     };
 
     const response = await apiClient.post<RawAuthResponse>('/auth/register', body, {

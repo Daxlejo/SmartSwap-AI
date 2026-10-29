@@ -48,12 +48,19 @@ export const registerUser = async (
   testApp: TestApp,
   name: string,
   location = 'Bogotá, Colombia',
+  municipalityCode?: string,
 ): Promise<RegisteredUser> => {
   const email = `${name.toLowerCase()}@e2e.smartswap.co`;
   const response = await testApp
     .http()
     .post('/api/v1/auth/register')
-    .send({ email, password: 'E2eTestPass!2026', name, location })
+    .send({
+      email,
+      password: 'E2eTestPass!2026',
+      name,
+      location,
+      municipalityCode,
+    })
     .expect(201);
 
   return { id: response.body.user.id, token: response.body.accessToken, email };

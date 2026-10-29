@@ -18,6 +18,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import { AiLocale } from '../ai/dto/ai-locale.dto';
 import { AiExplainerService } from '../ai/services/ai-explainer.service';
+import { GeoService } from '../geo/geo.service';
+import { NEARBY_RADIUS_KM } from '../geo/geo.types';
 import { ProposeRouteDto } from './dto/propose-route.dto';
 import { RespondRouteDto } from './dto/respond-route.dto';
 import { SearchRoutesDto } from './dto/search-routes.dto';
@@ -110,6 +112,7 @@ export class RoutesService {
     private readonly routeMapper: RouteMapper,
     private readonly aiEmbeddingService: AiEmbeddingService,
     private readonly aiExplainerService: AiExplainerService,
+    private readonly geoService: GeoService,
   ) {}
 
   /**
@@ -120,9 +123,12 @@ export class RoutesService {
     userId: string,
     dto: SearchRoutesDto,
   ): Promise<SwapRouteDto[]> {
+    const locationFilter = await this.buildLocationFilter(userId, dto);
+
     const activeItems = (await this.prisma.item.findMany({
       where: {
         status: ItemStatus.AVAILABLE,
+        ...locationFilter,
       },
       include: {
         owner: {
@@ -175,6 +181,41 @@ export class RoutesService {
       const explanation = idx < explanations.length ? explanations[idx] : null;
       return this.routeMapper.fromDiscoveredCycle(cycle, userId, explanation);
     });
+  }
+
+  /**
+   * Restricts the catalog to the searcher's surroundings (their registered municipality): within
+   * a radius, inside their department, or the whole country.
+   */
+  private async buildLocationFilter(
+    userId: string,
+    dto: SearchRoutesDto,
+  ): Promise<Prisma.ItemWhereInput> {
+    if (dto.scope === 'country') {
+      return {};
+    }
+
+    const searcher = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { municipalityCode: true, departmentCode: true },
+    });
+    if (!searcher?.municipalityCode || !searcher.departmentCode) {
+      throw new BadRequestException(
+        'Set your municipality in your profile to search nearby or inside your department',
+      );
+    }
+
+    if (dto.scope === 'department') {
+      return { departmentCode: searcher.departmentCode };
+    }
+
+    return {
+      municipalityCode: {
+        in: this.geoService
+          .municipalitiesWithin(searcher.municipalityCode, dto.radiusKm ?? NEARBY_RADIUS_KM)
+          .map((entry) => entry.code),
+      },
+    };
   }
 
   /**

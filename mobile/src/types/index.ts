@@ -5,6 +5,9 @@ export interface User {
   avatarUrl: string;
   rating: number;
   location: string;
+  /** DANE codes of the user's registered municipality (set at registration). */
+  departmentCode?: string;
+  municipalityCode?: string;
   verified: boolean;
   co2SavedKg: number;
   initials?: string;
@@ -36,6 +39,10 @@ export interface Item {
   description?: string;
   estimatedValue?: number;
   location?: string;
+  departmentCode?: string;
+  municipalityCode?: string;
+  /** Distance from the viewer's municipality, when the API could compute it. */
+  distanceKm?: number | null;
   status?: string;
   aiTags?: string[];
   owner?: ItemOwnerSummary;

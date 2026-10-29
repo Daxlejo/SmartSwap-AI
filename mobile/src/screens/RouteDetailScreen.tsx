@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
 
 export const RouteDetailScreen: React.FC = () => {
   const location = useLocation();
@@ -121,7 +122,7 @@ export const RouteDetailScreen: React.FC = () => {
             const fromUser = route.participants[index] || route.participants[0];
             const toUser = route.participants[(index + 1) % route.participants.length];
             const stepDetail = route.steps?.[index];
-            const stepValue = item.estimatedValue ?? 450;
+            const stepValue = item.estimatedValue;
             const acceptance = stepDetail?.acceptance;
 
             return (
@@ -143,7 +144,7 @@ export const RouteDetailScreen: React.FC = () => {
                       {t('routeDetail.estimatedValue')}
                     </span>
                     <span className="font-label-sm text-[11px] font-bold text-on-surface">
-                      ${stepValue} USD
+                      {formatCop(stepValue)}
                     </span>
                   </div>
 
@@ -197,7 +198,7 @@ export const RouteDetailScreen: React.FC = () => {
                 </Badge>
                 <div className="flex items-center gap-2">
                   <span className="font-label-md text-label-md font-bold text-primary">
-                    ${selectedItem.estimatedValue ?? 450} USD
+                    {formatCop(selectedItem.estimatedValue)}
                   </span>
                   <span className="font-body-sm text-body-sm font-medium text-on-surface-variant">
                     {t(`catalog.conditions.${selectedItem.condition}`, { defaultValue: selectedItem.condition })}

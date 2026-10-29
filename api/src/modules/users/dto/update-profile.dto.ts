@@ -13,6 +13,11 @@ export const updateProfileSchema = z
       .trim()
       .max(120, 'Location must be at most 120 characters long')
       .optional(),
+    municipalityCode: z
+      .string()
+      .trim()
+      .regex(/^\d{5}$/, 'municipalityCode must be a 5-digit DANE code')
+      .optional(),
     avatarUrl: z
       .string()
       .trim()

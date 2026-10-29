@@ -8,6 +8,8 @@ export interface PublicUserProfile {
   initials: string;
   avatarUrl: string | null;
   location: string | null;
+  departmentCode: string | null;
+  municipalityCode: string | null;
   level: number;
   rating: number;
   tradesCompleted: number;
@@ -25,6 +27,8 @@ export class UserMapper {
       initials: user.initials,
       avatarUrl: user.avatarUrl,
       location: user.location,
+      departmentCode: user.departmentCode,
+      municipalityCode: user.municipalityCode,
       level: user.level,
       rating: user.rating,
       tradesCompleted: user.tradesCompleted,

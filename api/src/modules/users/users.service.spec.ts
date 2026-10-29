@@ -7,6 +7,7 @@ import {
   User,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { GeoService } from '../geo/geo.service';
 import { CreateUserInput, UsersService } from './users.service';
 
 describe('UsersService', () => {
@@ -20,6 +21,8 @@ describe('UsersService', () => {
     initials: 'CM',
     avatarUrl: 'https://smartswap.co/avatars/cm.jpg',
     location: 'Bogotá, Usaquén',
+    departmentCode: '11',
+    municipalityCode: '11001',
     level: 3,
     rating: 4.85,
     tradesCompleted: 12,
@@ -51,6 +54,7 @@ describe('UsersService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
+        GeoService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -131,6 +135,8 @@ describe('UsersService', () => {
           name: 'Valeria Gomez',
           initials: 'VG',
           location: 'Bogotá, Chapinero',
+          departmentCode: null,
+          municipalityCode: null,
         },
       });
       expect(result).toEqual(createdUser);
@@ -159,6 +165,8 @@ describe('UsersService', () => {
           name: 'Alex',
           initials: 'AL',
           location: null,
+          departmentCode: null,
+          municipalityCode: null,
         },
       });
     });
@@ -186,6 +194,58 @@ describe('UsersService', () => {
           name: '',
           initials: 'US',
           location: null,
+          departmentCode: null,
+          municipalityCode: null,
+        },
+      });
+    });
+  });
+
+  describe('municipality handling', () => {
+    it('derives department and display location from the municipality when creating a user', async () => {
+      mockPrismaService.user.create.mockResolvedValue(mockUser);
+
+      await usersService.createUser({
+        email: 'camila@example.com',
+        passwordHash: '$2a$10$hash',
+        name: 'Camila Torres',
+        location: 'texto libre ignorado',
+        municipalityCode: '52001',
+      });
+
+      expect(mockPrismaService.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          location: 'Pasto, Nariño',
+          departmentCode: '52',
+          municipalityCode: '52001',
+        }),
+      });
+    });
+
+    it('rejects unknown municipality codes on registration', async () => {
+      await expect(
+        usersService.createUser({
+          email: 'x@example.com',
+          passwordHash: '$2a$10$hash',
+          name: 'X Person',
+          municipalityCode: '99999',
+        }),
+      ).rejects.toThrow('Unknown municipality code');
+      expect(mockPrismaService.user.create).not.toHaveBeenCalled();
+    });
+
+    it('updates department and location together when the profile municipality changes', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.user.update.mockResolvedValue(mockUser);
+
+      await usersService.updateProfile(mockUser.id, { municipalityCode: '05001' });
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: mockUser.id },
+        data: {
+          municipalityCode: '05001',
+          departmentCode: '05',
+          location: 'Medellín, Antioquia',
         },
       });
     });
@@ -337,6 +397,8 @@ describe('UsersService', () => {
           initials: mockUser.initials,
           avatarUrl: mockUser.avatarUrl,
           location: mockUser.location,
+          departmentCode: mockUser.departmentCode,
+          municipalityCode: mockUser.municipalityCode,
           level: mockUser.level,
           rating: mockUser.rating,
           tradesCompleted: mockUser.tradesCompleted,

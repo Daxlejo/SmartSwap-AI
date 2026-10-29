@@ -6,6 +6,7 @@ import {
   User,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { GeoService } from '../geo/geo.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PublicUserProfile, UserMapper } from './mappers/user.mapper';
 
@@ -14,6 +15,8 @@ export interface CreateUserInput {
   passwordHash: string;
   name: string;
   location?: string;
+  /** 5-digit DANE municipality code; fills department and the display location. */
+  municipalityCode?: string;
 }
 
 export interface UserOperationalStats {
@@ -34,7 +37,10 @@ export interface UserStatsResponse {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly geoService: GeoService,
+  ) {}
 
   async findByEmail(email: string): Promise<User | null> {
     const normalizedEmail = email.trim().toLowerCase();
@@ -59,6 +65,9 @@ export class UsersService {
     const normalizedEmail = data.email.trim().toLowerCase();
     const trimmedName = data.name.trim();
     const initials = this.computeInitials(trimmedName);
+    const municipality = data.municipalityCode
+      ? this.geoService.requireMunicipality(data.municipalityCode)
+      : undefined;
 
     return this.prisma.user.create({
       data: {
@@ -66,7 +75,11 @@ export class UsersService {
         passwordHash: data.passwordHash,
         name: trimmedName,
         initials,
-        location: data.location?.trim() || null,
+        location: municipality
+          ? this.geoService.label(municipality)
+          : data.location?.trim() || null,
+        departmentCode: municipality?.departmentCode ?? null,
+        municipalityCode: municipality?.code ?? null,
       },
     });
   }
@@ -78,6 +91,8 @@ export class UsersService {
       name?: string;
       initials?: string;
       location?: string;
+      departmentCode?: string;
+      municipalityCode?: string;
       avatarUrl?: string;
     } = {};
 
@@ -87,7 +102,12 @@ export class UsersService {
       updateData.initials = this.computeInitials(trimmedName);
     }
 
-    if (dto.location !== undefined) {
+    if (dto.municipalityCode !== undefined) {
+      const municipality = this.geoService.requireMunicipality(dto.municipalityCode);
+      updateData.municipalityCode = municipality.code;
+      updateData.departmentCode = municipality.departmentCode;
+      updateData.location = this.geoService.label(municipality);
+    } else if (dto.location !== undefined) {
       updateData.location = dto.location.trim();
     }
 

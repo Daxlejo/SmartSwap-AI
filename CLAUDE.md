@@ -14,6 +14,7 @@ This document defines the strict, non-negotiable guardrails and architectural st
 ## 2. UI & Localization Defaults
 - **Default Language**: Spanish (`es`) is the primary and mandatory default locale. English (`en`) is an optional user toggle stored in localStorage key `smartswap_locale`.
 - **Default Theme**: Light mode (`light`) is the mandatory default theme. Dark mode (`dark`) is an optional user toggle stored in localStorage key `smartswap_theme`.
+- **Colombia-only**: Money is Colombian pesos (COP), always whole numbers. Format with `formatCop` (`mobile/src/utils/currency.ts`); never write `$X USD`. Locations are DANE municipality codes served by `api/src/modules/geo` and chosen with `mobile/src/components/LocationPicker.tsx`; only the municipality is stored, never GPS coordinates.
 - **Brand Palette Tokens**:
   - Primary Teal: `#00685f` (Buttons, active tabs, header branding, trust indicators)
   - Secondary/Accent Orange: `#fd761a` (CTA accents, badges, swap cycle highlights, notifications)

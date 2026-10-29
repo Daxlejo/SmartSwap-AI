@@ -1,3 +1,4 @@
+import type { LocationScopePreference } from '@/services/storage/preferencesStorage';
 import { apiClient, ApiError } from '@/services/http/apiClient';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import type { Item, ItemOwnerSummary } from '@/types';
@@ -14,6 +15,10 @@ export interface ListItemsParams {
   ownerId?: string;
   limit?: number;
   offset?: number;
+  /** Where to look, relative to `municipalityCode` (the viewer). */
+  scope?: LocationScopePreference;
+  municipalityCode?: string;
+  radiusKm?: number;
 }
 
 export interface CreateItemPayload {
@@ -22,7 +27,8 @@ export interface CreateItemPayload {
   condition: string;
   description?: string;
   estimatedValue?: number;
-  location?: string;
+  /** Where the item is published; defaults to the owner's municipality. */
+  municipalityCode?: string;
   imageUrl?: string;
   images?: string[];
   wants: string[];
@@ -59,6 +65,9 @@ export interface RawItemDto {
   description?: string | null;
   estimatedValue?: number | null;
   location?: string | null;
+  departmentCode?: string | null;
+  municipalityCode?: string | null;
+  distanceKm?: number | null;
   status?: string | null;
   aiTags?: string[] | null;
   owner?: {
@@ -145,7 +154,7 @@ export const normalizeItem = (raw: RawItemDto): Item => {
       email: raw.owner.email,
       avatarUrl: raw.owner.avatarUrl || alexAvatar,
       rating: typeof raw.owner.rating === 'number' ? raw.owner.rating : 5.0,
-      location: raw.owner.location || raw.location || 'Madrid, España',
+      location: raw.owner.location || raw.location || 'Colombia',
       verified: typeof raw.owner.verified === 'boolean' ? raw.owner.verified : true,
       co2SavedKg: typeof raw.owner.co2SavedKg === 'number' ? raw.owner.co2SavedKg : 0,
     };
@@ -163,6 +172,9 @@ export const normalizeItem = (raw: RawItemDto): Item => {
     description: raw.description ?? undefined,
     estimatedValue: typeof raw.estimatedValue === 'number' ? raw.estimatedValue : undefined,
     location: raw.location ?? ownerSummary?.location ?? undefined,
+    departmentCode: raw.departmentCode ?? undefined,
+    municipalityCode: raw.municipalityCode ?? undefined,
+    distanceKm: typeof raw.distanceKm === 'number' ? raw.distanceKm : null,
     status: raw.status ?? 'AVAILABLE',
     aiTags: Array.isArray(raw.aiTags) ? raw.aiTags : undefined,
     owner: ownerSummary,
@@ -201,6 +213,11 @@ export const itemsService = {
     if (params?.ownerId) queryParams.ownerId = params.ownerId;
     if (params?.limit !== undefined) queryParams.limit = params.limit;
     if (params?.offset !== undefined) queryParams.offset = params.offset;
+    if (params?.municipalityCode) {
+      queryParams.municipalityCode = params.municipalityCode;
+      queryParams.scope = params.scope ?? 'country';
+      if (params.radiusKm !== undefined) queryParams.radiusKm = params.radiusKm;
+    }
 
     const response = await apiClient.get<RawItemDto[] | PaginatedItemsEnvelope>('/items', {
       params: queryParams,
@@ -264,7 +281,7 @@ export const itemsService = {
       condition: toBackendCondition(payload.condition),
       description: payload.description?.trim() || undefined,
       estimatedValue: payload.estimatedValue,
-      location: payload.location?.trim() || undefined,
+      municipalityCode: payload.municipalityCode,
       imageUrl: primaryImage,
       images: imagesList.length > 0 ? imagesList : [primaryImage],
       wants: payload.wants,

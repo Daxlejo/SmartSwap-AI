@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
+import { GeoService } from '../geo/geo.service';
 import { ItemsService } from './items.service';
 import { SupabaseStorageService } from './storage/supabase-storage.service';
 
@@ -102,6 +103,7 @@ describe('ItemsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ItemsService,
+        GeoService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -173,6 +175,8 @@ describe('ItemsService', () => {
             'Noise cancelling headphones in mint condition with case.',
           estimatedValue: 1200000,
           location: 'Medellín',
+          departmentCode: null,
+          municipalityCode: null,
           images: [
             'https://smartswap-mock.supabase.co/storage/v1/object/public/item-images/111/uploaded.jpg',
           ],
@@ -208,6 +212,121 @@ describe('ItemsService', () => {
         status: 'ACTIVE',
         wants: ['iPad Air', 'Nintendo Switch OLED'],
       });
+    });
+  });
+
+  describe('location', () => {
+    const locatedItem = (id: string, municipalityCode: string, departmentCode: string) => ({
+      ...mockCreatedEntity,
+      id,
+      municipalityCode,
+      departmentCode,
+    });
+
+    it('publishes an item in the owner municipality when none is sent', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        location: 'Pasto, Nariño',
+        departmentCode: '52',
+        municipalityCode: '52001',
+      });
+      mockTx.item.create.mockResolvedValue(mockCreatedEntity);
+      mockTx.want.createMany.mockResolvedValue({ count: 1 });
+      mockTx.item.findUniqueOrThrow.mockResolvedValue(mockCreatedEntity);
+
+      await itemsService.create(ownerId, {
+        name: 'Bicicleta',
+        category: 'Deportes',
+        condition: 'GOOD',
+        description: 'Bicicleta de montaña',
+        estimatedValue: 900000,
+        images: ['https://example.com/bike.jpg'],
+        wants: ['Cámara'],
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          location: 'Pasto, Nariño',
+          departmentCode: '52',
+          municipalityCode: '52001',
+        }),
+      });
+    });
+
+    it('lets an item be published in a different municipality than the owner', async () => {
+      mockTx.item.create.mockResolvedValue(mockCreatedEntity);
+      mockTx.want.createMany.mockResolvedValue({ count: 1 });
+      mockTx.item.findUniqueOrThrow.mockResolvedValue(mockCreatedEntity);
+
+      await itemsService.create(ownerId, {
+        name: 'Bicicleta',
+        category: 'Deportes',
+        condition: 'GOOD',
+        description: 'Bicicleta de montaña',
+        estimatedValue: 900000,
+        municipalityCode: '05001',
+        images: ['https://example.com/bike.jpg'],
+        wants: ['Cámara'],
+      });
+
+      expect(mockTx.item.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          location: 'Medellín, Antioquia',
+          municipalityCode: '05001',
+        }),
+      });
+    });
+
+    it('restricts the nearby scope to municipalities within the radius and sorts nearest first', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([
+        locatedItem('ipiales-item', '52356', '52'),
+        locatedItem('pasto-item', '52001', '52'),
+      ]);
+
+      const result = await itemsService.findAll({
+        scope: 'nearby',
+        municipalityCode: '52001',
+        radiusKm: 70,
+      });
+
+      const where = mockPrismaService.item.findMany.mock.calls[0][0].where;
+      expect(where.municipalityCode.in).toEqual(
+        expect.arrayContaining(['52001', '52356']),
+      );
+      expect(where.municipalityCode.in).not.toContain('19001');
+      expect(result.map((item) => item.id)).toEqual(['pasto-item', 'ipiales-item']);
+      expect(result[0].distanceKm).toBe(0);
+      expect(result[1].distanceKm).toBeGreaterThan(50);
+    });
+
+    it('restricts the department scope to the viewer department', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+
+      await itemsService.findAll({ scope: 'department', municipalityCode: '52001' });
+
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where.departmentCode).toBe('52');
+    });
+
+    it('does not filter by location in the country scope but still reports distances', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([
+        locatedItem('medellin-item', '05001', '05'),
+      ]);
+
+      const result = await itemsService.findAll({
+        scope: 'country',
+        municipalityCode: '52001',
+      });
+
+      const where = mockPrismaService.item.findMany.mock.calls[0][0].where;
+      expect(where.municipalityCode).toBeUndefined();
+      expect(where.departmentCode).toBeUndefined();
+      expect(result[0].distanceKm).toBeGreaterThan(500);
+    });
+
+    it('requires the viewer municipality for the nearby and department scopes', async () => {
+      await expect(itemsService.findAll({ scope: 'nearby' })).rejects.toThrow(
+        'municipalityCode is required',
+      );
+      expect(mockPrismaService.item.findMany).not.toHaveBeenCalled();
     });
   });
 

@@ -12,11 +12,14 @@
 | Method | Route | Controller | Handler | Summary |
 |:---|:---|:---|:---|:---|
 | `POST` | `/ai/analyze-photo` | `AiController` | `analyzePhoto` | Analyze an item photo and/or hint text to generate structured catalog metadata |
-| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate fair circular swap value (USD) for an item |
+| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate fair circular swap value (COP) for an item |
 | `POST` | `/ai/explain-route` | `AiController` | `explainRoute` | Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route |
 | `POST` | `/auth/login` | `AuthController` | `login` | Authenticate with email and password |
 | `GET` | `/auth/me` | `AuthController` | `getMe` | Get current authenticated user profile |
 | `POST` | `/auth/register` | `AuthController` | `register` | Register a new user account |
+| `GET` | `/geo/departments` | `GeoController` | `listDepartments` | List the departments of Colombia |
+| `GET` | `/geo/municipalities` | `GeoController` | `listMunicipalities` | List or search municipalities (accent-insensitive name search) |
+| `GET` | `/geo/resolve` | `GeoController` | `resolveLocation` | Resolve a GPS position to the closest municipality |
 | `GET` | `/health` | `HealthController` | `getHealth` | Healthcheck probe |
 | `GET` | `/items` | `ItemsController` | `findAll` | List public items with optional search and filters |
 | `POST` | `/items` | `ItemsController` | `create` | Create a new item and synchronize its wants |
@@ -60,11 +63,12 @@
 - **`routes/`**: `routes.controller.ts`, `routes.service.ts`, `engine/swap-graph.engine.ts`, `engine/route-scoring.strategy.ts` — Bounded DFS cycle finder (k=2,3,4) & atomic swap consensus.
 - **`ai/`**: `ai.controller.ts`, `services/ai-vision.service.ts`, `services/ai-explainer.service.ts`, `services/openai-client.service.ts` — OpenAI vision, valuation, and route explanation.
 - **`health/`**: `health.controller.ts` — DB probe and service liveness check.
+- **`geo/`**: `geo.controller.ts`, `geo.service.ts`, `data/colombia-municipalities.ts` (DANE, generated) — public municipality lookup, GPS resolve and radius queries; users and items carry `departmentCode`/`municipalityCode`.
 - **`notifications/`**: `notifications.controller.ts`, `notifications.service.ts`, `mappers/notification.mapper.ts` — In-app notification center (list, unread count, read, delete).
 - **`common/` & `prisma/`**: `jwt-auth.guard.ts`, `zod-validation.pipe.ts`, `prisma.service.ts` (soft-delete/logging).
 
 ## 4. Mobile Architecture (`mobile/src/`)
-- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale).
+- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `geo/` (departments, municipalities, GPS resolve), `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale/search area). Prices: `utils/currency.ts` (COP). Location UI: `components/LocationPicker.tsx`, `LocationScopeSelector.tsx`.
 - **State (`context/`)**: `AppContext.tsx` (swaps, active routes, mock fallback), `ThemeContext.tsx` (default `light`).
 - **Screens (`screens/`)**: `SplashScreen`, `LoginScreen`, `RegisterScreen`, `HomeScreen`, `ExploreScreen`, `PublishScreen`, `SearchingScreen`, `RouteResultsScreen`, `RouteDetailScreen`, `ConfigureSwapScreen`, `ProposalConfirmScreen`, `TradesScreen`, `NotificationsScreen`, `ProfileScreen`.
 - **i18n & Theme**: `i18n/es.ts` (source of truth, `TranslationSchema`) + `i18n/en.ts`; default `es`/`light`, persisted as `smartswap_locale` / `smartswap_theme`; use `hooks/useTranslation.ts`. Catalog values stay Spanish, labels via `catalog.*`. Brand: Primary `#00685f`, Accent `#fd761a`.

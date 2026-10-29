@@ -15,6 +15,11 @@ export const registerSchema = z
       .trim()
       .min(2, 'Name must be at least 2 characters long'),
     location: z.string().trim().optional(),
+    municipalityCode: z
+      .string()
+      .trim()
+      .regex(/^\d{5}$/, 'municipalityCode must be a 5-digit DANE code')
+      .optional(),
   })
   .strict();
 

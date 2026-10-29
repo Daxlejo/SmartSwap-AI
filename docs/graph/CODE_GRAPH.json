@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-28T20:39:08.925Z",
+  "generatedAt": "2026-10-29T05:16:33.825Z",
   "stats": {
-    "totalFiles": 119,
-    "apiFiles": 56,
-    "mobileFiles": 63,
-    "endpointsCount": 41
+    "totalFiles": 133,
+    "apiFiles": 63,
+    "mobileFiles": 70,
+    "endpointsCount": 44
   },
   "endpoints": [
     {
@@ -20,7 +20,7 @@
       "path": "/ai/estimate-value",
       "controller": "AiController",
       "handler": "estimateValue",
-      "summary": "Estimate fair circular swap value (USD) for an item",
+      "summary": "Estimate fair circular swap value (COP) for an item",
       "file": "api/src/modules/ai/ai.controller.ts"
     },
     {
@@ -54,6 +54,30 @@
       "handler": "register",
       "summary": "Register a new user account",
       "file": "api/src/modules/auth/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/departments",
+      "controller": "GeoController",
+      "handler": "listDepartments",
+      "summary": "List the departments of Colombia",
+      "file": "api/src/modules/geo/geo.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/municipalities",
+      "controller": "GeoController",
+      "handler": "listMunicipalities",
+      "summary": "List or search municipalities (accent-insensitive name search)",
+      "file": "api/src/modules/geo/geo.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/geo/resolve",
+      "controller": "GeoController",
+      "handler": "resolveLocation",
+      "summary": "Resolve a GPS position to the closest municipality",
+      "file": "api/src/modules/geo/geo.controller.ts"
     },
     {
       "method": "GET",
@@ -372,6 +396,15 @@
       "api/src/modules/auth/dto/login.dto.ts",
       "api/src/modules/auth/dto/register.dto.ts"
     ],
+    "api/geo": [
+      "api/src/modules/geo/data/colombia-municipalities.ts",
+      "api/src/modules/geo/dto/geo-query.dto.ts",
+      "api/src/modules/geo/geo.controller.ts",
+      "api/src/modules/geo/geo.module.ts",
+      "api/src/modules/geo/geo.service.ts",
+      "api/src/modules/geo/geo.types.ts",
+      "api/src/modules/geo/geo.utils.ts"
+    ],
     "api/health": [
       "api/src/modules/health/health.controller.ts",
       "api/src/modules/health/health.module.ts"
@@ -423,6 +456,9 @@
     "mobile/components": [
       "mobile/src/components/BottomNav.tsx",
       "mobile/src/components/DemoAccountSwitcher.tsx",
+      "mobile/src/components/LocationPicker.tsx",
+      "mobile/src/components/LocationPrompt.tsx",
+      "mobile/src/components/LocationScopeSelector.tsx",
       "mobile/src/components/ObjectCard.tsx",
       "mobile/src/components/ProposalCard.tsx",
       "mobile/src/components/RouteCard.tsx",
@@ -437,6 +473,7 @@
       "mobile/src/components/ui/EmptyState.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
+      "mobile/src/components/ui/Select.tsx",
       "mobile/src/components/ui/ThemeToggle.tsx"
     ],
     "mobile/config": [
@@ -494,6 +531,8 @@
     "mobile/services": [
       "mobile/src/services/ai/ai.service.ts",
       "mobile/src/services/auth/auth.service.ts",
+      "mobile/src/services/geo/geo.service.ts",
+      "mobile/src/services/geo/geolocation.ts",
       "mobile/src/services/health/health.service.ts",
       "mobile/src/services/http/apiClient.ts",
       "mobile/src/services/items/items.service.ts",
@@ -507,6 +546,7 @@
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
+      "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts"
     ]
@@ -522,6 +562,7 @@
         "./config/env.validation",
         "./modules/ai/ai.module",
         "./modules/auth/auth.module",
+        "./modules/geo/geo.module",
         "./modules/health/health.module",
         "./modules/items/items.module",
         "./modules/notifications/notifications.module",
@@ -644,7 +685,7 @@
           "path": "/ai/estimate-value",
           "controller": "AiController",
           "handler": "estimateValue",
-          "summary": "Estimate fair circular swap value (USD) for an item",
+          "summary": "Estimate fair circular swap value (COP) for an item",
           "file": "api/src/modules/ai/ai.controller.ts"
         },
         {
@@ -869,6 +910,109 @@
         "zod"
       ]
     },
+    "api/src/modules/geo/data/colombia-municipalities.ts": {
+      "module": "api/geo",
+      "exports": [
+        "RAW_DEPARTMENTS",
+        "RAW_MUNICIPALITIES"
+      ],
+      "imports": []
+    },
+    "api/src/modules/geo/dto/geo-query.dto.ts": {
+      "module": "api/geo",
+      "exports": [
+        "QueryMunicipalitiesDto",
+        "ResolveLocationDto",
+        "queryMunicipalitiesSchema",
+        "resolveLocationSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/geo/geo.controller.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoController"
+      ],
+      "imports": [
+        "../../common/pipes/zod-validation.pipe",
+        "./dto/geo-query.dto",
+        "./geo.service",
+        "./geo.types",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/geo/departments",
+          "controller": "GeoController",
+          "handler": "listDepartments",
+          "summary": "List the departments of Colombia",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/geo/municipalities",
+          "controller": "GeoController",
+          "handler": "listMunicipalities",
+          "summary": "List or search municipalities (accent-insensitive name search)",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/geo/resolve",
+          "controller": "GeoController",
+          "handler": "resolveLocation",
+          "summary": "Resolve a GPS position to the closest municipality",
+          "file": "api/src/modules/geo/geo.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/geo/geo.module.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoModule"
+      ],
+      "imports": [
+        "./geo.controller",
+        "./geo.service",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/geo/geo.service.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoService"
+      ],
+      "imports": [
+        "./data/colombia-municipalities",
+        "./geo.types",
+        "./geo.utils",
+        "@nestjs/common"
+      ]
+    },
+    "api/src/modules/geo/geo.types.ts": {
+      "module": "api/geo",
+      "exports": [
+        "GeoDepartment",
+        "GeoMunicipality",
+        "GeoScope",
+        "MunicipalityDto",
+        "NEARBY_RADIUS_KM",
+        "NearbyMunicipality"
+      ],
+      "imports": []
+    },
+    "api/src/modules/geo/geo.utils.ts": {
+      "module": "api/geo",
+      "exports": [
+        "haversineKm",
+        "normalizeSearchText"
+      ],
+      "imports": []
+    },
     "api/src/modules/health/health.controller.ts": {
       "module": "api/health",
       "exports": [
@@ -1054,6 +1198,7 @@
       ],
       "imports": [
         "../ai/ai.module",
+        "../geo/geo.module",
         "./items.controller",
         "./items.service",
         "./mappers/item.mapper",
@@ -1069,6 +1214,8 @@
       "imports": [
         "../../prisma/prisma.service",
         "../ai/services/ai-embedding.service",
+        "../geo/geo.service",
+        "../geo/geo.types",
         "./dto/create-item.dto",
         "./dto/query-items.dto",
         "./dto/update-item.dto",
@@ -1499,6 +1646,7 @@
       ],
       "imports": [
         "../ai/ai.module",
+        "../geo/geo.module",
         "./engine/route-scoring.strategy",
         "./engine/swap-graph.engine",
         "./mappers/route.mapper",
@@ -1519,6 +1667,8 @@
         "../ai/dto/ai-locale.dto",
         "../ai/services/ai-embedding.service",
         "../ai/services/ai-explainer.service",
+        "../geo/geo.service",
+        "../geo/geo.types",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1530,7 +1680,8 @@
       ],
       "prismaModels": [
         "Item",
-        "SwapRoute"
+        "SwapRoute",
+        "User"
       ]
     },
     "api/src/modules/users/dto/update-profile.dto.ts": {
@@ -1602,6 +1753,7 @@
         "UsersModule"
       ],
       "imports": [
+        "../geo/geo.module",
         "./mappers/user.mapper",
         "./users.controller",
         "./users.service",
@@ -1618,6 +1770,7 @@
       ],
       "imports": [
         "../../prisma/prisma.service",
+        "../geo/geo.service",
         "./dto/update-profile.dto",
         "./mappers/user.mapper",
         "@nestjs/common",
@@ -1689,6 +1842,51 @@
         "clsx",
         "react",
         "react-router-dom"
+      ]
+    },
+    "mobile/src/components/LocationPicker.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationPicker",
+        "LocationPickerProps"
+      ],
+      "imports": [
+        "./ui/Button",
+        "./ui/Icon",
+        "./ui/Select",
+        "@/hooks/useTranslation",
+        "@/services/geo/geo.service",
+        "@/services/geo/geolocation",
+        "@/services/http/apiClient",
+        "react"
+      ]
+    },
+    "mobile/src/components/LocationPrompt.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationPrompt"
+      ],
+      "imports": [
+        "./ui/Button",
+        "./ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/components/LocationScopeSelector.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LocationScopeSelector",
+        "LocationScopeSelectorProps"
+      ],
+      "imports": [
+        "./ui/Chip",
+        "./ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "@/services/storage/preferencesStorage",
+        "clsx"
       ]
     },
     "mobile/src/components/ObjectCard.tsx": {
@@ -1873,6 +2071,19 @@
         "react"
       ]
     },
+    "mobile/src/components/ui/Select.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "Select",
+        "SelectOption",
+        "SelectProps"
+      ],
+      "imports": [
+        "./Icon",
+        "clsx",
+        "react"
+      ]
+    },
     "mobile/src/components/ui/ThemeToggle.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -1917,6 +2128,7 @@
         "@/services/items/items.service",
         "@/services/notifications/notifications.service",
         "@/services/routes/routes.service",
+        "@/services/storage/preferencesStorage",
         "@/services/storage/tokenStorage",
         "@/types",
         "react"
@@ -2113,6 +2325,8 @@
         "ConfigureSwapScreen"
       ],
       "imports": [
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2121,6 +2335,7 @@
         "@/hooks/useTranslation",
         "@/services/swapService",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2142,6 +2357,8 @@
       ],
       "imports": [
         "@/assets/avatar-alex.svg",
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
@@ -2155,6 +2372,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2165,6 +2383,8 @@
         "HomeScreen"
       ],
       "imports": [
+        "@/components/LocationPrompt",
+        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ui/Badge",
         "@/components/ui/Button",
@@ -2190,6 +2410,7 @@
       "imports": [
         "@/assets/logo.svg",
         "@/components/DemoAccountSwitcher",
+        "@/components/LocationPicker",
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
@@ -2228,6 +2449,7 @@
       "imports": [
         "@/assets/avatar-alex.svg",
         "@/components/DemoAccountSwitcher",
+        "@/components/LocationPicker",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
@@ -2242,6 +2464,7 @@
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2261,6 +2484,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2290,6 +2514,7 @@
       "imports": [
         "@/assets/avatar-alex.svg",
         "@/assets/item-bike.svg",
+        "@/components/LocationPicker",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Button",
@@ -2301,6 +2526,7 @@
         "@/services/ai/ai.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
+        "@/utils/currency",
         "@/utils/imageCompressor",
         "clsx",
         "react",
@@ -2333,6 +2559,7 @@
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
+        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2449,6 +2676,32 @@
         "@/types"
       ]
     },
+    "mobile/src/services/geo/geo.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "Department",
+        "Municipality",
+        "ResolvedLocation",
+        "SearchMunicipalitiesParams",
+        "geoService"
+      ],
+      "imports": [
+        "@/services/http/apiClient"
+      ]
+    },
+    "mobile/src/services/geo/geolocation.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "Coordinates",
+        "GeolocationError",
+        "GeolocationFailure",
+        "getApproximatePosition"
+      ],
+      "imports": [
+        "@capacitor/core",
+        "@capacitor/geolocation"
+      ]
+    },
     "mobile/src/services/health/health.service.ts": {
       "module": "mobile/services",
       "exports": [
@@ -2492,6 +2745,7 @@
         "@/assets/avatar-alex.svg",
         "@/assets/item-bike.svg",
         "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
         "@/types",
         "@/utils/imageCompressor"
       ]
@@ -2539,16 +2793,20 @@
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/services/storage/preferencesStorage",
-        "@/types"
+        "@/types",
+        "@/utils/currency"
       ]
     },
     "mobile/src/services/storage/preferencesStorage.ts": {
       "module": "mobile/services",
       "exports": [
         "DEFAULT_LOCALE",
+        "DEFAULT_LOCATION_SCOPE",
         "DEFAULT_THEME",
         "LOCALE_STORAGE_KEY",
+        "LOCATION_SCOPE_STORAGE_KEY",
         "LocalePreference",
+        "LocationScopePreference",
         "THEME_STORAGE_KEY",
         "ThemePreference",
         "preferencesStorage"
@@ -2600,6 +2858,15 @@
         "SwapRoute",
         "SwapStep",
         "User"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/currency.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "formatCop",
+        "formatCopDigits",
+        "sanitizeCopDigits"
       ],
       "imports": []
     },

@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
+import { LocationPrompt } from '@/components/LocationPrompt';
+import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 
 interface TargetPreset {
   id: string;
@@ -45,7 +48,6 @@ export const ConfigureSwapScreen = () => {
   const [targetPreset, setTargetPreset] = useState<TargetPreset | null>(null);
 
   // Filters state
-  const [geoMode, setGeoMode] = useState<'local' | 'nationwide'>('local');
   const [swapMode, setSwapMode] = useState<'circular' | 'direct'>('circular');
 
   // Load items from service
@@ -87,7 +89,11 @@ export const ConfigureSwapScreen = () => {
                 matchRate: t('configure.matchRate', { percent: 96 }),
                 details:
                   matchedItem.description ||
-                  t('configure.details.estimatedRange', { value: matchedItem.estimatedValue ?? 500 }),
+                  (matchedItem.estimatedValue !== undefined
+                    ? t('configure.details.estimatedRange', {
+                        value: formatCop(matchedItem.estimatedValue),
+                      })
+                    : t('configure.details.adequateFit')),
                 imageUrl: matchedItem.imageUrl,
                 co2Saved: '38 kg',
                 routesCount: 6,
@@ -113,7 +119,13 @@ export const ConfigureSwapScreen = () => {
                 name: 'Cámara Fujifilm X-T30 II',
                 title: cameraItem.name + ' + 15-45mm',
                 matchRate: t('configure.matchRate', { percent: 98 }),
-                details: t('configure.details.cameraRange'),
+                details:
+                  cameraItem.estimatedValue !== undefined
+                    ? t('configure.details.valueRange', {
+                        min: formatCop(cameraItem.estimatedValue * 0.95),
+                        max: formatCop(cameraItem.estimatedValue * 1.05),
+                      })
+                    : t('configure.details.adequateFit'),
                 imageUrl: cameraItem.imageUrl,
                 co2Saved: '42 kg',
                 routesCount: 7,
@@ -250,7 +262,7 @@ export const ConfigureSwapScreen = () => {
                           {t('configure.estimatedValue')}
                         </span>
                         <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                          ${selectedOfferItem.estimatedValue ?? 780} USD
+                          {formatCop(selectedOfferItem.estimatedValue)}
                         </span>
                       </div>
                     </div>
@@ -400,93 +412,16 @@ export const ConfigureSwapScreen = () => {
             </div>
           </section>
 
-          {/* Geographic Radius Selector */}
+          {/* Search area: nearby, department or the whole country */}
           <section className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 flex flex-col gap-space-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon name="near_me" size="sm" className="text-primary" />
-                <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                  {t('configure.radius')}
-                </h3>
-              </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">
-                {geoMode === 'local' ? t('configure.localArea') : t('configure.nationwideArea')}
-              </span>
+            <div className="flex items-center gap-2">
+              <Icon name="near_me" size="sm" className="text-primary" />
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+                {t('configure.radius')}
+              </h3>
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setGeoMode('local')}
-                className={`flex flex-col p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98] ${
-                  geoMode === 'local'
-                    ? 'border-primary bg-primary/5 shadow-xs'
-                    : 'border-transparent bg-surface-container-low hover:bg-surface-container'
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Icon
-                    name="location_city"
-                    size="sm"
-                    className={geoMode === 'local' ? 'text-primary' : 'text-on-surface-variant'}
-                  />
-                  {geoMode === 'local' ? (
-                    <span className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-on-primary text-[10px] font-bold">
-                      ✓
-                    </span>
-                  ) : (
-                    <span className="w-4 h-4 rounded-full bg-surface-container-highest" />
-                  )}
-                </div>
-                <span
-                  className={`font-label-lg text-label-lg font-bold ${
-                    geoMode === 'local' ? 'text-primary' : 'text-on-surface'
-                  }`}
-                >
-                  {t('configure.inMyCity')}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                  {t('configure.upTo15km')}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setGeoMode('nationwide')}
-                className={`flex flex-col p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98] ${
-                  geoMode === 'nationwide'
-                    ? 'border-primary bg-primary/5 shadow-xs'
-                    : 'border-transparent bg-surface-container-low hover:bg-surface-container'
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Icon
-                    name="local_shipping"
-                    size="sm"
-                    className={
-                      geoMode === 'nationwide' ? 'text-primary' : 'text-on-surface-variant'
-                    }
-                  />
-                  {geoMode === 'nationwide' ? (
-                    <span className="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-on-primary text-[10px] font-bold">
-                      ✓
-                    </span>
-                  ) : (
-                    <span className="w-4 h-4 rounded-full bg-surface-container-highest" />
-                  )}
-                </div>
-                <span
-                  className={`font-label-lg text-label-lg font-bold ${
-                    geoMode === 'nationwide' ? 'text-primary' : 'text-on-surface'
-                  }`}
-                >
-                  {t('configure.nationwide')}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px] mt-0.5">
-                  {t('configure.secureShipping')}
-                </span>
-              </button>
-            </div>
+            <LocationPrompt />
+            <LocationScopeSelector layout="cards" />
           </section>
 
           {/* Match Routing Modes */}

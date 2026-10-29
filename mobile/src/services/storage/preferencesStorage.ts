@@ -1,8 +1,10 @@
 export type ThemePreference = 'light' | 'dark';
 export type LocalePreference = 'es' | 'en';
+export type LocationScopePreference = 'nearby' | 'department' | 'country';
 
 export const THEME_STORAGE_KEY = 'smartswap_theme';
 export const LOCALE_STORAGE_KEY = 'smartswap_locale';
+export const LOCATION_SCOPE_STORAGE_KEY = 'smartswap_location_scope';
 
 // Keys written by earlier builds; read once and migrated to the canonical keys.
 const LEGACY_THEME_STORAGE_KEY = 'smartswap-theme';
@@ -10,6 +12,7 @@ const LEGACY_LOCALE_STORAGE_KEY = 'smartswap-language';
 
 export const DEFAULT_THEME: ThemePreference = 'light';
 export const DEFAULT_LOCALE: LocalePreference = 'es';
+export const DEFAULT_LOCATION_SCOPE: LocationScopePreference = 'nearby';
 
 const getStorage = (): Storage | null => {
   try {
@@ -72,5 +75,17 @@ export const preferencesStorage = {
 
   setLocale(locale: LocalePreference): void {
     write(LOCALE_STORAGE_KEY, locale);
+  },
+
+  /** How far from home the user wants to see items; nearby by default. */
+  getLocationScope(): LocationScopePreference {
+    const saved = getStorage()?.getItem(LOCATION_SCOPE_STORAGE_KEY) ?? null;
+    return saved === 'nearby' || saved === 'department' || saved === 'country'
+      ? saved
+      : DEFAULT_LOCATION_SCOPE;
+  },
+
+  setLocationScope(scope: LocationScopePreference): void {
+    write(LOCATION_SCOPE_STORAGE_KEY, scope);
   },
 };

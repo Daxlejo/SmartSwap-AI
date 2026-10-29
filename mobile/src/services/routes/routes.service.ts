@@ -1,4 +1,5 @@
 import { apiClient } from '@/services/http/apiClient';
+import { formatCop } from '@/utils/currency';
 import {
   preferencesStorage,
   type LocalePreference,
@@ -60,6 +61,9 @@ export interface SearchRoutesPayload {
   valueTolerancePct?: number;
   /** Language for AI route explanations; defaults to the user's app locale. */
   locale?: LocalePreference;
+  /** Where to look for participants, relative to the user's registered municipality. */
+  scope?: 'nearby' | 'department' | 'country';
+  radiusKm?: number;
 }
 
 export interface ProposeRouteStepInput {
@@ -171,7 +175,7 @@ const resolveStepUser = (
       name: rawUser.name || mockMatch?.name || `Usuario ${stepIndex + 1}`,
       email: rawUser.email || mockMatch?.email || `user${stepIndex + 1}@smartswap.io`,
       avatarUrl: rawUser.avatarUrl || mockMatch?.avatarUrl,
-      location: rawUser.location || mockMatch?.location || 'Madrid, España',
+      location: rawUser.location || mockMatch?.location || 'Colombia',
       rating: typeof rawUser.rating === 'number' ? rawUser.rating : mockMatch?.rating ?? 4.9,
       verified: typeof rawUser.verified === 'boolean' ? rawUser.verified : mockMatch?.verified ?? true,
       co2SavedKg:
@@ -245,14 +249,14 @@ const buildDefaultAiExplanation = (
 ): string => {
   const firstItem = chainItems[0];
   const lastItem = chainItems[chainItems.length - 1];
-  const firstValue = firstItem?.estimatedValue ?? 750;
-  const lastValue = lastItem?.estimatedValue ?? 780;
+  const withValue = (item?: Item): string =>
+    item?.estimatedValue !== undefined ? ` (${formatCop(item.estimatedValue)})` : '';
 
   return `Ciclo circular equilibrado de ${stepsCount} ${
     stepsCount === 1 ? 'paso' : 'pasos'
-  }: el valor estimado entre ${firstItem?.name || 'tu artículo'} ($${firstValue} USD) y ${
+  }: el valor estimado entre ${firstItem?.name || 'tu artículo'}${withValue(firstItem)} y ${
     lastItem?.name || 'el objetivo deseado'
-  } ($${lastValue} USD) se encuentra dentro del margen de equidad sin requerir dinero adicional, evitando ${co2SavedKg} kg de CO₂.`;
+  }${withValue(lastItem)} se encuentra dentro del margen de equidad sin requerir dinero adicional, evitando ${co2SavedKg} kg de CO₂.`;
 };
 
 export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {

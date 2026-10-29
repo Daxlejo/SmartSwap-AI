@@ -45,7 +45,7 @@ export const publishCycleItems = async (
       .send({
         ...item,
         condition: 'EXCELLENT',
-        estimatedValue: 450,
+        estimatedValue: 1_800_000,
         images: ['https://example.com/item.jpg'],
       })
       .expect(201);

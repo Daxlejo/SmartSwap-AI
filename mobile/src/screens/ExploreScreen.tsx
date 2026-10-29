@@ -14,6 +14,9 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ApiError } from '@/services/http/apiClient';
 import alexAvatar from '@/assets/avatar-alex.svg';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
+import { LocationPrompt } from '@/components/LocationPrompt';
+import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 
 interface CategoryOption {
   id: string;
@@ -58,7 +61,15 @@ const SORT_OPTIONS = [
 export const ExploreScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { items, currentUser, isItemsLoading, refreshItems, deleteItemReal } = useApp();
+  const {
+    items,
+    currentUser,
+    isItemsLoading,
+    refreshItems,
+    deleteItemReal,
+    locationScope,
+    setLocationScope,
+  } = useApp();
 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -209,11 +220,20 @@ export const ExploreScreen = () => {
   const isSelectedItemMine =
     Boolean(selectedItem && currentUser && selectedItem.ownerId === currentUser.id);
   const showSkeleton = isItemsLoading && items.length === 0;
+  const hasMunicipality = Boolean(currentUser?.municipalityCode);
+  const widenTarget =
+    hasMunicipality && locationScope === 'nearby'
+      ? 'department'
+      : hasMunicipality && locationScope === 'department'
+        ? 'country'
+        : null;
 
   return (
     <div className="flex flex-col flex-1 w-full pb-6">
       {/* Sticky Header: Search Bar + Category Chips */}
       <div className="sticky top-16 z-30 bg-surface/90 backdrop-blur-xl border-b border-surface-container-high/50 px-margin pt-3 pb-3 space-y-3 transition-colors">
+        <LocationPrompt />
+        <LocationScopeSelector />
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">
@@ -387,10 +407,27 @@ export const ExploreScreen = () => {
           <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[45vh]">
             <EmptyState
               iconName="search_off"
-              title={t('explore.emptyTitle')}
-              description={t('explore.emptyDescription')}
+              title={
+                !hasActiveFilters && widenTarget ? t('location.empty.title') : t('explore.emptyTitle')
+              }
+              description={
+                !hasActiveFilters && widenTarget
+                  ? t('location.empty.description')
+                  : t('explore.emptyDescription')
+              }
               action={
-                hasActiveFilters ? (
+                !hasActiveFilters && widenTarget ? (
+                  <Button
+                    variant="tonal"
+                    size="sm"
+                    leftIcon={widenTarget === 'department' ? 'map' : 'public'}
+                    onClick={() => setLocationScope(widenTarget)}
+                  >
+                    {widenTarget === 'department'
+                      ? t('location.empty.widenDepartment')
+                      : t('location.empty.widenCountry')}
+                  </Button>
+                ) : hasActiveFilters ? (
                   <Button
                     variant="tonal"
                     size="sm"
@@ -442,7 +479,7 @@ export const ExploreScreen = () => {
                   {/* Estimated Value Overlay Pill on Item Thumbnail */}
                   {item.estimatedValue !== undefined && (
                     <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-[10px] text-inverse-on-surface font-bold shadow-xs">
-                      {t('explore.estimatedShort', { value: item.estimatedValue })}
+                      {t('explore.estimatedShort', { value: formatCop(item.estimatedValue) })}
                     </span>
                   )}
                 </div>
@@ -478,7 +515,7 @@ export const ExploreScreen = () => {
               {selectedItem.estimatedValue !== undefined && (
                 <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md border border-surface-container-high shadow-xs">
                   <span className="font-label-md text-label-md text-primary font-bold">
-                    {t('explore.estimatedValue', { value: selectedItem.estimatedValue })}
+                    {t('explore.estimatedValue', { value: formatCop(selectedItem.estimatedValue) })}
                   </span>
                 </div>
               )}

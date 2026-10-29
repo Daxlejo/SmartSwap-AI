@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 
 export const ProposalConfirmScreen: React.FC = () => {
@@ -90,7 +91,8 @@ export const ProposalConfirmScreen: React.FC = () => {
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
-                  {t('proposalConfirm.estimatedValue', { value: offeredItem.estimatedValue ?? 780 })}
+                  {offeredItem.estimatedValue !== undefined &&
+                    t('proposalConfirm.estimatedValue', { value: formatCop(offeredItem.estimatedValue) })}
                 </span>
               </div>
             </div>
@@ -139,7 +141,8 @@ export const ProposalConfirmScreen: React.FC = () => {
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
-                  {t('proposalConfirm.estimatedValue', { value: targetItem.estimatedValue ?? 790 })}
+                  {targetItem.estimatedValue !== undefined &&
+                    t('proposalConfirm.estimatedValue', { value: formatCop(targetItem.estimatedValue) })}
                 </span>
               </div>
             </div>

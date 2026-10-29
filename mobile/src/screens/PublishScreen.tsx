@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { LocationPicker } from '@/components/LocationPicker';
+import { formatCop, formatCopDigits, sanitizeCopDigits } from '@/utils/currency';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -205,21 +207,24 @@ export const PublishScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
   // Step 1: Photos state
-  const [photos, setPhotos] = useState<string[]>([bikeImg]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
 
   // Step 2: Information state
-  const [name, setName] = useState('Bicicleta Trek Marlin 7');
-  const [description, setDescription] = useState(
-    'Rodado 29" • Talle M • Frenos hidráulicos Shimano. Revisión reciente.',
-  );
-  const [category, setCategory] = useState('Deportes');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('Excelente estado');
-  const [estimatedValue, setEstimatedValue] = useState('780');
-  const [location, setLocation] = useState(currentUser?.location || t('publish.defaultLocation'));
+  const [estimatedValue, setEstimatedValue] = useState('');
+  // Items are located where they are published: the owner's municipality unless changed here
+  const [municipalityCode, setMunicipalityCode] = useState<string | null>(
+    currentUser?.municipalityCode ?? null,
+  );
+  const [locationLabel, setLocationLabel] = useState(currentUser?.location ?? '');
+  const [isChangingLocation, setIsChangingLocation] = useState(!currentUser?.municipalityCode);
 
   // Step 3: Wanted items state
-  const [wantedItems, setWantedItems] = useState<string[]>(['Cámara', 'iPad']);
+  const [wantedItems, setWantedItems] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // AI Assistant state
@@ -444,7 +449,7 @@ export const PublishScreen: React.FC = () => {
     if (!estimatedValue || isNaN(parsedVal) || parsedVal <= 0) {
       nextErrors.estimatedValue = t('publish.errors.valueInvalid');
     }
-    if (!location.trim()) {
+    if (!municipalityCode) {
       nextErrors.location = t('publish.errors.locationRequired');
     }
 
@@ -518,8 +523,8 @@ export const PublishScreen: React.FC = () => {
         category,
         condition,
         description: description.trim(),
-        estimatedValue: Number(estimatedValue) || 100,
-        location: location.trim(),
+        estimatedValue: Number(estimatedValue),
+        municipalityCode: municipalityCode ?? undefined,
         imageUrl: primaryImage,
         images: uploadedImages.length > 0 ? uploadedImages : [primaryImage],
         wants: wantedItems,
@@ -624,7 +629,10 @@ export const PublishScreen: React.FC = () => {
               >
                 <Icon name="payments" size="xs" />
                 <span>
-                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                  {t('publish.ai.valueRange', {
+                    min: formatCop(aiValueRange.min),
+                    max: formatCop(aiValueRange.max),
+                  })}
                 </span>
               </span>
               {aiValueRange.reasoning && (
@@ -706,7 +714,7 @@ export const PublishScreen: React.FC = () => {
             <div className="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant">
               <span>{t(`catalog.categories.${category}`, { defaultValue: category })}</span>
               <span>•</span>
-              <span className="font-semibold text-on-surface">${estimatedValue} USD</span>
+              <span className="font-semibold text-on-surface">{formatCop(Number(estimatedValue))}</span>
             </div>
 
             <span className="font-label-sm text-label-sm text-primary font-bold mt-1 flex items-center gap-1">
@@ -1101,7 +1109,7 @@ export const PublishScreen: React.FC = () => {
             )}
           </div>
 
-          {/* Valor Estimado ($ USD) */}
+          {/* Valor estimado (COP) */}
           <div className="flex flex-col gap-1.5 w-full">
             <div className="flex items-center justify-between">
               <label
@@ -1112,7 +1120,10 @@ export const PublishScreen: React.FC = () => {
               </label>
               {aiValueRange ? (
                 <span className="font-label-sm text-label-sm text-primary font-bold">
-                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                  {t('publish.ai.valueRange', {
+                    min: formatCop(aiValueRange.min),
+                    max: formatCop(aiValueRange.max),
+                  })}
                 </span>
               ) : (
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
@@ -1132,21 +1143,21 @@ export const PublishScreen: React.FC = () => {
               </span>
               <input
                 id="estimated-value-input"
-                type="number"
-                min="1"
-                step="10"
-                value={estimatedValue}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={formatCopDigits(estimatedValue)}
                 onChange={(e) => {
-                  setEstimatedValue(e.target.value);
+                  setEstimatedValue(sanitizeCopDigits(e.target.value));
                   if (errors.estimatedValue) {
                     setErrors((prev) => ({ ...prev, estimatedValue: undefined }));
                   }
                 }}
-                placeholder="780"
+                placeholder={t('publish.info.valuePlaceholder')}
                 className="w-full bg-transparent text-on-surface font-body-md text-body-md focus:outline-none"
               />
               <span className="font-label-md text-label-md font-bold text-on-surface-variant ml-2 select-none">
-                USD
+                COP
               </span>
             </div>
             {errors.estimatedValue && (
@@ -1155,18 +1166,39 @@ export const PublishScreen: React.FC = () => {
           </div>
 
           {/* Ubicación */}
-          <Input
-            label={t('publish.info.location')}
-            leftIcon="location_on"
-            placeholder={t('publish.info.locationPlaceholder')}
-            value={location}
-            onChange={(e) => {
-              setLocation(e.target.value);
-              if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
-            }}
-            error={errors.location}
-            helperText={t('publish.info.locationHelper')}
-          />
+          <div className="flex flex-col gap-1.5 w-full">
+            <span className="font-label-md text-label-md text-on-surface">
+              {t('publish.info.location')}
+            </span>
+            {municipalityCode && !isChangingLocation ? (
+              <div className="flex items-center justify-between gap-3 min-h-[52px] px-4 rounded-2xl bg-surface-container-low">
+                <span className="flex items-center gap-2 font-body-md text-body-md text-on-surface">
+                  <Icon name="location_on" size="md" className="text-primary" />
+                  {locationLabel}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setIsChangingLocation(true)}>
+                  {t('publish.info.locationChange')}
+                </Button>
+              </div>
+            ) : (
+              <LocationPicker
+                municipalityCode={municipalityCode}
+                departmentCode={currentUser?.departmentCode}
+                onChange={(municipality) => {
+                  setMunicipalityCode(municipality?.code ?? null);
+                  setLocationLabel(municipality?.label ?? '');
+                  if (municipality) {
+                    setIsChangingLocation(false);
+                    if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
+                  }
+                }}
+                error={errors.location}
+              />
+            )}
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {t('publish.info.locationHelper')}
+            </span>
+          </div>
         </div>
       )}
 
@@ -1348,14 +1380,13 @@ export const PublishScreen: React.FC = () => {
                     {t('publish.info.estimatedValue')}
                   </span>
                   <span className="font-headline-sm text-headline-sm font-bold text-primary">
-                    ${estimatedValue}{' '}
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">USD</span>
+                    {formatCop(Number(estimatedValue))}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
                   <Icon name="location_on" size="sm" />
-                  <span>{location}</span>
+                  <span>{locationLabel}</span>
                 </div>
               </div>
             </div>

@@ -10,6 +10,14 @@ export const queryItemsSchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
+  /** Viewer location; required for the `nearby` and `department` scopes. */
+  municipalityCode: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, 'municipalityCode must be a 5-digit DANE code')
+    .optional(),
+  scope: z.enum(['nearby', 'department', 'country']).optional(),
+  radiusKm: z.coerce.number().min(1).max(300).optional(),
 });
 
 export type QueryItemsDto = z.infer<typeof queryItemsSchema>;
