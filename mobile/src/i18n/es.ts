@@ -261,7 +261,7 @@ export const es = {
     logout: 'Cerrar sesión',
     version: 'SmartSwap v2.4 • Intercambio circular P2P',
     fullName: 'Nombre completo',
-    location: 'Ciudad / Ubicación',
+    location: 'Tu ubicación',
     cancel: 'Cancelar',
     saveChanges: 'Guardar cambios',
   },

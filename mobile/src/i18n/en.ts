@@ -263,7 +263,7 @@ export const en: TranslationSchema = {
     logout: 'Sign out',
     version: 'SmartSwap v2.4 • P2P circular swapping',
     fullName: 'Full name',
-    location: 'City / Location',
+    location: 'Your location',
     cancel: 'Cancel',
     saveChanges: 'Save changes',
   },
