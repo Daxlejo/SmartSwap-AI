@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCop, formatCopDigits, sanitizeCopDigits } from '@/utils/currency';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -205,21 +206,19 @@ export const PublishScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
   // Step 1: Photos state
-  const [photos, setPhotos] = useState<string[]>([bikeImg]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
 
   // Step 2: Information state
-  const [name, setName] = useState('Bicicleta Trek Marlin 7');
-  const [description, setDescription] = useState(
-    'Rodado 29" • Talle M • Frenos hidráulicos Shimano. Revisión reciente.',
-  );
-  const [category, setCategory] = useState('Deportes');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('Excelente estado');
-  const [estimatedValue, setEstimatedValue] = useState('780');
+  const [estimatedValue, setEstimatedValue] = useState('');
   const [location, setLocation] = useState(currentUser?.location || t('publish.defaultLocation'));
 
   // Step 3: Wanted items state
-  const [wantedItems, setWantedItems] = useState<string[]>(['Cámara', 'iPad']);
+  const [wantedItems, setWantedItems] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   // AI Assistant state
@@ -518,7 +517,7 @@ export const PublishScreen: React.FC = () => {
         category,
         condition,
         description: description.trim(),
-        estimatedValue: Number(estimatedValue) || 100,
+        estimatedValue: Number(estimatedValue),
         location: location.trim(),
         imageUrl: primaryImage,
         images: uploadedImages.length > 0 ? uploadedImages : [primaryImage],
@@ -624,7 +623,10 @@ export const PublishScreen: React.FC = () => {
               >
                 <Icon name="payments" size="xs" />
                 <span>
-                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                  {t('publish.ai.valueRange', {
+                    min: formatCop(aiValueRange.min),
+                    max: formatCop(aiValueRange.max),
+                  })}
                 </span>
               </span>
               {aiValueRange.reasoning && (
@@ -706,7 +708,7 @@ export const PublishScreen: React.FC = () => {
             <div className="flex items-center gap-1.5 font-body-sm text-body-sm text-on-surface-variant">
               <span>{t(`catalog.categories.${category}`, { defaultValue: category })}</span>
               <span>•</span>
-              <span className="font-semibold text-on-surface">${estimatedValue} USD</span>
+              <span className="font-semibold text-on-surface">{formatCop(Number(estimatedValue))}</span>
             </div>
 
             <span className="font-label-sm text-label-sm text-primary font-bold mt-1 flex items-center gap-1">
@@ -1101,7 +1103,7 @@ export const PublishScreen: React.FC = () => {
             )}
           </div>
 
-          {/* Valor Estimado ($ USD) */}
+          {/* Valor estimado (COP) */}
           <div className="flex flex-col gap-1.5 w-full">
             <div className="flex items-center justify-between">
               <label
@@ -1112,7 +1114,10 @@ export const PublishScreen: React.FC = () => {
               </label>
               {aiValueRange ? (
                 <span className="font-label-sm text-label-sm text-primary font-bold">
-                  Rango sugerido IA: ${aiValueRange.min} - ${aiValueRange.max} USD
+                  {t('publish.ai.valueRange', {
+                    min: formatCop(aiValueRange.min),
+                    max: formatCop(aiValueRange.max),
+                  })}
                 </span>
               ) : (
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
@@ -1132,21 +1137,21 @@ export const PublishScreen: React.FC = () => {
               </span>
               <input
                 id="estimated-value-input"
-                type="number"
-                min="1"
-                step="10"
-                value={estimatedValue}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={formatCopDigits(estimatedValue)}
                 onChange={(e) => {
-                  setEstimatedValue(e.target.value);
+                  setEstimatedValue(sanitizeCopDigits(e.target.value));
                   if (errors.estimatedValue) {
                     setErrors((prev) => ({ ...prev, estimatedValue: undefined }));
                   }
                 }}
-                placeholder="780"
+                placeholder={t('publish.info.valuePlaceholder')}
                 className="w-full bg-transparent text-on-surface font-body-md text-body-md focus:outline-none"
               />
               <span className="font-label-md text-label-md font-bold text-on-surface-variant ml-2 select-none">
-                USD
+                COP
               </span>
             </div>
             {errors.estimatedValue && (
@@ -1348,8 +1353,7 @@ export const PublishScreen: React.FC = () => {
                     {t('publish.info.estimatedValue')}
                   </span>
                   <span className="font-headline-sm text-headline-sm font-bold text-primary">
-                    ${estimatedValue}{' '}
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">USD</span>
+                    {formatCop(Number(estimatedValue))}
                   </span>
                 </div>
 
