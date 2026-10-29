@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export const RouteDetailScreen: React.FC = () => {
   const location = useLocation();
@@ -186,11 +187,7 @@ export const RouteDetailScreen: React.FC = () => {
       >
         {selectedItem && (
           <div className="flex flex-col gap-4">
-            <img
-              src={selectedItem.imageUrl}
-              alt={selectedItem.name}
-              className="w-full h-48 object-cover rounded-xl"
-            />
+            <ItemImage src={selectedItem.imageUrl} alt={selectedItem.name} category={selectedItem.category} className="w-full h-48 rounded-xl" />
             <div>
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="warning">

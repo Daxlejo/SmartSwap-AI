@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export interface RouteCardProps {
   route: SwapRoute;
@@ -79,11 +80,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
       {/* Objective Label & Target Item */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <img
-            src={targetItem.imageUrl}
-            alt={targetItem.name}
-            className="w-12 h-12 rounded-xl object-cover bg-surface-container-low border border-surface-container-high/60 shrink-0"
-          />
+          <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-12 h-12 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
           <div className="flex flex-col min-w-0">
             <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
               {t('cards.desiredTarget')}
@@ -129,11 +126,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
                       isLast ? 'ring-2 ring-primary ring-offset-1' : ''
                     }`}
                   >
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                     {isFirst && (
                       <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
                         {t('cards.you')}

@@ -6,20 +6,17 @@ import { formatMatchScore } from '@/services/routes/routes.service';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
 
-// Item thumbnails from mock assets
-import bikeImg from '@/assets/item-bike.svg';
-import ballImg from '@/assets/item-ball.svg';
-import headphonesImg from '@/assets/item-headphones.svg';
-import cameraImg from '@/assets/item-camera.svg';
+import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values', 'found'] as const;
 
-const FLOW_STEPS = [
-  { user: 'Tú', itemImg: bikeImg, itemName: 'Bicicleta' },
-  { user: 'Carlos', itemImg: ballImg, itemName: 'Balón' },
-  { user: 'Laura', itemImg: headphonesImg, itemName: 'Audífonos' },
-  { user: 'Sofía', itemImg: cameraImg, itemName: 'Cámara' },
+// Illustrative chain shown while the search runs; real items replace it once a route is found.
+const FLOW_STEPS: { user: string; itemImg?: string; itemName: string; category: string }[] = [
+  { user: 'Tú', itemName: 'Bicicleta', category: 'Deportes' },
+  { user: 'Carlos', itemName: 'Balón', category: 'Deportes' },
+  { user: 'Laura', itemName: 'Audífonos', category: 'Música' },
+  { user: 'Sofía', itemName: 'Cámara', category: 'Fotografía' },
 ];
 
 interface SearchingLocationState {
@@ -190,8 +187,9 @@ export const SearchingScreen: React.FC = () => {
               ? t('searching.you')
               : topRoute.participants[idx]?.name?.split(' ')[0] ||
                 t('searching.step', { count: idx + 1 }),
-          itemImg: item.imageUrl || bikeImg,
+          itemImg: item.imageUrl,
           itemName: item.name,
+          category: item.category,
         }))
       : FLOW_STEPS;
 
@@ -450,11 +448,7 @@ export const SearchingScreen: React.FC = () => {
                 <React.Fragment key={`${step.user}-${idx}`}>
                   <div className="flex flex-col items-center min-w-0">
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
-                      <img
-                        src={step.itemImg}
-                        alt={step.itemName}
-                        className="w-full h-full object-contain"
-                      />
+                      <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
                     </div>
                     <span className="font-label-sm text-[11px] text-on-surface font-semibold mt-1 truncate max-w-[50px] text-center">
                       {step.user}

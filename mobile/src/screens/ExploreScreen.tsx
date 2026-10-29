@@ -12,11 +12,11 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { ApiError } from '@/services/http/apiClient';
-import alexAvatar from '@/assets/avatar-alex.svg';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 interface CategoryOption {
   id: string;
@@ -141,10 +141,10 @@ export const ExploreScreen = () => {
         id: item.owner.id,
         name: item.owner.name,
         email: item.owner.email || '',
-        avatarUrl: item.owner.avatarUrl || alexAvatar,
+        avatarUrl: item.owner.avatarUrl,
         rating: item.owner.rating,
         location: item.owner.location,
-        verified: item.owner.verified ?? true,
+        verified: item.owner.verified ?? false,
         co2SavedKg: item.owner.co2SavedKg ?? 14.2,
       };
     }
@@ -499,11 +499,7 @@ export const ExploreScreen = () => {
           <div className="flex flex-col space-y-4">
             {/* Full Item Image */}
             <div className="relative w-full h-56 rounded-2xl bg-surface-container-low border border-surface-container-high/60 overflow-hidden flex items-center justify-center">
-              <img
-                src={selectedItem.imageUrl}
-                alt={selectedItem.name}
-                className="w-full h-full object-cover"
-              />
+              <ItemImage src={selectedItem.imageUrl} alt={selectedItem.name} category={selectedItem.category} className="w-full h-full" />
               <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
                 <Badge variant="primary" icon="category">
                   {t(`catalog.categories.${selectedItem.category}`, { defaultValue: selectedItem.category })}

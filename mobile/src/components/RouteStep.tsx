@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export interface RouteStepProps {
   fromUser: User;
@@ -79,11 +80,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
             }}
             className="flex items-center gap-3 bg-surface-container-low p-2.5 rounded-xl border border-surface-container-high/60 cursor-pointer hover:bg-surface-container active:scale-[0.98] transition-all"
           >
-            <img
-              src={itemGiven.imageUrl}
-              alt={itemGiven.name}
-              className="w-12 h-12 rounded-xl object-cover bg-surface-container-lowest shrink-0"
-            />
+            <ItemImage src={itemGiven.imageUrl} alt={itemGiven.name} category={itemGiven.category} className="w-12 h-12 rounded-xl bg-surface-container-lowest shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
                 {itemGiven.name}

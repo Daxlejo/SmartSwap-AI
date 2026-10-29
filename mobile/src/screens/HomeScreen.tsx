@@ -14,6 +14,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { ObjectCard } from '@/components/ObjectCard';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
@@ -325,11 +326,7 @@ export const HomeScreen = () => {
                             isLast ? 'ring-2 ring-primary ring-offset-1' : ''
                           }`}
                         >
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                           {isFirst && (
                             <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
                               {t('home.route.you')}

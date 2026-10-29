@@ -3,6 +3,7 @@ import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 export interface ObjectCardProps {
   item: Item;
@@ -26,11 +27,7 @@ export const ObjectCard = ({
       <div className="flex items-start gap-3">
         {/* Item image with category badge */}
         <div className="relative w-24 h-24 rounded-xl bg-surface-container-high overflow-hidden shrink-0">
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
+          <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
           <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm font-label-sm text-[10px] text-primary font-bold">
             {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
           </span>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { mockUsers } from '@/data/mockData';
-import alexAvatar from '@/assets/avatar-alex.svg';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +17,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
   <button
@@ -155,10 +155,9 @@ export const ProfileScreen = () => {
       {/* Section 1: Profile hero */}
       <section className="flex flex-col items-center text-center pt-2">
         <Avatar
-          src={currentUser?.avatarUrl || alexAvatar}
+          src={currentUser?.avatarUrl}
           alt={currentUser?.name ?? 'Alex Morales'}
           size="xl"
-          verified={currentUser?.verified ?? true}
           className="mb-3"
         />
         <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
@@ -303,11 +302,7 @@ export const ProfileScreen = () => {
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
                   <div className="flex items-start gap-3">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-14 h-14 rounded-xl object-cover shrink-0 bg-surface-container-high"
-                    />
+                    <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-14 h-14 rounded-xl shrink-0 bg-surface-container-high" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">
                         <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">

@@ -16,8 +16,7 @@ import { aiService } from '@/services/ai/ai.service';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import { ApiError } from '@/services/http/apiClient';
 
-import bikeImg from '@/assets/item-bike.svg';
-import alexAvatar from '@/assets/avatar-alex.svg';
+import { ItemImage } from '@/components/ui/ItemImage';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -370,10 +369,7 @@ export const PublishScreen: React.FC = () => {
 
     try {
       const compressedUrls: string[] = [];
-      const availableSlots = Math.max(
-        0,
-        4 - (photos.length === 1 && photos[0] === bikeImg ? 0 : photos.length),
-      );
+      const availableSlots = Math.max(0, 4 - photos.length);
 
       for (let i = 0; i < files.length && compressedUrls.length < availableSlots; i++) {
         const compressedDataUrl = await compressImageToDataUrl(files[i], {
@@ -385,11 +381,7 @@ export const PublishScreen: React.FC = () => {
       }
 
       if (compressedUrls.length > 0) {
-        setPhotos((prev) => {
-          // Replace the default SVG placeholder if user uploads their first real photo
-          const baseList = prev.length === 1 && prev[0] === bikeImg ? [] : prev;
-          return [...baseList, ...compressedUrls].slice(0, 4);
-        });
+        setPhotos((prev) => [...prev, ...compressedUrls].slice(0, 4));
       }
     } catch {
       setErrors((prev) => ({
@@ -505,18 +497,27 @@ export const PublishScreen: React.FC = () => {
     setErrors((prev) => ({ ...prev, submit: undefined }));
 
     try {
-      // Upload base64 data URLs if upload-image endpoint is available, or pass directly
-      const uploadedImages: string[] = [];
-      for (const photo of photos) {
-        if (photo.startsWith('data:image/')) {
-          const uploadedUrl = await itemsService.uploadImage(photo);
-          uploadedImages.push(uploadedUrl);
-        } else {
-          uploadedImages.push(photo);
+      // Upload every inline photo. A failure aborts the publish with a visible error; photos that
+      // were already stored are kept as URLs so a retry only uploads the missing ones.
+      const uploadedImages: string[] = [...photos];
+      try {
+        for (let index = 0; index < uploadedImages.length; index++) {
+          if (uploadedImages[index].startsWith('data:image/')) {
+            uploadedImages[index] = await itemsService.uploadImage(uploadedImages[index]);
+          }
         }
+      } catch (uploadError) {
+        setPhotos(uploadedImages);
+        const detail = uploadError instanceof Error ? uploadError.message : '';
+        setErrors((prev) => ({
+          ...prev,
+          submit: t('publish.errors.photoUploadFailed', { detail }),
+        }));
+        return;
       }
+      setPhotos(uploadedImages);
 
-      const primaryImage = uploadedImages[0] || bikeImg;
+      const primaryImage = uploadedImages[0];
 
       await createItemReal({
         name: name.trim(),
@@ -526,7 +527,7 @@ export const PublishScreen: React.FC = () => {
         estimatedValue: Number(estimatedValue),
         municipalityCode: municipalityCode ?? undefined,
         imageUrl: primaryImage,
-        images: uploadedImages.length > 0 ? uploadedImages : [primaryImage],
+        images: uploadedImages,
         wants: wantedItems,
       });
 
@@ -561,9 +562,9 @@ export const PublishScreen: React.FC = () => {
   };
 
   // Display cover photo
-  const coverPhoto = photos[0] || bikeImg;
+  const coverPhoto = photos[0];
   const ownerName = currentUser?.name || 'Alex Morales';
-  const ownerAvatar = currentUser?.avatarUrl || alexAvatar;
+  const ownerAvatar = currentUser?.avatarUrl;
   const ownerRating = (currentUser?.rating ?? 4.9).toFixed(1);
 
   const renderAiAssistantBanner = () => (
@@ -697,7 +698,7 @@ export const PublishScreen: React.FC = () => {
           className="w-full rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-4 text-left flex items-center gap-3.5"
         >
           <div className="relative w-16 h-16 rounded-xl bg-surface-container-high overflow-hidden shrink-0">
-            <img src={coverPhoto} alt={name} className="w-full h-full object-cover" />
+            <ItemImage src={coverPhoto} alt={name} category={category} className="w-full h-full" />
           </div>
 
           <div className="flex flex-col flex-1 min-w-0">
@@ -1352,11 +1353,7 @@ export const PublishScreen: React.FC = () => {
           <article className="flex flex-col rounded-2xl bg-surface-container-lowest p-4 shadow-sm space-y-4 border border-surface-container-high/60">
             {/* Large Image (h-56 full width rounded-2xl) */}
             <div className="relative w-full h-56 rounded-2xl bg-surface-container-high overflow-hidden shadow-xs">
-              <img
-                src={coverPhoto}
-                alt={name}
-                className="w-full h-full object-cover"
-              />
+              <ItemImage src={coverPhoto} alt={name} category={category} className="w-full h-full" />
               <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-surface/90 backdrop-blur-sm font-label-sm text-label-sm text-primary font-bold shadow-xs">
                 {t(`catalog.categories.${category}`, { defaultValue: category })}
               </span>
@@ -1419,14 +1416,11 @@ export const PublishScreen: React.FC = () => {
             {/* Owner Row */}
             <div className="pt-3 border-t border-surface-container-high/60 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar src={ownerAvatar} alt={ownerName} size="md" verified />
+                <Avatar src={ownerAvatar} alt={ownerName} size="md" />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
                     <span className="font-label-lg text-label-lg font-bold text-on-surface">
                       {ownerName}
-                    </span>
-                    <span className="inline-flex items-center text-primary" title={t('publish.preview.verified')}>
-                      <Icon name="verified" size="xs" filled />
                     </span>
                   </div>
                   <span className="font-body-sm text-body-sm text-on-surface-variant">

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
+import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
@@ -18,7 +19,7 @@ interface TargetPreset {
   title: string;
   matchRate: string;
   details: string;
-  imageUrl: string;
+  imageUrl?: string;
   co2Saved: string;
   routesCount: number;
 }
@@ -106,7 +107,7 @@ export const ConfigureSwapScreen = () => {
                 title: preselectedWant.wantItemName,
                 matchRate: t('configure.matchRate', { percent: 90 }),
                 details: t('configure.details.customSearch'),
-                imageUrl: allItems[0]?.imageUrl || '',
+                imageUrl: allItems[0]?.imageUrl,
                 co2Saved: '35 kg',
                 routesCount: 4,
               });
@@ -226,11 +227,7 @@ export const ConfigureSwapScreen = () => {
               <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 relative overflow-hidden transition-all duration-300">
                 <div className="flex items-start gap-space-md">
                   <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container shrink-0">
-                    <img
-                      src={selectedOfferItem.imageUrl}
-                      alt={selectedOfferItem.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <ItemImage src={selectedOfferItem.imageUrl} alt={selectedOfferItem.name} category={selectedOfferItem.category} className="w-full h-full" />
                     <span className="absolute bottom-1.5 left-1.5 bg-surface/90 backdrop-blur-md px-1.5 py-0.5 rounded-md font-label-sm text-[10px] text-primary font-bold flex items-center gap-0.5">
                       <Icon name="verified" size="xs" filled />
                       {t('configure.verified')}
@@ -388,11 +385,7 @@ export const ConfigureSwapScreen = () => {
               {targetPreset && (
                 <div className="flex items-center gap-3 p-2.5 bg-surface-container-low rounded-xl">
                   <div className="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">
-                    <img
-                      src={targetPreset.imageUrl}
-                      alt={targetPreset.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <ItemImage src={targetPreset.imageUrl} alt={targetPreset.name} className="w-full h-full" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">

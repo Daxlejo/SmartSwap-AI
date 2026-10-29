@@ -597,6 +597,7 @@ export const es = {
     errors: {
       photoProcessing: 'No se pudo procesar la imagen seleccionada. Intenta con otro archivo.',
       photoRequired: 'Agrega al menos una foto de tu artículo para continuar.',
+      photoUploadFailed: 'No se pudo subir tu foto, por eso no publicamos el artículo. Revisa tu conexión e inténtalo de nuevo. {{detail}}',
       nameRequired: 'El nombre del artículo es obligatorio.',
       descriptionRequired: 'La descripción es obligatoria.',
       categoryRequired: 'Selecciona una categoría.',

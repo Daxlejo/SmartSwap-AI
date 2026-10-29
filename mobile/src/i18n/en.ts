@@ -599,6 +599,7 @@ export const en: TranslationSchema = {
     errors: {
       photoProcessing: 'The selected image could not be processed. Try another file.',
       photoRequired: 'Add at least one photo of your item to continue.',
+      photoUploadFailed: 'We could not upload your photo, so the item was not published. Check your connection and try again. {{detail}}',
       nameRequired: 'The item name is required.',
       descriptionRequired: 'The description is required.',
       categoryRequired: 'Select a category.',

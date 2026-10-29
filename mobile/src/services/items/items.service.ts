@@ -2,8 +2,6 @@ import type { LocationScopePreference } from '@/services/storage/preferencesStor
 import { apiClient, ApiError } from '@/services/http/apiClient';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import type { Item, ItemOwnerSummary } from '@/types';
-import bikeImg from '@/assets/item-bike.svg';
-import alexAvatar from '@/assets/avatar-alex.svg';
 
 export const API_ITEM_CONDITIONS = ['LIKE_NEW', 'EXCELLENT', 'GOOD', 'FOR_PARTS'] as const;
 export type ApiItemCondition = (typeof API_ITEM_CONDITIONS)[number];
@@ -132,7 +130,7 @@ export const toBackendCondition = (condition: string): ApiItemCondition => {
 
 export const normalizeItem = (raw: RawItemDto): Item => {
   const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : [];
-  const primaryImage = raw.imageUrl || images[0] || bikeImg;
+  const primaryImage = raw.imageUrl || images[0] || undefined;
 
   const normalizedWants: string[] = Array.isArray(raw.wants)
     ? raw.wants
@@ -152,10 +150,10 @@ export const normalizeItem = (raw: RawItemDto): Item => {
       id: raw.owner.id,
       name: raw.owner.name || 'Usuario SmartSwap',
       email: raw.owner.email,
-      avatarUrl: raw.owner.avatarUrl || alexAvatar,
+      avatarUrl: raw.owner.avatarUrl || undefined,
       rating: typeof raw.owner.rating === 'number' ? raw.owner.rating : 5.0,
       location: raw.owner.location || raw.location || 'Colombia',
-      verified: typeof raw.owner.verified === 'boolean' ? raw.owner.verified : true,
+      verified: typeof raw.owner.verified === 'boolean' ? raw.owner.verified : false,
       co2SavedKg: typeof raw.owner.co2SavedKg === 'number' ? raw.owner.co2SavedKg : 0,
     };
   }
@@ -167,7 +165,7 @@ export const normalizeItem = (raw: RawItemDto): Item => {
     condition: toDisplayCondition(raw.condition),
     ownerId: raw.ownerId,
     imageUrl: primaryImage,
-    images: images.length > 0 ? images : [primaryImage],
+    images,
     wants: normalizedWants,
     description: raw.description ?? undefined,
     estimatedValue: typeof raw.estimatedValue === 'number' ? raw.estimatedValue : undefined,
@@ -243,27 +241,16 @@ export const itemsService = {
       base64DataUrl = await compressImageToDataUrl(dataUrlOrFile);
     }
 
-    try {
-      const response = await apiClient.post<UploadImageResponse | { url?: string; imageUrl?: string }>(
-        '/items/upload-image',
-        {
-          image: base64DataUrl,
-          dataUrl: base64DataUrl,
-          base64: base64DataUrl,
-        },
-      );
-      const uploadedUrl = response?.url || response?.imageUrl;
-      if (uploadedUrl) {
-        return uploadedUrl;
-      }
-      return base64DataUrl;
-    } catch (err) {
-      // If the backend relies on inline base64 images inside POST /items instead of a dedicated upload endpoint
-      if (err instanceof ApiError && (err.statusCode === 404 || err.statusCode === 501)) {
-        return base64DataUrl;
-      }
-      throw err;
+    // No silent fallback: if the photo cannot be stored the caller must show the failure.
+    const response = await apiClient.post<UploadImageResponse | { url?: string; imageUrl?: string }>(
+      '/items/upload-image',
+      { imageBase64: base64DataUrl },
+    );
+    const uploadedUrl = response?.url || response?.imageUrl;
+    if (!uploadedUrl) {
+      throw new ApiError({ statusCode: 502, message: 'La respuesta del servidor no incluyó la URL de la foto.' });
     }
+    return uploadedUrl;
   },
 
   async createItem(payload: CreateItemPayload): Promise<Item> {
@@ -273,7 +260,7 @@ export const itemsService = {
         : payload.imageUrl
           ? [payload.imageUrl]
           : [];
-    const primaryImage = payload.imageUrl || imagesList[0] || bikeImg;
+    const primaryImage = payload.imageUrl || imagesList[0];
 
     const body = {
       name: payload.name.trim(),
@@ -283,7 +270,7 @@ export const itemsService = {
       estimatedValue: payload.estimatedValue,
       municipalityCode: payload.municipalityCode,
       imageUrl: primaryImage,
-      images: imagesList.length > 0 ? imagesList : [primaryImage],
+      images: imagesList,
       wants: payload.wants,
     };
 
