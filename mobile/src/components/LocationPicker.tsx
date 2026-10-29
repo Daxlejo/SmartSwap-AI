@@ -115,12 +115,14 @@ export const LocationPicker = ({
   }, [onChange]);
 
   const handleDepartmentChange = (code: string) => {
+    setDetectError(null);
     setSelectedDepartment(code);
     setDetected(null);
     onChange(null);
   };
 
   const handleMunicipalityChange = (code: string) => {
+    setDetectError(null);
     const municipality = municipalities.find((m) => m.code === code) ?? null;
     setDetected(null);
     onChange(municipality);
