@@ -59,3 +59,8 @@ This document defines the strict, non-negotiable guardrails and architectural st
 - `npm run test:mobile`: Run mobile Vitest unit tests.
 - `npm run dev:api`: Start NestJS backend development server.
 - `npm run dev:mobile`: Start Vite mobile development server.
+
+---
+
+## 6. Puertas de fase
+- Trabaja solo en la fase marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase.
