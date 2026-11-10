@@ -343,7 +343,7 @@ export const SearchingScreen: React.FC = () => {
           </span>
         </div>
 
-        {/* Node 0 (Top): Tú (Alex) — Current user with primary ring */}
+        {/* Node 0 (Top): the current user, with primary ring */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
           <div
             className="flex flex-col items-center"
@@ -367,7 +367,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Node 1 (Right): Carlos V. — Secondary node */}
+        {/* Node 1 (Right): secondary node */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-20">
           <div
             className="flex flex-col items-center"
@@ -393,7 +393,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Node 2 (Bottom): Laura G. — Secondary node */}
+        {/* Node 2 (Bottom): secondary node */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
           <div
             className="flex flex-col items-center"
@@ -419,7 +419,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Node 3 (Left): Sofía C. — Secondary node */}
+        {/* Node 3 (Left): secondary node */}
         <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-20">
           <div
             className="flex flex-col items-center"
