@@ -63,4 +63,4 @@ This document defines the strict, non-negotiable guardrails and architectural st
 ---
 
 ## 6. Puertas de fase
-- Trabaja solo en la fase marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase.
+- Trabaja solo en la fase que indica tu prompt, y solo si está marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase.
