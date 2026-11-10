@@ -56,7 +56,6 @@ export class OpenAiClientService {
     const lower = key.toLowerCase();
     if (
       lower.startsWith('sk-proj-temporal') ||
-      lower.startsWith('sk-mock') ||
       lower.includes('placeholder') ||
       lower.includes('your-key') ||
       lower.includes('replace')
