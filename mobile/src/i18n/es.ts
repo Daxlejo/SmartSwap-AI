@@ -293,6 +293,7 @@ export const es = {
   notifications: {
     title: 'Notificaciones',
     subtitle: 'Últimas actualizaciones de tus canjes',
+    markReadFailed: "No pudimos marcar como leída. Inténtalo de nuevo.",
     markAllAsRead: 'Marcar todas como leídas',
     tabs: {
       all: 'Todas',

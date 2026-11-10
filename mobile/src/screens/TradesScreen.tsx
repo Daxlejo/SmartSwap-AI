@@ -204,7 +204,7 @@ export const TradesScreen: React.FC = () => {
     void refreshRoutesReal();
   }, [refreshRoutesReal]);
 
-  // Synchronize any real backend routes where user is a participant into Recibidas
+  // Recibidas: routes started by other users
   useEffect(() => {
     const apiProposals: ReceivedProposal[] = routes
       .filter((r) => r.initiatorId !== currentUser?.id)
@@ -306,7 +306,8 @@ export const TradesScreen: React.FC = () => {
     }
   };
 
-  const showTabs = loadStates.routes !== 'error' && !(loadStates.routes === 'loading' && routes.length === 0);
+  const showTabs =
+    routes.length > 0 || loadStates.routes === 'ready';
 
   return (
     <div className="flex flex-col min-h-full bg-surface px-margin pt-4 pb-24 space-y-4">
@@ -403,7 +404,7 @@ export const TradesScreen: React.FC = () => {
         </div>
       )}
 
-      {loadStates.routes === 'error' && (
+      {loadStates.routes === 'error' && routes.length === 0 && (
         <ErrorState onRetry={() => void refreshRoutesReal()} />
       )}
 

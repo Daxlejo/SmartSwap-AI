@@ -35,6 +35,7 @@ export const NotificationsScreen = () => {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [actionError, setActionError] = useState(false);
   const {
     notifications,
     markNotificationReadReal,
@@ -57,12 +58,13 @@ export const NotificationsScreen = () => {
 
   // A failed mark-as-read is rolled back by the context, so the unread dot comes back.
   const handleMarkAllAsRead = async () => {
-    await markAllNotificationsReadReal().catch(() => undefined);
+    setActionError(false);
+    await markAllNotificationsReadReal().catch(() => setActionError(true));
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
     if (notif.unread) {
-      await markNotificationReadReal(notif.id).catch(() => undefined);
+      await markNotificationReadReal(notif.id).catch(() => setActionError(true));
     }
 
     if (notif.routeId) {
@@ -104,6 +106,12 @@ export const NotificationsScreen = () => {
           {t('notifications.markAllAsRead')}
         </button>
       </div>
+
+      {actionError && (
+        <p role="alert" className="mb-3 font-body-sm text-body-sm text-error">
+          {t('notifications.markReadFailed')}
+        </p>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 mb-4">

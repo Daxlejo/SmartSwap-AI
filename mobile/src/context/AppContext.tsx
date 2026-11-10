@@ -187,13 +187,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLoadState('routes', 'ready');
       return [];
     }
+    const epoch = sessionEpochRef.current;
     setLoadState('routes', 'loading');
     try {
       const list = await routesService.listMyRoutes();
+      if (epoch !== sessionEpochRef.current) return [];
       setRoutes(list);
       setLoadState('routes', 'ready');
       return list;
-    } catch {
+    } catch (error) {
+      if (epoch !== sessionEpochRef.current) return [];
+      console.error('Could not load routes', error);
       setLoadState('routes', 'error');
       return [];
     }
@@ -205,13 +209,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLoadState('notifications', 'ready');
       return [];
     }
+    const epoch = sessionEpochRef.current;
     setLoadState('notifications', 'loading');
     try {
       const list = await notificationsService.listNotifications();
+      if (epoch !== sessionEpochRef.current) return [];
       setNotifications(list);
       setLoadState('notifications', 'ready');
       return list;
-    } catch {
+    } catch (error) {
+      if (epoch !== sessionEpochRef.current) return [];
+      console.error('Could not load notifications', error);
       setLoadState('notifications', 'error');
       return [];
     }
@@ -219,27 +227,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const markNotificationReadReal = useCallback(
     async (id: string): Promise<void> => {
-      const previous = notifications;
       setNotifications((prev) =>
         prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)),
       );
       try {
         await notificationsService.markAsRead(id);
       } catch (error) {
-        setNotifications(previous);
+        setNotifications((prev) =>
+          prev.map((notif) => (notif.id === id ? { ...notif, unread: true } : notif)),
+        );
         throw error;
       }
     },
-    [notifications],
+    [],
   );
 
   const markAllNotificationsReadReal = useCallback(async (): Promise<void> => {
-    const previous = notifications;
+    const previouslyUnread = new Set(notifications.filter((n) => n.unread).map((n) => n.id));
     setNotifications((prev) => prev.map((notif) => ({ ...notif, unread: false })));
     try {
       await notificationsService.markAllAsRead();
     } catch (error) {
-      setNotifications(previous);
+      setNotifications((prev) =>
+        prev.map((notif) => (previouslyUnread.has(notif.id) ? { ...notif, unread: true } : notif)),
+      );
       throw error;
     }
   }, [notifications]);
@@ -268,6 +279,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (epoch !== sessionEpochRef.current) {
           return; // the session changed while loading: these results belong to the old one
         }
+        for (const result of [allItemsResult, myItemsResult, myRoutesResult]) {
+          if (result.status === 'rejected') {
+            console.error('Could not load session data', result.reason);
+          }
+        }
         if (allItemsResult.status === 'fulfilled') {
           setItems(allItemsResult.value);
         }
@@ -286,7 +302,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           routes: myRoutesResult.status === 'fulfilled' ? 'ready' : 'error',
         }));
       } finally {
-        setIsItemsLoading(false);
+        if (epoch === sessionEpochRef.current) {
+          setIsItemsLoading(false);
+        }
       }
     },
     [],
@@ -331,7 +349,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     setOnUnauthorizedHandler(() => {
+      sessionEpochRef.current += 1;
       setIsAuthenticated(false);
+      setItems([]);
       clearSessionData();
     });
 
@@ -383,6 +403,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setIsAuthenticated(false);
           clearSessionData();
         } else {
+          console.error('Could not restore the session', error);
           setLoadStates({ items: 'error', routes: 'error', notifications: 'error' });
         }
       } finally {
@@ -413,16 +434,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Background refresh: a failed tick keeps the last real data and the next tick retries.
+      const epoch = sessionEpochRef.current;
       const [notifsResult, routesResult] = await Promise.allSettled([
         notificationsService.listNotifications(),
         routesService.listMyRoutes(),
       ]);
+      if (epoch !== sessionEpochRef.current) return;
 
       if (notifsResult.status === 'fulfilled') {
         setNotifications(notifsResult.value);
+        setLoadState('notifications', 'ready');
       }
       if (routesResult.status === 'fulfilled') {
         setRoutes(routesResult.value);
+        setLoadState('routes', 'ready');
       }
     };
 
@@ -462,12 +487,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, setLoadState]);
 
   const refreshItems = useCallback(async () => {
     const hasActiveToken = tokenStorage.hasToken();
+    if (hasActiveToken && !currentUser) {
+      // Hydration failed earlier: restore the user first, or the retry would load unscoped data
+      const epoch = sessionEpochRef.current;
+      try {
+        const user = await authService.getMe();
+        if (epoch !== sessionEpochRef.current) return;
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        await Promise.all([
+          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          refreshNotificationsReal(),
+        ]);
+      } catch (error) {
+        if (epoch !== sessionEpochRef.current) return;
+        console.error('Could not restore the session', error);
+        setLoadStates({ items: 'error', routes: 'error', notifications: 'error' });
+      }
+      return;
+    }
     await loadMarketplaceAndUserItems(hasActiveToken);
-  }, [loadMarketplaceAndUserItems]);
+  }, [currentUser, loadMarketplaceAndUserItems, refreshNotificationsReal]);
 
   const startSession = useCallback(
     async (user: User): Promise<void> => {

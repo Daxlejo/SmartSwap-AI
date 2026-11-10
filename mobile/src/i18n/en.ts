@@ -295,6 +295,7 @@ export const en: TranslationSchema = {
   notifications: {
     title: 'Notifications',
     subtitle: 'Latest updates on your swaps',
+    markReadFailed: "We couldn't mark it as read. Please try again.",
     markAllAsRead: 'Mark all as read',
     tabs: {
       all: 'All',

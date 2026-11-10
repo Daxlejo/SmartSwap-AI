@@ -15,7 +15,7 @@ import { ObjectCard } from '@/components/ObjectCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
 
-const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED']);
+const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'COMPLETED']);
 
 export const HomeScreen = () => {
   const navigate = useNavigate();

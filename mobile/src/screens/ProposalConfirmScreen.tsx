@@ -24,9 +24,7 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // First item in the chain: the one the current user offers
   const offeredItem = route.chainItems[0];
-  // Last item in the chain: the one the current user wants
   const targetItem = route.chainItems[route.chainItems.length - 1];
   // Second participant in the chain (recipient of the user's item)
   const recipientUser = route.participants[1] || route.participants[0];

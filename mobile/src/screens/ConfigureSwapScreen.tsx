@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
@@ -20,7 +21,7 @@ export const ConfigureSwapScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const location = useLocation();
-  const { myItems, items, isItemsLoading } = useApp();
+  const { myItems, items, isItemsLoading, loadStates, refreshItems } = useApp();
   const preselectedWant = location.state as { wantItemId?: string; wantItemName?: string } | null;
 
   const [offerIndex, setOfferIndex] = useState(0);
@@ -72,7 +73,7 @@ export const ConfigureSwapScreen = () => {
         offeredItemId: selectedOfferItem.id,
         wantItemId,
         objectiveText: trimmedQuery,
-        desiredCategory: selectedOfferItem.category,
+        desiredCategory: targetItem?.category,
         maxSteps,
         valueTolerancePct: VALUE_TOLERANCE_PCT,
       },
@@ -96,6 +97,8 @@ export const ConfigureSwapScreen = () => {
           <div className="h-44 rounded-2xl bg-surface-container-low animate-pulse" />
           <div className="h-44 rounded-2xl bg-surface-container-low animate-pulse" />
         </div>
+      ) : loadStates.items === 'error' && myItems.length === 0 ? (
+        <ErrorState onRetry={() => void refreshItems()} />
       ) : myItems.length === 0 ? (
         <EmptyState
           illustration="routes"

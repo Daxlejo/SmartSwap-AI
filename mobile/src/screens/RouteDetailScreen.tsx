@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { SwapRoute, Item } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { routesService, formatMatchScore } from '@/services/routes/routes.service';
@@ -36,6 +36,7 @@ export const RouteDetailScreen: React.FC = () => {
     }
     let isMounted = true;
     setLoadFailed(false);
+    setFetchedRoute(null);
     routesService
       .getRouteById(routeIdParam)
       .then((fetched) => {
@@ -49,6 +50,10 @@ export const RouteDetailScreen: React.FC = () => {
       isMounted = false;
     };
   }, [routeIdParam, location.state, reloadKey]);
+
+  if (!route && !routeIdParam) {
+    return <Navigate to="/swaps" replace />;
+  }
 
   if (!route) {
     return (

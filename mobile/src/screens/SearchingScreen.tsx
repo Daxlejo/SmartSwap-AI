@@ -468,7 +468,7 @@ export const SearchingScreen: React.FC = () => {
             </div>
             )}
 
-            {/* Sequential flow indicators with SVG item thumbnails */}
+            {/* Chain summary: item photo (or category fallback) and first name of each participant */}
             <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
               {activeFlowSteps.map((step, idx) => (
                 <React.Fragment key={`${step.user}-${idx}`}>

@@ -50,6 +50,10 @@ export const RouteResultsScreen: React.FC = () => {
     if (!hasSearchParams) {
       return;
     }
+    // The Searching screen already ran this search; only repeat it on retry or direct entry.
+    if (reloadKey === 0 && locationState?.routes && locationState.routes.length > 0) {
+      return;
+    }
     let isMounted = true;
 
     const loadRoutes = async () => {
