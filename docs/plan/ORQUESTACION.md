@@ -1,7 +1,7 @@
 # SmartSwap AI: plan de cierre en fases con puertas de aprobación
 
-**Ventana:** lunes 2 de noviembre a miércoles 11 de noviembre de 2026. La entrega se supone el jueves 12; si la fecha real es otra, se corre el calendario.
-**Orquestador:** Claude, en el chat del Project "App Mobile". **Ejecutor:** Claude Code en el PC de David.
+**Ventana:** lunes 2 a martes 17 de noviembre de 2026. **Entrega y sustentación: miércoles 18 de noviembre** (el profesor dividió el curso en dos grupos; el de David entrega el 18).
+**Orquestador:** Claude, en el chat del Project "App Mobile". **Ejecutor:** Claude Code en el PC de David, con plugins y subagentes por fase.
 **Meta:** un APK release firmado, instalado en un celular Android físico, sin datos falsos visibles, legible para adultos mayores y con el anillo de intercambio como elemento distintivo.
 
 ## Alcance acordado (2 de noviembre)
@@ -10,58 +10,73 @@
 | Escala tipográfica nueva: ningún texto por debajo de 14 px, cuerpo en 16 px o más | Medidor de justicia |
 | Áreas táctiles de al menos 44 px (48 px en acciones principales) | Cuenta regresiva de 48 h |
 | Cero nombres truncados con elipsis | Toggle de texto grande (se compensa con la escala base y con el tamaño de fuente del sistema Android) |
-| Componente **Anillo de intercambio** (`SwapRing`) | Upgrades mayores por `npm audit` (Nest 12, zod 4): quedan como deuda documentada |
+| Componente **Anillo de intercambio** (`SwapRing`) | Upgrades mayores por `npm audit` (Nest 12, zod 4) y cualquier arreglo que exija `--force`: quedan como deuda documentada |
 | Eliminar todos los mocks; seed real con estados vacíos bien diseñados | |
-| Fusionar las 6 ramas apiladas a `main`; desde ahí, una rama y un PR por fase | |
+| Fusionar las 6 ramas apiladas a `main` (hecho); desde ahí, una rama y un PR por fase | |
 
-## Regla de las puertas
-1. Solo hay una fase **ACTIVA** a la vez. Claude Code no empieza la siguiente aunque le sobre tiempo.
+## Regla de las puertas (actualizada el 10 de noviembre)
+1. Hay como máximo **dos fases ACTIVAS** a la vez, y solo si no tocan los mismos archivos. En la práctica: una fase de código más la Fase 6 (solo `docs/`). Cada fase activa corre en su propio worktree (`git worktree add ../smartswap-<fase> <rama>`) y en su propia sesión de Claude Code.
 2. Al cerrar una fase, David pega en el chat el **Reporte de puerta** (plantilla al final) con evidencia real: salidas de comandos y capturas. Un "ya quedó" no cuenta como evidencia.
 3. El orquestador responde **APROBADA** (y entrega el prompt de la siguiente fase) o **RECHAZADA** (con la lista exacta de lo que falta).
-4. El PR de la fase se fusiona a `main` solo después de la aprobación.
-5. En la Fase 0 se agrega a `CLAUDE.md` esta regla para el ejecutor: *"Trabaja solo en la fase marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase."*
+4. Antes de pegar el reporte de una fase de código (1 a 4), el ejecutor corre la revisión de PR (`/pr-review-toolkit:review-pr`) y corrige o justifica cada hallazgo.
+5. El PR de la fase se fusiona a `main` solo después de la aprobación.
+6. Regla en `CLAUDE.md` para el ejecutor: *"Trabaja solo en la fase que indica tu prompt, y solo si está marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase."*
 
 ## Tablero
-| Fase | Día | Rama | Estado |
+| Fase | Fechas | Rama | Estado |
 |---|---|---|---|
-| 0. Línea base, integración y APK de humo | lun 2 | `main` (PR por rama apilada) | **ACTIVA** |
-| 1. Datos reales y estados vacíos | mar 3 | `feat/real-data` | Bloqueada |
-| 2. Tipografía, táctil y contraste | mié 4 – jue 5 | `feat/ui-type-scale` | Bloqueada |
-| 3. Anillo de intercambio | vie 6 – sáb 7 | `feat/swap-ring` | Bloqueada |
-| 4. Pulido de flujos y comportamiento nativo Android | dom 8 | `feat/ui-polish` | Bloqueada |
-| 5. APK release firmado | lun 9 | `chore/release-apk` | Bloqueada |
-| 6. Arquitectura 4+1 y guion de demo | mar 10 | `docs/architecture` | Bloqueada |
-| 7. Congelación, tag v1.0.0 y ensayo | mié 11 | `main` | Bloqueada |
+| 0. Línea base, integración y APK de humo | lun 2 – mié 11 | `chore/fase-0-integracion` | **ACTIVA — cierre** (3 de 5 criterios; rechazada el 10 por Render y APK) |
+| 1. Datos reales y estados vacíos | mié 11 – jue 12 | `feat/real-data` | Bloqueada |
+| 2. Tipografía, táctil y contraste | jue 12 – vie 13 | `feat/ui-type-scale` | Bloqueada |
+| 3. Anillo de intercambio | sáb 14 – dom 15 | `feat/swap-ring` | Bloqueada |
+| 4. Pulido de flujos y comportamiento nativo Android | lun 16 (mañana) | `feat/ui-polish` | Bloqueada |
+| 5. APK release firmado | lun 16 (tarde) | `chore/release-apk` | Bloqueada |
+| 6. Arquitectura 4+1 y guion de demo | jue 12 – dom 15, **en paralelo** | `docs/architecture` | Bloqueada (arranca al aprobar la Fase 1) |
+| 7. Congelación, tag v1.0.0 y ensayo | mar 17 | `main` | Bloqueada |
+
+## Plugins y subagentes por fase
+Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); con todos activos, Claude Code se vuelve lento y se confunde de herramienta.
+
+| Fase | Plugins y skills | Subagentes |
+|---|---|---|
+| 0 (cierre) | github (si `gh` no está instalado) | — |
+| 1 | supabase (`supabase`, `supabase-postgres-best-practices`) | `silent-failure-hunter` para cazar fallbacks a mock escondidos |
+| 2 | Axe, playwright, `design:accessibility-review`, `design:design-system` | — |
+| 3 | `frontend-design`, feature-dev | `code-architect` diseña la geometría antes de implementar; `type-design-analyzer` sobre los tipos de `SwapRing` |
+| 4 | Snagly (`flow-runner`, `i18n-audit`, `visual-snapshot`), `design:ux-copy` | — |
+| 5 | github (tag y Release) | — |
+| 6 | feature-dev | `code-explorer` más tres subagentes propios en `.claude/agents/`: `diagramas-4mas1`, `adr-readme`, `guion-demo` |
+| 7 | Snagly (`visual-regression` contra la línea base de la Fase 4) | — |
+| Todas las fases de código | pr-review-toolkit (`/pr-review-toolkit:review-pr`) | revisores del toolkit |
 
 ---
 
-## Fase 0: Línea base, integración y APK de humo (lun 2)
-**Por qué va primero:** el APK no se ha compilado desde que se agregó geolocalización. Si la cadena de Android falla, hay que saberlo el día 1 y no el día 10.
+## Fase 0: Línea base, integración y APK de humo
+**Por qué va primero:** el APK no se ha compilado desde que se agregó geolocalización. Si la cadena de Android falla, hay que saberlo ya.
 
-**Tareas**
-- Verificar que el árbol esté limpio y correr en `feat/media-and-profile`: `typecheck`, `test:api`, `test:mobile`, `test:e2e`, `openapi:check`, `graphify` y el build de `mobile`. Corregir lo que falle en commits atómicos.
-- Fusionar a `main` en orden: notifications-and-hardening → i18n-theme → ux-resilience → e2e-contract → colombia-location → media-and-profile. Un PR por rama con descripción corta; después de cada merge se cambia la base del siguiente PR a `main`.
-- Confirmar que Render despliega `main`: migraciones aplicadas (incluida la conversión USD→COP, que no debe correr dos veces) y `/health` responde. Medir cuánto tarda el primer request después de que el servicio está dormido.
-- `npm audit fix` **sin** `--force`, solo si todo sigue en verde. Si algo se rompe, se revierte.
-- APK de humo: `vite build` con `VITE_API_URL` de Render, `npx cap sync android`, `./gradlew assembleDebug`, instalar en el celular, hacer login con una cuenta demo y abrir el mapa con permiso de ubicación.
-- Copiar este plan a `docs/plan/ORQUESTACION.md` y agregar la regla de puertas a `CLAUDE.md`.
+**Estado al 10 de noviembre:** las suites están en verde sobre `main` (157 de api, 89 de mobile y 34 de e2e). Las 6 ramas ya estaban fusionadas, hasta el PR #16. Se corrigió el registro de `@capacitor/geolocation` en Android. Falta lo siguiente:
+- Render: el servicio no se ha redesplegado desde el merge de #16 (lleva unos 4,6 días arriba). Tampoco están verificadas las migraciones ni medido el arranque en frío.
+- APK: la máquina no tiene Java ni el Android SDK configurados.
+- Subir `chore/fase-0-integracion` y fusionarla con un PR.
+
+**Desvío aceptado:** `npm audit fix` sin `--force` falla por un conflicto de peer dependencies y no cambia nada. Las vulnerabilidades (@nestjs/core, body-parser, ajv, esbuild, vitest) pasan a la deuda documentada del README en la Fase 6.
 
 **Criterios de salida**
-- [ ] Las 6 suites en verde sobre `main`, con conteo de tests
-- [ ] 6 PR fusionados y `main` igual a la punta de `feat/media-and-profile` (más los arreglos)
-- [ ] Render sano en `main`, con el tiempo de arranque en frío medido
-- [ ] APK debug instalado; login y geolocalización funcionan en el celular físico
-- [ ] Regla de puertas incluida en `CLAUDE.md`
+- [x] Las 6 suites en verde sobre `main`, con conteo de tests
+- [x] 6 PR fusionados y `main` con la punta de `feat/media-and-profile`
+- [ ] Render desplegando `main` (commit del último deploy), migraciones confirmadas en los logs, `/health` en 200 y tiempo de arranque en frío medido
+- [ ] APK debug instalado; login y geolocalización funcionan en el celular físico (con capturas)
+- [ ] Regla de puertas en `CLAUDE.md` **fusionada a `main`** mediante PR
 
-## Fase 1: Datos reales y estados vacíos (mar 3)
+## Fase 1: Datos reales y estados vacíos
 - Quitar todos los restos de demo: `mockSwapRoute` de Home, "1,420 usuarios activos" y los porcentajes de los presets en ConfigureSwap, el fallback mock de "En curso" en Trades, notificaciones e items mock sin sesión, y los mocks de `AppContext`, `RouteDetailScreen`, `ProposalConfirmScreen`, `ProposalSentScreen`, `swapService.ts` y `routes.service.ts`.
 - Seed idempotente con cuentas demo en municipios cercanos de Nariño, objetos con foto en Supabase y precio en COP. El motor debe encontrar de verdad al menos un ciclo de 2, uno de 3 y uno de 4, y debe quedar una propuesta en curso.
 - Estados vacíos diseñados (ilustración, una frase y una acción) en Home, las 3 pestañas de Trades, Notificaciones y Explorar.
 - Verificar de punta a punta el selector de cuentas demo con `VITE_DEMO_PASSWORD`.
 
-**Criterios de salida:** `rg -n -i "mock" api/src mobile/src` solo devuelve tests y fixtures; el seed corre dos veces sin duplicar datos; capturas de un usuario nuevo con estados vacíos y de un usuario demo con una ruta real; cambio de cuenta probado; suites en verde.
+**Criterios de salida:** `rg -n -i "mock" api/src mobile/src` solo devuelve tests y fixtures; el seed corre dos veces sin duplicar datos; capturas de un usuario nuevo con estados vacíos y de un usuario demo con una ruta real; cambio de cuenta probado; suites en verde; revisión de PR sin hallazgos abiertos.
 
-## Fase 2: Tipografía, área táctil y contraste (mié 4 – jue 5)
+## Fase 2: Tipografía, área táctil y contraste
 - Tokens en Tailwind: `caption` 14 px, `body` 16 px, `body-lg` 18 px y títulos de 20, 24 y 28 px, con interlineado de 1,5 en el cuerpo. Se prohíben `text-xs` y los tamaños arbitrarios menores de 14 px; si se puede, con una regla de lint.
 - Áreas táctiles: `min-h-11 min-w-11` en todo lo que se pueda tocar y 48 px en las acciones principales.
 - Nombres y títulos de objetos: `line-clamp-2` en lugar de `truncate`.
@@ -70,7 +85,7 @@
 
 **Criterios de salida:** tabla antes/después de la auditoría con 0 en las cuatro métricas y en ambos temas; capturas de Home, Trades y RouteDetail a 360 px en claro y oscuro; prueba en el celular con "Tamaño de fuente" del sistema en grande sin que se rompa el layout.
 
-## Fase 3: Anillo de intercambio (vie 6 – sáb 7)
+## Fase 3: Anillo de intercambio
 - Componente `SwapRing` en SVG. Recibe de 2 a 4 participantes (nombre, avatar, objeto que entrega y estado: pendiente, aceptó o rechazó) y tiene variante `compact` y `full`.
 - Geometría: los avatares van repartidos en el círculo empezando arriba. Cada arco de órbita lleva una flecha en el sentido de la entrega y una insignia del objeto en su punto medio. En el centro, un disco con "3 personas" y el estado. Los arcos son punteados mientras alguien no ha aceptado y se vuelven sólidos al aceptar; cuando todos aceptan, el anillo se cierra y aparece el halo.
 - Accesibilidad: `role="img"` con un `aria-label` que narra el ciclo completo, y debajo una lista en texto ("Tú entregas la bicicleta a Laura"), porque un adulto mayor puede no leer el diagrama. Cada avatar es un botón de 48 px. Con `prefers-reduced-motion` no hay animación. Solo se animan `transform` y `stroke-dashoffset`.
@@ -79,14 +94,15 @@
 
 **Criterios de salida:** capturas de n = 2, 3 y 4 en cada estado y en ambos temas; video corto en el celular del anillo cerrándose; `audit:ui` sigue en 0; suites en verde.
 
-## Fase 4: Pulido de flujos y comportamiento nativo Android (dom 8)
+## Fase 4: Pulido de flujos y comportamiento nativo Android
 - Recorrer en el celular los 3 flujos obligatorios: Login → ruta completa → propuesta; Publicar objeto; Explorar → proponer. También foto de perfil, cambio de idioma, cambio de tema y selector de cuentas.
 - Comportamiento nativo: botón atrás de Android (`@capacitor/app`, que salga de la app solo desde Home), color de la barra de estado por tema, zonas seguras, teclado que no tape los campos, ícono y splash con `@capacitor/assets`, nombre "SmartSwap" y textos en español al pedir permisos de cámara y ubicación.
 - Skeletons de carga y mitigación del arranque en frío de Render (el banner de servidor ya existe; se agrega un ping de calentamiento al abrir la app).
+- Capturar con `visual-snapshot` la línea base visual que se compara en la Fase 7.
 
-**Criterios de salida:** checklist de cada flujo con captura desde el celular; lista de bugs encontrados en 0 abiertos o aceptados explícitamente por el orquestador.
+**Criterios de salida:** checklist de cada flujo con captura desde el celular; reporte de `flow-runner` e `i18n-audit` (es/en) sin fallos; lista de bugs encontrados en 0 abiertos o aceptados explícitamente por el orquestador.
 
-## Fase 5: APK release firmado (lun 9)
+## Fase 5: APK release firmado
 - `versionName` 1.0.0 y `versionCode` 1. Keystore generado fuera del repo, `keystore.properties` en `.gitignore` y copia de respaldo del keystore.
 - Build de producción contra Render por HTTPS sin cleartext, `cap sync` y `./gradlew assembleRelease` con firma.
 - Desinstalar la versión anterior, instalar limpio y probar con datos móviles, no solo con wifi.
@@ -94,15 +110,15 @@
 
 **Criterios de salida:** salida de `apksigner verify`, `aapt dump badging` (versión y permisos), tamaño del APK y grabación de pantalla de un flujo completo en el celular.
 
-## Fase 6: Arquitectura 4+1 y guion de demo (mar 10)
+## Fase 6: Arquitectura 4+1 y guion de demo (en paralelo, solo `docs/`)
 - `docs/architecture/` en Mermaid y dibujable a mano, en el orden del profesor: **Contexto → Funcional (casos de uso) → Lógica (clases y módulos de Nest) → Desarrollo (paquetes del monorepo) → Despliegue (APK, Render, PostgreSQL, Supabase, OpenAI)**. Además: secuencia del consenso de propuestas, explicación del algoritmo de ciclos de 2 a 4, ER desde Prisma y ADRs cortos (Capacitor frente a React Native, COP en enteros, ciclos de máximo 4).
-- Actualizar el README y la sección de deuda conocida (las vulnerabilidades, el E2E sobre doble en memoria) dicha con honestidad.
-- `docs/demo/GUION.md`: 7 a 10 minutos cronometrados, quién habla en cada parte, qué cuenta usar y un plan B (video de respaldo, hotspot propio, calentar Render 10 minutos antes).
+- Actualizar el README y la sección de deuda conocida (las vulnerabilidades que exigen `--force`, el E2E sobre doble en memoria) dicha con honestidad.
+- `docs/demo/GUION.md`: 7 a 10 minutos cronometrados, quién habla en cada parte, qué cuenta usar y un plan B (video de respaldo, hotspot propio, calentar Render 10 minutos antes). El guion se ajusta al final con lo que entregue la Fase 3.
 
 **Criterios de salida:** los diagramas renderizan con `mmdc` sin errores; un ensayo cronometrado dentro del tiempo.
 
-## Fase 7: Congelación y ensayo (mié 11)
-- Code freeze. Suite completa más `audit:ui` en `main`, tag `v1.0.0` y GitHub Release con el APK adjunto.
+## Fase 7: Congelación y ensayo (mar 17)
+- Code freeze. Suite completa más `audit:ui` en `main`, `visual-regression` contra la línea base de la Fase 4, tag `v1.0.0` y GitHub Release con el APK adjunto.
 - Dos ensayos completos en el celular. Video de respaldo grabado. APK instalado en al menos 2 celulares.
 
 **Criterios de salida:** release publicado y checklist del día de la sustentación marcado.
@@ -115,6 +131,7 @@ FASE: <n> — <nombre>
 RAMA / PR: <rama> — <link del PR>
 COMMITS: <git log --oneline main..HEAD>
 CHECKS: typecheck / test:api / test:mobile / test:e2e / openapi:check (pegar el resumen de cada uno)
+REVISIÓN PR: <hallazgos de /pr-review-toolkit:review-pr y cómo se resolvió cada uno>  (fases 1 a 4)
 AUDIT UI: <tabla de npm run audit:ui>  (desde la Fase 2)
 EVIDENCIA: <capturas o video del celular>
 CRITERIOS: <copiar los checkboxes de la fase marcados [x] o [ ]>
@@ -124,19 +141,21 @@ PENDIENTES: <lo que quedó abierto>
 
 ---
 
-## Prompt de la Fase 0 (pegar en Claude Code)
+## Prompt de cierre de la Fase 0 (pegar en Claude Code)
 ```
-Eres el ejecutor de la Fase 0 de SmartSwap. Lee primero docs/graph/CODE_MAP.md y respeta las reglas del proyecto: español, TypeScript estricto sin any, el mobile solo usa apiClient.ts, dinero en COP entero con formatCop, commits atómicos convencionales tipo(scope): descripción con mi identidad de autor.
+Sigues siendo el ejecutor de la Fase 0 de SmartSwap. Solo vas a cerrar los criterios que quedaron abiertos. No toques la Fase 1 ni el código de UI.
 
-Objetivo: dejar main integrado y verde, y probar que se puede generar el APK.
+1. Reemplaza docs/plan/ORQUESTACION.md con el plan actualizado que te paso. Actualiza también la regla de CLAUDE.md con este texto: "Trabaja solo en la fase que indica tu prompt, y solo si está marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase." Haz un commit atómico para cada cambio.
 
-1. git fetch --all y confirma que el árbol está limpio en feat/media-and-profile.
-2. Corre npm run typecheck, test:api, test:mobile, test:e2e, openapi:check y graphify, más el build de mobile. Guarda el resumen de cada uno. Si algo falla, corrígelo con commits atómicos y vuelve a correr todo.
-3. Con gh, abre un PR por cada rama apilada, en este orden: feat/notifications-and-hardening (base main), feat/i18n-theme, feat/ux-resilience, test/e2e-contract, feat/colombia-location, feat/media-and-profile. Fusiónalos uno por uno con merge commit; después de cada merge, cambia la base del siguiente a main. No reescribas historia ni uses force-push.
-4. Revisa que Render despliegue main: que las migraciones queden aplicadas (la conversión USD→COP no puede correr dos veces) y que /health responda. Mide el tiempo del primer request con el servicio dormido.
-5. Corre npm audit fix SIN --force. Si alguna suite se rompe, revierte ese commit.
-6. APK de humo: build de mobile con VITE_API_URL apuntando a Render, npx cap sync android, y en mobile/android ./gradlew assembleDebug. Reporta la ruta y el tamaño del APK. Dime cuándo instalarlo para que yo pruebe login y ubicación en el celular.
-7. Copia el plan que te paso a docs/plan/ORQUESTACION.md y agrega a CLAUDE.md la regla: "Trabaja solo en la fase marcada ACTIVA en docs/plan/ORQUESTACION.md. Al cumplir los criterios de salida, detente y genera el Reporte de puerta. No cambies el estado de ninguna fase."
+2. Toolchain de Android. Antes de instalar nada, busca si ya existe una instalación: el JBR de Android Studio (carpeta jbr dentro de la instalación de Android Studio), el SDK en ANDROID_HOME, en ANDROID_SDK_ROOT o en la ruta por defecto (Windows: %LOCALAPPDATA%\Android\Sdk; macOS: ~/Library/Android/sdk; Linux: ~/Android/Sdk), y mobile/android/local.properties. Este proyecto ya generó un APK antes con JBR 21, así que lo más probable es que solo falten las variables en tu shell.
+   - Si lo encuentras: exporta JAVA_HOME al jbr y ANDROID_HOME al SDK, verifica con java -version y escribe sdk.dir en local.properties. Ese archivo no se versiona.
+   - Si no existe: detente y pídeme que instale Android Studio.
 
-Al terminar, DETENTE. No empieces la Fase 1 ni cambies código de UI. Genera el Reporte de puerta con la plantilla del plan.
+3. APK de humo: build de mobile con VITE_API_URL apuntando a Render, npx cap sync android y, en mobile/android, ./gradlew assembleDebug. Reporta la ruta y el tamaño del APK. Si hay un celular conectado con depuración USB, instálalo con adb install -r. Si no, dime dónde está el archivo para pasarlo al celular.
+
+4. Render: cuando yo te confirme que el último deploy ya es el commit de main, verifica /health. Después mide el arranque en frío: espero al menos 20 minutos sin tráfico y corres curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" <URL>/health. Repite la medición en caliente para comparar.
+
+5. Publica la rama chore/fase-0-integracion y abre el PR hacia main. Si gh no está instalado, usa el plugin github o pídeme que lo instale. No lo fusiones: el merge va después de la aprobación.
+
+6. DETENTE y genera el Reporte de puerta. Incluye el commit del deploy de Render, las líneas de migración del log que yo te pase, los dos tiempos de /health, la ruta y el tamaño del APK y el link del PR. Deja un espacio para mis capturas de login y del mapa en el celular.
 ```
