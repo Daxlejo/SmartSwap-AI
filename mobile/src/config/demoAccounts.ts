@@ -11,7 +11,9 @@ export interface DemoAccount {
 
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   { email: 'alex@smartswap.co', name: 'Alex', initials: 'AR', city: 'Pasto' },
-  { email: 'valeria@smartswap.co', name: 'Valeria', initials: 'VG', city: 'Medellín' },
-  { email: 'mateo@smartswap.co', name: 'Mateo', initials: 'MV', city: 'Bogotá' },
-  { email: 'camila@smartswap.co', name: 'Camila', initials: 'CT', city: 'Cali' },
+  { email: 'valeria@smartswap.co', name: 'Valeria', initials: 'VG', city: 'Chachagüí' },
+  { email: 'mateo@smartswap.co', name: 'Mateo', initials: 'MV', city: 'Sandoná' },
+  { email: 'camila@smartswap.co', name: 'Camila', initials: 'CT', city: 'Yacuanquer' },
+  { email: 'diego@smartswap.co', name: 'Diego', initials: 'DS', city: 'La Florida' },
+  { email: 'laura@smartswap.co', name: 'Laura', initials: 'LI', city: 'Consacá' },
 ];

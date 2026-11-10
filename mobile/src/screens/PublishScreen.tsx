@@ -563,9 +563,9 @@ export const PublishScreen: React.FC = () => {
 
   // Display cover photo
   const coverPhoto = photos[0];
-  const ownerName = currentUser?.name || 'Alex Morales';
+  const ownerName = currentUser?.name ?? '';
   const ownerAvatar = currentUser?.avatarUrl;
-  const ownerRating = (currentUser?.rating ?? 4.9).toFixed(1);
+  const ownerRating = typeof currentUser?.rating === 'number' ? currentUser.rating.toFixed(1) : '—';
 
   const renderAiAssistantBanner = () => (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-3.5 space-y-2.5 transition-all">

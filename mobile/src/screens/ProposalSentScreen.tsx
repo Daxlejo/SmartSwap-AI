@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
-import { mockSwapRoute } from '@/data/mockData';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
 
-export const ProposalSentScreen: React.FC = () => {
-  const location = useLocation();
+interface ProposalSentContentProps {
+  route: SwapRoute;
+}
+
+const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const route = (location.state?.route as SwapRoute | undefined) ?? mockSwapRoute;
 
   const [animateCheck, setAnimateCheck] = useState(false);
 
@@ -140,4 +141,14 @@ export const ProposalSentScreen: React.FC = () => {
       </div>
     </div>
   );
+};
+
+/** The route to confirm travels in the navigation state; without it there is nothing to show. */
+export const ProposalSentScreen: React.FC = () => {
+  const location = useLocation();
+  const route = location.state?.route as SwapRoute | undefined;
+  if (!route || route.chainItems.length < 2) {
+    return <Navigate to="/swaps" replace />;
+  }
+  return <ProposalSentContent route={route} />;
 };

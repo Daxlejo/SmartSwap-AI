@@ -10,6 +10,8 @@ import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { Button } from '@/components/ui/Button';
 import { formatRelativeTime } from '@/utils/relativeTime';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -37,6 +39,8 @@ export const NotificationsScreen = () => {
     notifications,
     markNotificationReadReal,
     markAllNotificationsReadReal,
+    refreshNotificationsReal,
+    loadStates,
   } = useApp();
 
   const localize = (notif: AppNotification) => {
@@ -51,13 +55,14 @@ export const NotificationsScreen = () => {
     };
   };
 
+  // A failed mark-as-read is rolled back by the context, so the unread dot comes back.
   const handleMarkAllAsRead = async () => {
-    await markAllNotificationsReadReal();
+    await markAllNotificationsReadReal().catch(() => undefined);
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
     if (notif.unread) {
-      await markNotificationReadReal(notif.id);
+      await markNotificationReadReal(notif.id).catch(() => undefined);
     }
 
     if (notif.routeId) {
@@ -114,11 +119,17 @@ export const NotificationsScreen = () => {
       </div>
 
       {/* Notifications List or Empty State */}
-      {filteredNotifications.length === 0 ? (
+      {loadStates.notifications === 'error' && notifications.length === 0 ? (
+        <ErrorState onRetry={() => void refreshNotificationsReal()} />
+      ) : filteredNotifications.length === 0 ? (
         <EmptyState
-          iconName="notifications_off"
-          title={t('notifications.emptyTitle')}
-          description={t('notifications.emptyDescription')}
+          illustration="bell"
+          title={t('states.notifications')}
+          action={
+            <Button variant="primary" size="md" onClick={() => navigate('/home')}>
+              {t('states.notificationsCta')}
+            </Button>
+          }
         />
       ) : (
         <div className="flex flex-col gap-3">

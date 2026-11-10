@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { mockSwapRoute } from '@/data/mockData';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import type { SwapRoute } from '@/types';
 import { ApiError } from '@/services/http/apiClient';
 import { formatRelativeTime } from '@/utils/relativeTime';
 
-// Mock avatars
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -32,11 +32,157 @@ interface ReceivedProposal {
   status: 'pending' | 'accepted' | 'declined';
 }
 
+interface InProgressRouteCardProps {
+  route: SwapRoute;
+  isCompleted: boolean;
+  isBusy: boolean;
+  onComplete: () => void;
+  onOpen: () => void;
+}
+
+const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
+  route,
+  isCompleted,
+  isBusy,
+  onComplete,
+  onOpen,
+}) => {
+  const { t } = useTranslation();
+  const totalSteps = route.stepsCount;
+  const acceptedSteps = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
+  const progressPct = isCompleted
+    ? 100
+    : totalSteps > 0
+      ? Math.min(100, Math.round((acceptedSteps / totalSteps) * 100))
+      : 0;
+  const chainSteps = route.chainItems.slice(0, 4).map((item) => ({
+    id: item.id,
+    name: item.name.split(' ')[0],
+    img: item.imageUrl,
+    category: item.category,
+  }));
+
+  return (
+    <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
+            {t('trades.circuitLabel', { code: route.code ?? route.id })}
+          </span>
+          <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+            {isCompleted
+              ? t('trades.circuitCompleted', { count: totalSteps })
+              : t('trades.stepProgress', { done: acceptedSteps, total: totalSteps })}
+          </h2>
+        </div>
+        <Badge variant={isCompleted ? 'success' : 'primary'}>
+          {isCompleted ? t('trades.completed') : t('trades.active')}
+        </Badge>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-[11px] font-label-sm text-on-surface-variant font-medium">
+          <span>{t('trades.progress', { pct: progressPct })}</span>
+          <span>
+            {isCompleted
+              ? t('trades.deliveryConfirmed')
+              : t('trades.stepsLeft', { count: Math.max(0, totalSteps - acceptedSteps) })}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
+        <div className="flex items-center justify-between">
+          <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold">
+            {t('trades.circuitChain')}
+          </span>
+          {route.co2SavedKg > 0 && (
+            <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a]">
+              -{route.co2SavedKg} kg CO₂
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
+          {chainSteps.map((step, idx) => {
+            const isLast = idx === chainSteps.length - 1;
+            return (
+              <div key={step.id} className="flex items-center shrink-0">
+                <div className="flex flex-col items-center min-w-[56px]">
+                  <div
+                    className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
+                      idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
+                    }`}
+                  >
+                    <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
+                    {idx === 0 && (
+                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                        {t('trades.you')}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[62px] ${
+                      idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
+                    }`}
+                  >
+                    {step.name}
+                  </span>
+                </div>
+                {!isLast && (
+                  <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
+                    <Icon name="arrow_forward" size="xs" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {route.aiExplanation && (
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-[12px] leading-snug">
+          <div className="flex items-center gap-1 text-primary font-label-sm text-[11px] font-bold mb-0.5">
+            <Icon name="auto_awesome" size="xs" filled />
+            <span>{t('trades.aiFairness')}</span>
+          </div>
+          {route.aiExplanation}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        {!isCompleted && (
+          <Button
+            variant="outline"
+            size="md"
+            fullWidth
+            leftIcon="check_circle"
+            disabled={isBusy}
+            onClick={onComplete}
+          >
+            {isBusy ? t('trades.completing') : t('trades.completeSwap')}
+          </Button>
+        )}
+        <Button variant="primary" size="md" fullWidth rightIcon="arrow_forward" onClick={onOpen}>
+          {t('trades.viewDetails')}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
   const {
     routes,
+    loadStates,
     currentUser,
     respondToProposalReal,
     completeSwapReal,
@@ -55,13 +201,13 @@ export const TradesScreen: React.FC = () => {
   const [completedRouteIds, setCompletedRouteIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    refreshRoutesReal().catch(() => {});
+    void refreshRoutesReal();
   }, [refreshRoutesReal]);
 
   // Synchronize any real backend routes where user is a participant into Recibidas
   useEffect(() => {
     const apiProposals: ReceivedProposal[] = routes
-      .filter((r) => r.id !== mockSwapRoute.id && r.initiatorId !== currentUser?.id)
+      .filter((r) => r.initiatorId !== currentUser?.id)
       .map((r) => {
         const initiator = r.participants[0];
         const offered = r.chainItems[0];
@@ -126,12 +272,13 @@ export const TradesScreen: React.FC = () => {
   const handleAcceptProposal = (id: string) => handleRespond(id, 'ACCEPTED');
   const handleDeclineProposal = (id: string) => handleRespond(id, 'REJECTED');
 
-  const primaryActiveRoute = routes[0] || mockSwapRoute;
+  const inProgressRoutes = routes.filter((r) => {
+    const status = (r.status || '').toUpperCase();
+    return status !== 'CANCELLED' && status !== 'EXPIRED';
+  });
 
   // Enviadas: real proposals the current user initiated
-  const sentRoutes = routes.filter(
-    (r) => r.id !== mockSwapRoute.id && r.initiatorId === currentUser?.id,
-  );
+  const sentRoutes = routes.filter((r) => r.initiatorId === currentUser?.id);
 
   const handleCancelSentRoute = async (routeId: string) => {
     setActionError(null);
@@ -159,31 +306,7 @@ export const TradesScreen: React.FC = () => {
     }
   };
 
-  const chainSteps =
-    primaryActiveRoute && primaryActiveRoute.chainItems.length >= 2
-      ? primaryActiveRoute.chainItems.slice(0, 4).map((item, idx) => ({
-          name: item.name.split(' ')[0],
-          img: item.imageUrl,
-          category: item.category,
-          user:
-            idx === 0
-              ? t('trades.you')
-              : primaryActiveRoute.participants[idx]?.name || t('trades.step', { count: idx + 1 }),
-        }))
-      : [];
-
-  const isPrimaryRouteCompleted =
-    Boolean(completedRouteIds[primaryActiveRoute.id]) ||
-    (primaryActiveRoute.status || '').toUpperCase() === 'COMPLETED';
-
-  const acceptedStepsCount =
-    primaryActiveRoute.steps && primaryActiveRoute.steps.length > 0
-      ? primaryActiveRoute.steps.filter((s) => s.acceptance === 'ACCEPTED').length || 1
-      : 1;
-  const totalStepsCount = primaryActiveRoute.stepsCount || 4;
-  const progressPct = isPrimaryRouteCompleted
-    ? 100
-    : Math.min(100, Math.max(25, Math.round((acceptedStepsCount / totalStepsCount) * 100)));
+  const showTabs = loadStates.routes !== 'error' && !(loadStates.routes === 'loading' && routes.length === 0);
 
   return (
     <div className="flex flex-col min-h-full bg-surface px-margin pt-4 pb-24 space-y-4">
@@ -258,7 +381,7 @@ export const TradesScreen: React.FC = () => {
                 : 'bg-surface-container-high text-on-surface-variant'
             }`}
           >
-            {routes.length || 1}
+            {inProgressRoutes.length}
           </span>
         </button>
       </div>
@@ -280,9 +403,32 @@ export const TradesScreen: React.FC = () => {
         </div>
       )}
 
+      {loadStates.routes === 'error' && (
+        <ErrorState onRetry={() => void refreshRoutesReal()} />
+      )}
+
+      {loadStates.routes === 'loading' && routes.length === 0 && (
+        <div className="flex flex-col gap-3.5" aria-busy="true">
+          {[1, 2].map((n) => (
+            <div key={n} className="h-40 rounded-2xl bg-surface-container-low animate-pulse" />
+          ))}
+        </div>
+      )}
+
       {/* Tab: Recibidas */}
-      {activeTab === 'recibidas' && (
+      {showTabs && activeTab === 'recibidas' && (
         <div className="flex flex-col gap-3.5">
+          {receivedProposals.length === 0 && (
+            <EmptyState
+              illustration="inbox"
+              title={t('states.tradesReceived')}
+              action={
+                <Button variant="primary" size="md" onClick={() => navigate('/explore')}>
+                  {t('states.tradesReceivedCta')}
+                </Button>
+              }
+            />
+          )}
           {receivedProposals.map((proposal) => {
             const isAccepted = proposal.status === 'accepted';
             const isDeclined = proposal.status === 'declined';
@@ -400,16 +546,15 @@ export const TradesScreen: React.FC = () => {
       )}
 
       {/* Tab: Enviadas */}
-      {activeTab === 'enviadas' && (
+      {showTabs && activeTab === 'enviadas' && (
         <div className="flex flex-col gap-3.5">
           {sentRoutes.length === 0 ? (
             <EmptyState
-              iconName="outbox"
-              title={t('trades.sentEmptyTitle')}
-              description={t('trades.sentEmptyDescription')}
+              illustration="sent"
+              title={t('states.tradesSent')}
               action={
-                <Button variant="primary" size="sm" onClick={() => navigate('/swap/configure')}>
-                  {t('trades.findSwap')}
+                <Button variant="primary" size="md" onClick={() => navigate('/swap/configure')}>
+                  {t('states.tradesSentCta')}
                 </Button>
               }
             />
@@ -515,135 +660,33 @@ export const TradesScreen: React.FC = () => {
       )}
 
       {/* Tab: En Curso */}
-      {activeTab === 'en_curso' && (
+      {showTabs && activeTab === 'en_curso' && (
         <div className="flex flex-col gap-3.5">
-          <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
-                  Circuito Multi-Canje {primaryActiveRoute.code || 'SR-8492'}
-                </span>
-                <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {isPrimaryRouteCompleted
-                    ? t('trades.circuitCompleted', { count: totalStepsCount })
-                    : t('trades.stepProgress', { done: acceptedStepsCount, total: totalStepsCount })}
-                </h2>
-              </div>
-              <Badge variant={isPrimaryRouteCompleted ? 'success' : 'primary'}>
-                {isPrimaryRouteCompleted ? t('trades.completed') : t('trades.active')}
-              </Badge>
-            </div>
-
-            {/* Progress bar */}
-            <div className="space-y-1.5">
-              <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[11px] font-label-sm text-on-surface-variant font-medium">
-                <span>Progreso: {progressPct}%</span>
-                <span>
-                  {isPrimaryRouteCompleted
-                    ? t('trades.deliveryConfirmed')
-                    : t('trades.stepsLeft', { count: Math.max(0, totalStepsCount - acceptedStepsCount) })}
-                </span>
-              </div>
-            </div>
-
-            {/* Route chain visual: Bicicleta → Balón → Audífonos → Cámara */}
-            <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
-              <div className="flex items-center justify-between">
-                <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold">
-                  {t('trades.circuitChain')}
-                </span>
-                <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a]">
-                  -{primaryActiveRoute.co2SavedKg ?? 42} kg CO₂
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
-                {chainSteps.map((step, idx) => {
-                  const isLast = idx === chainSteps.length - 1;
-
-                  return (
-                    <div key={`${step.name}-${idx}`} className="flex items-center shrink-0">
-                      <div className="flex flex-col items-center min-w-[56px]">
-                        <div
-                          className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
-                            idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
-                          }`}
-                        >
-                          <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
-                          {idx === 0 && (
-                            <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
-                              {t('trades.you')}
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[62px] ${
-                            idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
-                          }`}
-                        >
-                          {step.name}
-                        </span>
-                      </div>
-
-                      {!isLast && (
-                        <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
-                          <Icon name="arrow_forward" size="xs" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {primaryActiveRoute.aiExplanation && (
-              <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-[12px] leading-snug">
-                <div className="flex items-center gap-1 text-primary font-label-sm text-[11px] font-bold mb-0.5">
-                  <Icon name="auto_awesome" size="xs" filled />
-                  <span>{t('trades.aiFairness')}</span>
-                </div>
-                {primaryActiveRoute.aiExplanation}
-              </div>
-            )}
-
-            {/* Complete Swap & View Details Actions */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              {!isPrimaryRouteCompleted && (
-                <Button
-                  variant="outline"
-                  size="md"
-                  fullWidth
-                  leftIcon="check_circle"
-                  disabled={processingId === primaryActiveRoute.id}
-                  onClick={() => handleCompleteRoute(primaryActiveRoute.id)}
-                >
-                  {processingId === primaryActiveRoute.id
-                    ? t('trades.completing')
-                    : t('trades.completeSwap')}
+          {inProgressRoutes.length === 0 ? (
+            <EmptyState
+              illustration="routes"
+              title={t('states.tradesInProgress')}
+              action={
+                <Button variant="primary" size="md" onClick={() => navigate('/swap/configure')}>
+                  {t('states.tradesInProgressCta')}
                 </Button>
-              )}
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                rightIcon="arrow_forward"
-                onClick={() =>
-                  navigate(`/swap/route/${primaryActiveRoute.id}`, {
-                    state: { route: primaryActiveRoute },
-                  })
+              }
+            />
+          ) : (
+            inProgressRoutes.map((route) => (
+              <InProgressRouteCard
+                key={route.id}
+                route={route}
+                isCompleted={
+                  Boolean(completedRouteIds[route.id]) ||
+                  (route.status || '').toUpperCase() === 'COMPLETED'
                 }
-              >
-                {t('trades.viewDetails')}
-              </Button>
-            </div>
-          </div>
+                isBusy={processingId === route.id}
+                onComplete={() => handleCompleteRoute(route.id)}
+                onOpen={() => navigate(`/swap/route/${route.id}`, { state: { route } })}
+              />
+            ))
+          )}
         </div>
       )}
 

@@ -1,180 +1,82 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { Item } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { getMyItems, getItems } from '@/services/swapService';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 
-interface TargetPreset {
-  id: string;
-  name: string;
-  title: string;
-  matchRate: string;
-  details: string;
-  imageUrl?: string;
-  co2Saved: string;
-  routesCount: number;
-}
-
-const itemIdMap: Record<string, string> = {
-  fujifilm: 'item-camera',
-  ipad: 'item-ipad',
-  ps5: 'item-switch',
-  sony: 'item-headphones',
-};
+const VALUE_TOLERANCE_PCT = 25;
+const MAX_SAVED_WANT_CHIPS = 6;
 
 export const ConfigureSwapScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const location = useLocation();
-  const { searchRoutesReal } = useApp();
+  const { myItems, items, isItemsLoading } = useApp();
   const preselectedWant = location.state as { wantItemId?: string; wantItemName?: string } | null;
 
-  const [myItems, setMyItems] = useState<Item[]>([]);
-  const [selectedOfferItem, setSelectedOfferItem] = useState<Item | null>(null);
-  const [hasSecondaryItem, setHasSecondaryItem] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Search / Target item state
-  const [searchQuery, setSearchQuery] = useState('Cámara Fujifilm X-T30 II');
-  const [activeTag, setActiveTag] = useState<string>('fujifilm');
-  const [targetPreset, setTargetPreset] = useState<TargetPreset | null>(null);
-
-  // Filters state
+  const [offerIndex, setOfferIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState(preselectedWant?.wantItemName ?? '');
   const [swapMode, setSwapMode] = useState<'circular' | 'direct'>('circular');
 
-  // Load items from service
-  useEffect(() => {
-    let isMounted = true;
+  const selectedOfferItem: Item | undefined = myItems[offerIndex % Math.max(1, myItems.length)];
+  const trimmedQuery = searchQuery.trim();
 
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const [userItems, allItems] = await Promise.all([getMyItems(), getItems()]);
-
-        if (isMounted) {
-          setMyItems(userItems);
-          if (userItems.length > 0) {
-            setSelectedOfferItem(userItems[0]);
-          }
-
-          if (preselectedWant && (preselectedWant.wantItemId || preselectedWant.wantItemName)) {
-            if (preselectedWant.wantItemName) {
-              setSearchQuery(preselectedWant.wantItemName);
-            }
-
-            const matchedItem = allItems.find(
-              (i) =>
-                (preselectedWant.wantItemId && i.id === preselectedWant.wantItemId) ||
-                (preselectedWant.wantItemName &&
-                  i.name.toLowerCase() === preselectedWant.wantItemName.toLowerCase()),
-            );
-
-            if (matchedItem) {
-              const matchedTag = Object.keys(itemIdMap).find(
-                (k) => itemIdMap[k] === matchedItem.id,
-              );
-              setActiveTag(matchedTag || 'custom');
-              setTargetPreset({
-                id: matchedTag || matchedItem.id,
-                name: matchedItem.name,
-                title: matchedItem.name,
-                matchRate: t('configure.matchRate', { percent: 96 }),
-                details:
-                  matchedItem.description ||
-                  (matchedItem.estimatedValue !== undefined
-                    ? t('configure.details.estimatedRange', {
-                        value: formatCop(matchedItem.estimatedValue),
-                      })
-                    : t('configure.details.adequateFit')),
-                imageUrl: matchedItem.imageUrl,
-                co2Saved: '38 kg',
-                routesCount: 6,
-              });
-            } else if (preselectedWant.wantItemName) {
-              setActiveTag('custom');
-              setTargetPreset({
-                id: preselectedWant.wantItemId || 'custom',
-                name: preselectedWant.wantItemName,
-                title: preselectedWant.wantItemName,
-                matchRate: t('configure.matchRate', { percent: 90 }),
-                details: t('configure.details.customSearch'),
-                imageUrl: allItems[0]?.imageUrl,
-                co2Saved: '35 kg',
-                routesCount: 4,
-              });
-            }
-          } else {
-            const cameraItem = allItems.find((i) => i.id === 'item-camera');
-            if (cameraItem) {
-              setTargetPreset({
-                id: 'fujifilm',
-                name: 'Cámara Fujifilm X-T30 II',
-                title: cameraItem.name + ' + 15-45mm',
-                matchRate: t('configure.matchRate', { percent: 98 }),
-                details:
-                  cameraItem.estimatedValue !== undefined
-                    ? t('configure.details.valueRange', {
-                        min: formatCop(cameraItem.estimatedValue * 0.95),
-                        max: formatCop(cameraItem.estimatedValue * 1.05),
-                      })
-                    : t('configure.details.adequateFit'),
-                imageUrl: cameraItem.imageUrl,
-                co2Saved: '42 kg',
-                routesCount: 7,
-              });
-            }
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [preselectedWant, t]);
-
-  const handleSelectTag = async (key: string, name: string) => {
-    setActiveTag(key);
-    setSearchQuery(name);
-
-    const allItems = await getItems();
-    const targetId = itemIdMap[key] || 'item-camera';
-    const foundItem = allItems.find((i) => i.id === targetId);
-
-    if (foundItem) {
-      setTargetPreset({
-        id: key,
-        name: foundItem.name,
-        title: foundItem.name,
-        matchRate: t('configure.matchRate', { percent: key === 'fujifilm' ? 98 : 92 }),
-        details: foundItem.description || t('configure.details.adequateFit'),
-        imageUrl: foundItem.imageUrl,
-        co2Saved: '38 kg',
-        routesCount: key === 'fujifilm' ? 7 : 4,
-      });
+  // The catalog item the objective points at: the one chosen in Explore, or the first name match.
+  const targetItem = useMemo(() => {
+    if (preselectedWant?.wantItemId) {
+      const chosen = items.find((item) => item.id === preselectedWant.wantItemId);
+      if (chosen && chosen.name.toLowerCase() === trimmedQuery.toLowerCase()) return chosen;
     }
-  };
+    if (trimmedQuery.length < 2) return undefined;
+    const query = trimmedQuery.toLowerCase();
+    return items.find((item) => item.ownerId !== selectedOfferItem?.ownerId && item.name.toLowerCase().includes(query));
+  }, [items, preselectedWant?.wantItemId, trimmedQuery, selectedOfferItem?.ownerId]);
+
+  const savedWants = useMemo(
+    () =>
+      Array.from(new Set(myItems.flatMap((item) => item.wants.map((want) => want.trim())))).filter(
+        (want) => want.length > 0,
+      ).slice(0, MAX_SAVED_WANT_CHIPS),
+    [myItems],
+  );
 
   const handleToggleOfferItem = () => {
-    if (myItems.length <= 1) return;
-    const currentIndex = myItems.findIndex((i) => i.id === selectedOfferItem?.id);
-    const nextIndex = (currentIndex + 1) % myItems.length;
-    setSelectedOfferItem(myItems[nextIndex]);
+    if (myItems.length > 1) setOfferIndex((index) => (index + 1) % myItems.length);
+  };
+
+  const canSearch = Boolean(selectedOfferItem) && trimmedQuery.length >= 2;
+
+  const handleSearch = () => {
+    if (!selectedOfferItem || !canSearch) return;
+    const maxSteps = swapMode === 'direct' ? 2 : 4;
+    const wantItemId = targetItem?.id ?? '';
+    const params = new URLSearchParams({
+      have: selectedOfferItem.id,
+      q: trimmedQuery,
+      maxSteps: String(maxSteps),
+      tolerance: String(VALUE_TOLERANCE_PCT),
+    });
+    if (wantItemId) params.set('want', wantItemId);
+
+    navigate(`/swap/searching?${params.toString()}`, {
+      state: {
+        offeredItemId: selectedOfferItem.id,
+        wantItemId,
+        objectiveText: trimmedQuery,
+        desiredCategory: selectedOfferItem.category,
+        maxSteps,
+        valueTolerancePct: VALUE_TOLERANCE_PCT,
+      },
+    });
   };
 
   return (
@@ -187,17 +89,23 @@ export const ConfigureSwapScreen = () => {
             {t('configure.badge')}
           </span>
         </div>
-        <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5">
-          <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
-          1,420 usuarios activos
-        </span>
       </div>
 
-      {isLoading ? (
+      {isItemsLoading && myItems.length === 0 ? (
         <div className="flex flex-col space-y-4">
           <div className="h-44 rounded-2xl bg-surface-container-low animate-pulse" />
           <div className="h-44 rounded-2xl bg-surface-container-low animate-pulse" />
         </div>
+      ) : myItems.length === 0 ? (
+        <EmptyState
+          illustration="routes"
+          title={t('states.homeNoItems')}
+          action={
+            <Button variant="primary" size="md" onClick={() => navigate('/publish')}>
+              {t('states.homeNoItemsCta')}
+            </Button>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-space-md">
           {/* STEP 1: Lo que ofreces ("I have") */}
@@ -266,18 +174,6 @@ export const ConfigureSwapScreen = () => {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setHasSecondaryItem(!hasSecondaryItem)}
-                  className="w-full mt-3 py-2 bg-surface-container-low hover:bg-surface-container active:scale-[0.99] text-primary font-label-md text-label-md rounded-xl flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <Icon name={hasSecondaryItem ? 'remove_circle' : 'add_circle'} size="sm" />
-                  <span>
-                    {hasSecondaryItem
-                      ? t('configure.secondaryAdded')
-                      : t('configure.addSecondary')}
-                  </span>
-                </button>
               </div>
             )}
           </section>
@@ -313,10 +209,6 @@ export const ConfigureSwapScreen = () => {
                   {t('configure.youWant')}
                 </h2>
               </div>
-              <span className="font-body-sm text-body-sm text-secondary font-semibold flex items-center gap-0.5">
-                <Icon name="auto_awesome" size="xs" />
-                {t('configure.suggestions')}
-              </span>
             </div>
 
             <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 flex flex-col gap-space-sm">
@@ -344,61 +236,41 @@ export const ConfigureSwapScreen = () => {
                 )}
               </div>
 
-              {/* Wishlist quick tags */}
-              <div className="flex flex-col gap-1.5 mt-1">
-                <span className="font-label-sm text-label-sm text-on-surface-variant">
-                  {t('configure.savedWants')}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  <Chip
-                    active={activeTag === 'fujifilm'}
-                    icon="photo_camera"
-                    onClick={() => handleSelectTag('fujifilm', 'Cámara Fujifilm X-T30 II')}
-                  >
-                    Fujifilm X-T30 II
-                  </Chip>
-                  <Chip
-                    active={activeTag === 'ipad'}
-                    icon="tablet_mac"
-                    onClick={() => handleSelectTag('ipad', 'iPad Air M2')}
-                  >
-                    iPad Air M2
-                  </Chip>
-                  <Chip
-                    active={activeTag === 'ps5'}
-                    icon="sports_esports"
-                    onClick={() => handleSelectTag('ps5', 'PlayStation 5 Slim')}
-                  >
-                    PS5 Slim
-                  </Chip>
-                  <Chip
-                    active={activeTag === 'sony'}
-                    icon="headphones"
-                    onClick={() => handleSelectTag('sony', 'Sony WH-1000XM5')}
-                  >
-                    Sony XM5
-                  </Chip>
+              {/* Wants saved on the user's own items */}
+              {savedWants.length > 0 && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    {t('configure.savedWants')}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {savedWants.map((want) => (
+                      <Chip
+                        key={want}
+                        active={trimmedQuery.toLowerCase() === want.toLowerCase()}
+                        onClick={() => setSearchQuery(want)}
+                      >
+                        {want}
+                      </Chip>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Target item preview */}
-              {targetPreset && (
+              {/* Target item preview: a real catalog match, with its own value */}
+              {targetItem && (
                 <div className="flex items-center gap-3 p-2.5 bg-surface-container-low rounded-xl">
                   <div className="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">
-                    <ItemImage src={targetPreset.imageUrl} alt={targetPreset.name} className="w-full h-full" />
+                    <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-full h-full" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-headline-sm text-[14px] text-on-surface font-semibold truncate">
-                        {targetPreset.title}
-                      </p>
-                      <Badge variant="primary-subtle" className="text-[10px] py-0">
-                        {targetPreset.matchRate}
-                      </Badge>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px] truncate mt-0.5">
-                      {targetPreset.details}
+                    <p className="font-headline-sm text-[14px] text-on-surface font-semibold line-clamp-2">
+                      {targetItem.name}
                     </p>
+                    {targetItem.estimatedValue !== undefined && (
+                      <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                        {formatCop(targetItem.estimatedValue)}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -461,29 +333,7 @@ export const ConfigureSwapScreen = () => {
                   </div>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">
                     {t('configure.circularDescription')}
-                    <strong className="text-secondary font-semibold ml-1">
-                      {t('configure.moreLikely')}
-                    </strong>{' '}
-                    de concretar tu canje hoy.
                   </p>
-
-                  <div className="flex items-center gap-1.5 mt-2.5 pt-2 bg-surface-container-lowest/90 p-2 rounded-xl border border-surface-container-high/40">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 text-primary font-label-sm text-[10px] flex items-center justify-center font-bold">
-                      {t('configure.you')}
-                    </div>
-                    <Icon name="arrow_forward" size="xs" className="text-on-surface-variant" />
-                    <div className="w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[10px] flex items-center justify-center font-bold">
-                      C.R.
-                    </div>
-                    <Icon name="arrow_forward" size="xs" className="text-on-surface-variant" />
-                    <div className="w-6 h-6 rounded-full bg-secondary-container/20 text-secondary font-label-sm text-[10px] flex items-center justify-center font-bold">
-                      S.V.
-                    </div>
-                    <Icon name="cached" size="xs" className="text-secondary" />
-                    <span className="font-label-sm text-label-sm text-secondary font-bold ml-auto">
-                      +4 circuitos activos
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -532,7 +382,7 @@ export const ConfigureSwapScreen = () => {
                 {t('configure.impactTitle')}
               </span>
               <span className="font-body-sm text-body-sm text-on-surface-variant">
-                {t('configure.impactDescription', { kg: targetPreset?.co2Saved || '42 kg' })}
+                {t('configure.impactDescription')}
               </span>
             </div>
           </div>
@@ -546,48 +396,10 @@ export const ConfigureSwapScreen = () => {
           variant="primary"
           fullWidth
           rightIcon="explore"
-          onClick={() => {
-            const offerItemId = selectedOfferItem?.id || 'item-bike';
-            const targetItemId =
-              (targetPreset && (itemIdMap[targetPreset.id] || targetPreset.id)) || 'item-camera';
-            const objectiveText =
-              searchQuery.trim() || targetPreset?.name || 'Cámara Fujifilm X-T30 II';
-            const maxSteps = swapMode === 'direct' ? 2 : 4;
-            const valueTolerancePct = hasSecondaryItem ? 35 : 25;
-
-            // Pre-trigger backend route discovery
-            searchRoutesReal({
-              offeredItemId: offerItemId,
-              objectiveText,
-              desiredCategory: selectedOfferItem?.category,
-              maxSteps,
-              valueTolerancePct,
-            }).catch(() => {});
-
-            const queryString = new URLSearchParams({
-              have: offerItemId,
-              want: targetItemId,
-              q: objectiveText,
-              maxSteps: String(maxSteps),
-              tolerance: String(valueTolerancePct),
-            }).toString();
-
-            navigate(`/swap/searching?${queryString}`, {
-              state: {
-                offeredItemId: offerItemId,
-                wantItemId: targetItemId,
-                objectiveText,
-                desiredCategory: selectedOfferItem?.category,
-                maxSteps,
-                valueTolerancePct,
-              },
-            });
-          }}
+          disabled={!canSearch}
+          onClick={handleSearch}
         >
           <span>{t('configure.searchRoutes')}</span>
-          <span className="w-5 h-5 rounded-full bg-on-primary/20 text-on-primary font-label-sm text-label-sm flex items-center justify-center ml-1">
-            {targetPreset?.routesCount ?? 7}
-          </span>
         </Button>
         <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
           {t('configure.custodyGuarantee')}

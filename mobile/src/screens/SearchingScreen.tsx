@@ -1,23 +1,19 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { formatMatchScore } from '@/services/routes/routes.service';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { formatCop } from '@/utils/currency';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values', 'found'] as const;
 
-// Illustrative chain shown while the search runs; real items replace it once a route is found.
-const FLOW_STEPS: { user: string; itemImg?: string; itemName: string; category: string }[] = [
-  { user: 'Tú', itemName: 'Bicicleta', category: 'Deportes' },
-  { user: 'Carlos', itemName: 'Balón', category: 'Deportes' },
-  { user: 'Laura', itemName: 'Audífonos', category: 'Música' },
-  { user: 'Sofía', itemName: 'Cámara', category: 'Fotografía' },
-];
+// Neutral placeholder nodes while the search runs; real people and items replace them once a route is found.
+const PLACEHOLDER_NODES = 4;
 
 interface SearchingLocationState {
   offeredItemId?: string;
@@ -36,10 +32,10 @@ export const SearchingScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const locationState = location.state as SearchingLocationState | null;
 
-  const haveId = searchParams.get('have') || locationState?.offeredItemId || 'item-bike';
-  const wantId = searchParams.get('want') || locationState?.wantItemId || 'item-camera';
-  const objectiveText =
-    searchParams.get('q') || locationState?.objectiveText || wantId || 'Cámara Fujifilm X-T30 II';
+  const haveId = searchParams.get('have') || locationState?.offeredItemId || '';
+  const wantId = searchParams.get('want') || locationState?.wantItemId || '';
+  const objectiveText = searchParams.get('q') || locationState?.objectiveText || wantId;
+  const hasSearchParams = haveId !== '' && objectiveText !== '';
   const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || 4;
   const valueTolerancePct =
     Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
@@ -87,6 +83,9 @@ export const SearchingScreen: React.FC = () => {
 
   // Phase scheduling and real backend route discovery via searchRoutesReal
   useEffect(() => {
+    if (!hasSearchParams) {
+      return;
+    }
     let isMounted = true;
 
     searchRoutesReal({
@@ -102,7 +101,9 @@ export const SearchingScreen: React.FC = () => {
           setDiscoveredRoutes(routes);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Results screen repeats the search and shows the failure with a retry
+      });
 
     // Kick off progress bar animation (2500ms)
     const progressTimer = setTimeout(() => {
@@ -141,6 +142,7 @@ export const SearchingScreen: React.FC = () => {
       clearTimeout(autoNavTimer);
     };
   }, [
+    hasSearchParams,
     haveId,
     wantId,
     objectiveText,
@@ -152,7 +154,7 @@ export const SearchingScreen: React.FC = () => {
   ]);
 
   const topRoute = discoveredRoutes[0];
-  const targetMatchScore = topRoute ? formatMatchScore(topRoute.matchScore) : 98;
+  const targetMatchScore = topRoute ? (formatMatchScore(topRoute.matchScore) ?? 0) : 0;
 
   // Match counter animation (0 to targetMatchScore% in Phase 3)
   useEffect(() => {
@@ -179,6 +181,7 @@ export const SearchingScreen: React.FC = () => {
   }, [phase, targetMatchScore]);
 
   const isPhase3 = phase === 3;
+  const { currentUser } = useApp();
   const activeFlowSteps =
     topRoute && topRoute.chainItems.length >= 2
       ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
@@ -187,11 +190,24 @@ export const SearchingScreen: React.FC = () => {
               ? t('searching.you')
               : topRoute.participants[idx]?.name?.split(' ')[0] ||
                 t('searching.step', { count: idx + 1 }),
+          initials: idx === 0 ? currentUser?.initials : topRoute.participants[idx]?.initials,
+          value: item.estimatedValue,
           itemImg: item.imageUrl,
           itemName: item.name,
           category: item.category,
         }))
-      : FLOW_STEPS;
+      : Array.from({ length: PLACEHOLDER_NODES }, (_, idx) => ({
+          user: idx === 0 ? t('searching.you') : t('searching.step', { count: idx + 1 }),
+          initials: idx === 0 ? currentUser?.initials : undefined,
+          value: undefined as number | undefined,
+          itemImg: undefined as string | undefined,
+          itemName: '',
+          category: '',
+        }));
+
+  if (!hasSearchParams) {
+    return <Navigate to="/swap/configure" replace />;
+  }
 
   return (
     <div className="flex flex-col items-center justify-between h-full min-h-[580px] w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-hidden select-none animate-fade-in relative">
@@ -337,11 +353,13 @@ export const SearchingScreen: React.FC = () => {
           >
             <div className="relative">
               <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-primary ring-2 ring-primary ring-offset-2 ring-offset-surface shadow-md flex items-center justify-center">
-                <span className="font-headline-sm text-headline-sm font-bold text-primary">AM</span>
+                <span className="font-headline-sm text-headline-sm font-bold text-primary">{activeFlowSteps[0]?.initials ?? '•'}</span>
               </div>
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-primary font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                $780
-              </span>
+              {activeFlowSteps[0]?.value !== undefined && (
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-primary font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
+                  {formatCop(activeFlowSteps[0].value ?? 0)}
+                </span>
+              )}
             </div>
             <span className="font-label-sm text-[11px] text-on-surface font-bold mt-2 truncate max-w-[76px] text-center">
               {t('searching.you')}
@@ -360,15 +378,17 @@ export const SearchingScreen: React.FC = () => {
             <div className="relative">
               <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
                 <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  CV
+                  {activeFlowSteps[1]?.initials ?? '•'}
                 </span>
               </div>
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                $120
-              </span>
+              {activeFlowSteps[1]?.value !== undefined && (
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
+                  {formatCop(activeFlowSteps[1].value ?? 0)}
+                </span>
+              )}
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[1]?.user ?? FLOW_STEPS[1].user}
+              {activeFlowSteps[1]?.user}
             </span>
           </div>
         </div>
@@ -384,15 +404,17 @@ export const SearchingScreen: React.FC = () => {
             <div className="relative">
               <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
                 <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  LG
+                  {activeFlowSteps[2]?.initials ?? '•'}
                 </span>
               </div>
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                $390
-              </span>
+              {activeFlowSteps[2]?.value !== undefined && (
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
+                  {formatCop(activeFlowSteps[2].value ?? 0)}
+                </span>
+              )}
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[2]?.user ?? FLOW_STEPS[2].user}
+              {activeFlowSteps[2]?.user}
             </span>
           </div>
         </div>
@@ -408,15 +430,17 @@ export const SearchingScreen: React.FC = () => {
             <div className="relative">
               <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
                 <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  SC
+                  {activeFlowSteps[3]?.initials ?? '•'}
                 </span>
               </div>
-              <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                $790
-              </span>
+              {activeFlowSteps[3]?.value !== undefined && (
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
+                  {formatCop(activeFlowSteps[3].value ?? 0)}
+                </span>
+              )}
             </div>
             <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[3]?.user ?? FLOW_STEPS[3].user}
+              {activeFlowSteps[3]?.user}
             </span>
           </div>
         </div>
@@ -427,11 +451,12 @@ export const SearchingScreen: React.FC = () => {
         {isPhase3 ? (
           <div className="w-full flex flex-col items-center gap-2 animate-slide-up">
             {/* Reveal Badges & Percentage */}
+            {topRoute && (
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a7a4a]/12 border border-[#1a7a4a]/30 text-[#1a7a4a] shadow-2xs">
                 <Icon name="verified" size="xs" filled />
                 <span className="font-label-sm text-label-sm font-bold">
-                  {t('searching.routeFound', { code: topRoute?.code || 'SR-8492' })}
+                  {t('searching.routeFound', { code: topRoute?.code ?? '' })}
                 </span>
               </div>
               <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary">
@@ -441,6 +466,7 @@ export const SearchingScreen: React.FC = () => {
                 </span>
               </div>
             </div>
+            )}
 
             {/* Sequential flow indicators with SVG item thumbnails */}
             <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
@@ -489,7 +515,9 @@ export const SearchingScreen: React.FC = () => {
           <div className="w-full max-w-xs animate-slide-up">
             <Button variant="primary" size="lg" fullWidth onClick={handleNavigate}>
               <span>
-                Ver Cadena de Ruta Completa ({topRoute?.stepsCount ?? 4} Pasos) →
+                {topRoute
+                  ? t('searching.viewChain', { count: topRoute.stepsCount })
+                  : t('searching.viewResults')}
               </span>
             </Button>
           </div>

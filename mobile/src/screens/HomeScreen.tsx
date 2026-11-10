@@ -1,9 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Item, User, SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { getCurrentUser, getItems, getRecommendedRoutes } from '@/services/swapService';
-import { mockSwapRoute } from '@/data/mockData';
 import { formatMatchScore } from '@/services/routes/routes.service';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
@@ -12,86 +9,62 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ObjectCard } from '@/components/ObjectCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
+
+const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED']);
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
   const { t, language } = useTranslation();
   const {
-    currentUser: contextUser,
-    items: contextItems,
+    currentUser,
+    items,
     myItems,
     routes,
     notifications,
+    loadStates,
+    isItemsLoading,
+    refreshItems,
+    locationScope,
+    setLocationScope,
   } = useApp();
-
-  const [localUser, setLocalUser] = useState<User | null>(null);
-  const [recommendedRoute, setRecommendedRoute] = useState<SwapRoute | null>(null);
-  const [items, setItems] = useState<Item[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   const [filterMode, setFilterMode] = useState<'nearby' | 'wishlist'>('nearby');
   const [showRouteExplanation, setShowRouteExplanation] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        setError(false);
-        const [userData, itemsData, routesData] = await Promise.all([
-          getCurrentUser(),
-          getItems(),
-          getRecommendedRoutes(),
-        ]);
-
-        if (isMounted) {
-          setLocalUser(userData);
-          setItems(itemsData);
-          if (routesData.length > 0) {
-            setRecommendedRoute(routesData[0]);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setError(true);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const currentUser = contextUser || localUser;
-  const activeRoute = routes.length > 0 ? routes[0] : recommendedRoute || mockSwapRoute;
-  const activeRoutesCount = routes.length;
+  const activeRoute = routes.find(
+    (route) => !INACTIVE_ROUTE_STATUSES.has((route.status || '').toUpperCase()),
+  );
+  const activeRoutesCount = routes.filter(
+    (route) => !INACTIVE_ROUTE_STATUSES.has((route.status || '').toUpperCase()),
+  ).length;
   const latestNotification = notifications[0];
-  const activeRouteTarget = activeRoute.chainItems[activeRoute.chainItems.length - 1];
-  const activeRouteChain = activeRoute.chainItems
+  const activeRouteTarget = activeRoute?.chainItems[activeRoute.chainItems.length - 1];
+  const activeRouteChain = (activeRoute?.chainItems ?? [])
     .map((item) => item.name.split(' ')[0])
     .join(' → ');
   const activeUserItemsCount = myItems.length;
+  const activeMatchPct = formatMatchScore(activeRoute?.matchScore);
 
-  const allItems = contextItems.length > 0 ? contextItems : items;
-  const otherItems = allItems.filter((i) => i.ownerId !== currentUser?.id);
+  const isLoading = isItemsLoading || loadStates.items === 'loading';
+  const hasError = loadStates.items === 'error';
+  const otherItems = useMemo(
+    () => items.filter((i) => i.ownerId !== currentUser?.id),
+    [items, currentUser?.id],
+  );
 
   const displayedItems = useMemo(() => {
-    return filterMode === 'wishlist'
-      ? otherItems.filter((item) => ['Fotografía', 'Tecnología'].includes(item.category))
-      : otherItems;
-  }, [filterMode, otherItems]);
+    if (filterMode !== 'wishlist') return otherItems;
+    const wanted = myItems.flatMap((item) => item.wants.map((want) => want.trim().toLowerCase()));
+    return otherItems.filter((item) => {
+      const name = item.name.toLowerCase();
+      return wanted.some((want) => want.length > 1 && name.includes(want));
+    });
+  }, [filterMode, otherItems, myItems]);
 
   return (
     <div className="flex flex-col w-full px-margin pt-4 pb-8 space-y-5">
@@ -102,7 +75,9 @@ export const HomeScreen = () => {
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-space-xs">
             <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-              {t('home.greeting', { name: currentUser?.name?.split(' ')[0] || 'Alex' })}
+              {currentUser?.name
+                ? t('home.greeting', { name: currentUser.name.split(' ')[0] })
+                : t('home.greetingAnonymous')}
             </h1>
             <span className="text-xl">👋</span>
           </div>
@@ -246,6 +221,26 @@ export const HomeScreen = () => {
       </section>
 
       {/* Signature Section: Recommended Circular Chain */}
+      {!activeRoute && loadStates.routes === 'ready' && (
+        <EmptyState
+          illustration="routes"
+          title={activeUserItemsCount > 0 ? t('states.homeRoutes') : t('states.homeNoItems')}
+          action={
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => navigate(activeUserItemsCount > 0 ? '/swap/configure' : '/publish')}
+            >
+              {activeUserItemsCount > 0 ? t('states.homeRoutesCta') : t('states.homeNoItemsCta')}
+            </Button>
+          }
+        />
+      )}
+
+      {!activeRoute && loadStates.routes === 'error' && (
+        <ErrorState onRetry={() => void refreshItems()} />
+      )}
+
       {activeRoute && (
         <section aria-label={t('home.route.aria')} className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
@@ -258,7 +253,7 @@ export const HomeScreen = () => {
             <button
               type="button"
               onClick={() =>
-                navigate(`/swap/route/${activeRoute.code || activeRoute.id || 'SR-8492'}`, {
+                navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, {
                   state: { route: activeRoute },
                 })
               }
@@ -276,12 +271,14 @@ export const HomeScreen = () => {
               <Badge variant="secondary-subtle" icon="auto_mode">
                 {t('home.route.circuit', { count: activeRoute.stepsCount })}
               </Badge>
-              <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
-                <Icon name="verified" size="xs" />
-                <span className="font-label-sm text-label-sm font-bold">
-                  {t('home.route.match', { percent: formatMatchScore(activeRoute.matchScore) })}
-                </span>
-              </div>
+              {activeMatchPct !== null && (
+                <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
+                  <Icon name="verified" size="xs" />
+                  <span className="font-label-sm text-label-sm font-bold">
+                    {t('home.route.match', { percent: activeMatchPct })}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Target and economics */}
@@ -368,7 +365,7 @@ export const HomeScreen = () => {
                 size="md"
                 rightIcon="explore"
                 onClick={() =>
-                  navigate(`/swap/route/${activeRoute.code || activeRoute.id || 'SR-8492'}`, {
+                  navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, {
                     state: { route: activeRoute },
                   })
                 }
@@ -439,35 +436,39 @@ export const HomeScreen = () => {
         )}
 
         {/* Error State */}
-        {!isLoading && error && (
-          <div className="p-4 rounded-2xl bg-error-container/30 text-error text-center font-body-sm text-body-sm">
-            <p>{t('home.loadError')}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => window.location.reload()}
-            >
-              {t('home.recommended.retry')}
-            </Button>
-          </div>
-        )}
+        {!isLoading && hasError && <ErrorState onRetry={() => void refreshItems()} />}
 
         {/* Empty State */}
-        {!isLoading && !error && displayedItems.length === 0 && (
-          <div className="p-8 text-center bg-surface-container-lowest rounded-2xl border border-surface-container-high/60">
-            <Icon name="search_off" size="xl" className="text-outline mb-2" />
-            <p className="font-body-md text-body-md text-on-surface font-semibold">
-              {t('home.recommended.emptyTitle')}
-            </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-              {t('home.recommended.emptyDescription')}
-            </p>
-          </div>
+        {!isLoading && !hasError && displayedItems.length === 0 && (
+          <EmptyState
+            illustration="search"
+            title={
+              filterMode === 'wishlist'
+                ? t('home.recommended.emptyDescription')
+                : locationScope !== 'country'
+                  ? t('states.homeCatalog')
+                  : t('states.explore')
+            }
+            action={
+              filterMode === 'wishlist' ? (
+                <Button variant="primary" size="md" onClick={() => setFilterMode('nearby')}>
+                  {t('home.recommended.nearby')}
+                </Button>
+              ) : locationScope !== 'country' ? (
+                <Button variant="primary" size="md" onClick={() => setLocationScope('country')}>
+                  {t('states.homeCatalogCta')}
+                </Button>
+              ) : (
+                <Button variant="primary" size="md" onClick={() => navigate('/publish')}>
+                  {t('states.exploreCta')}
+                </Button>
+              )
+            }
+          />
         )}
 
         {/* Item List */}
-        {!isLoading && !error && displayedItems.length > 0 && (
+        {!isLoading && !hasError && displayedItems.length > 0 && (
           <div className="flex flex-col space-y-3">
             {displayedItems.map((item) => (
               <ObjectCard

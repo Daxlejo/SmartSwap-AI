@@ -30,7 +30,7 @@ export const AppLayout = () => {
       case '/profile':
         return {
           title: t('headers.profile.title'),
-          subtitle: currentUser?.name || 'Alex Morales',
+          subtitle: currentUser?.name ?? '',
           showBack: true,
           showProfile: false,
         };
