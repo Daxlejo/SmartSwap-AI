@@ -2,9 +2,18 @@ import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
 import { Icon } from './ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useApp } from '@/context/AppContext';
 
 export const BottomNav = () => {
   const { t } = useTranslation();
+  const { routes, currentUser } = useApp();
+  // Proposals from other people still waiting for this user's answer
+  const pendingResponses = routes.filter(
+    (route) =>
+      route.initiatorId !== currentUser?.id &&
+      ['ACTIVE', 'PROPOSED'].includes((route.status || '').toUpperCase()) &&
+      route.steps?.some((step) => step.userId === currentUser?.id && step.acceptance === 'PENDING'),
+  ).length;
   return (
     <nav
       aria-label={t('nav.mainNavigation')}
@@ -97,9 +106,11 @@ export const BottomNav = () => {
             <>
               <div className="relative flex items-center justify-center">
                 <Icon name="sync_alt" size="lg" filled={isActive} />
-                <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-[10px] leading-none font-bold shadow-xs flex items-center justify-center">
-                  2
-                </span>
+                {pendingResponses > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-[10px] leading-none font-bold shadow-xs flex items-center justify-center">
+                    {pendingResponses}
+                  </span>
+                )}
               </div>
               <span
                 className={clsx(
