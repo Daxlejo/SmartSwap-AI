@@ -157,6 +157,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoadStates((prev) => (prev[key] === status ? prev : { ...prev, [key]: status }));
   }, []);
 
+  // Bumped on every login/logout so a slow response from a previous session is discarded
+  const sessionEpochRef = useRef(0);
+
   // Latest viewer location for callbacks that must stay stable (kept in sync after every render)
   const viewerRef = useRef<{ scope: LocationScopePreference; municipalityCode?: string }>({
     scope: locationScope,
@@ -243,6 +246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadMarketplaceAndUserItems = useCallback(
     async (hasActiveToken: boolean, viewerMunicipalityCode?: string) => {
+      const epoch = sessionEpochRef.current;
       setIsItemsLoading(true);
       setLoadStates((prev) => ({
         ...prev,
@@ -261,6 +265,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
         ]);
 
+        if (epoch !== sessionEpochRef.current) {
+          return; // the session changed while loading: these results belong to the old one
+        }
         if (allItemsResult.status === 'fulfilled') {
           setItems(allItemsResult.value);
         }
@@ -343,9 +350,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       setIsHydrating(true);
+      const epoch = sessionEpochRef.current;
+      const isStale = () => !isMounted || epoch !== sessionEpochRef.current;
       try {
         const user = await authService.getMe();
-        if (!isMounted) return;
+        if (isStale()) return;
         setCurrentUser(user);
         setIsAuthenticated(true);
 
@@ -354,17 +363,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           notificationsService
             .listNotifications()
             .then((list) => {
-              if (isMounted) {
+              if (!isStale()) {
                 setNotifications(list);
                 setLoadState('notifications', 'ready');
               }
             })
             .catch(() => {
-              if (isMounted) setLoadState('notifications', 'error');
+              if (!isStale()) setLoadState('notifications', 'error');
             }),
         ]);
       } catch (error) {
-        if (!isMounted) return;
+        if (isStale()) return;
         // Only a rejected session ends it; a network or server failure keeps the token so the
         // user can retry instead of being logged out by a cold server.
         const sessionRejected =
@@ -462,6 +471,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const startSession = useCallback(
     async (user: User): Promise<void> => {
+      sessionEpochRef.current += 1;
       setCurrentUser(user);
       setIsAuthenticated(true);
       await Promise.all([
@@ -492,6 +502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = useCallback(() => {
     authService.logout();
+    sessionEpochRef.current += 1;
     setIsAuthenticated(false);
     setItems([]);
     clearSessionData();
