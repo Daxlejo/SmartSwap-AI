@@ -16,6 +16,10 @@
     "openapi": "npm --workspace=api run openapi",
     "openapi:check": "npm --workspace=api run openapi:check",
     "typecheck": "npm --workspace=mobile run typecheck && npm --workspace=api run typecheck",
-    "graphify": "node scripts/graphify.mjs"
+    "graphify": "node scripts/graphify.mjs",
+    "smoke:demo": "node scripts/smoke-demo.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.2"
   }
 }
