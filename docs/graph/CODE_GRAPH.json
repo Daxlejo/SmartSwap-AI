@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-10T19:20:23.989Z",
+  "generatedAt": "2026-11-10T19:29:40.607Z",
   "stats": {
-    "totalFiles": 137,
-    "apiFiles": 65,
+    "totalFiles": 138,
+    "apiFiles": 66,
     "mobileFiles": 72,
     "endpointsCount": 45
   },
@@ -461,6 +461,9 @@
     "api/prisma": [
       "api/src/prisma/prisma.module.ts",
       "api/src/prisma/prisma.service.ts"
+    ],
+    "api/seed": [
+      "api/src/seed/seed-data.ts"
     ],
     "mobile/App.tsx": [
       "mobile/src/App.tsx"
@@ -1847,6 +1850,20 @@
         "@prisma/client"
       ]
     },
+    "api/src/seed/seed-data.ts": {
+      "module": "api/seed",
+      "exports": [
+        "DEMO_ITEMS",
+        "DEMO_USERS",
+        "PROPOSAL_STEPS",
+        "SeedItemSpec",
+        "SeedUserSpec",
+        "uuid"
+      ],
+      "imports": [
+        "@prisma/client"
+      ]
+    },
     "mobile/src/App.tsx": {
       "module": "mobile/App.tsx",
       "exports": [
@@ -2376,6 +2393,7 @@
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
