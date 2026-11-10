@@ -194,6 +194,22 @@ describe('routesService & mapApiRouteToUiRoute', () => {
     });
   });
 
+  describe('unexpected payloads', () => {
+    it('treats an unknown list shape as an error, not as "no routes"', async () => {
+      vi.spyOn(apiClient, 'get').mockResolvedValueOnce({ unexpected: true });
+      await expect(routesService.listMyRoutes()).rejects.toThrow('Unexpected routes response shape');
+    });
+
+    it('rejects a step that does not say which item it receives', () => {
+      expect(() =>
+        mapApiRouteToUiRoute({
+          id: 'r1',
+          steps: [{ stepOrder: 1, userId: 'u1', user: { id: 'u1', name: 'Ana' }, givesItemId: 'i1', givesItem: { id: 'i1', name: 'Bici' } }],
+        }),
+      ).toThrow('receives');
+    });
+  });
+
   describe('no invented data', () => {
     it('returns null for a missing score and keeps absent fields undefined', () => {
       expect(formatMatchScore(undefined)).toBeNull();

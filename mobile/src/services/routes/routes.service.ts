@@ -214,10 +214,10 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
     const rawReceivesObj = rawStep.receivesItem || rawStep.toItem;
     const receivesItemId =
       rawStep.receivesItemId || rawStep.toItemId || rawReceivesObj?.id || '';
-    const receivesItem =
-      rawReceivesObj || receivesItemId
-        ? resolveStepItem(rawReceivesObj, receivesItemId, '')
-        : undefined;
+    if (!receivesItemId) {
+      throw new Error('Route step is missing the item it receives');
+    }
+    const receivesItem = resolveStepItem(rawReceivesObj, receivesItemId, '');
 
     const toUser =
       rawStep.toUser || rawStep.toUserId
@@ -240,7 +240,7 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
       toUser,
       givesItemId: givesItem.id,
       givesItem,
-      receivesItemId: receivesItem?.id || receivesItemId || givesItem.id,
+      receivesItemId: receivesItem.id,
       receivesItem,
       acceptance: normalizeStepAcceptance(rawStep.acceptance || rawStep.status),
       respondedAt,
@@ -428,7 +428,7 @@ const extractRoutesArray = (raw: SwapRouteDto[] | RoutesListEnvelope): SwapRoute
       return raw.data.map(mapApiRouteToUiRoute);
     }
   }
-  return [];
+  throw new Error('Unexpected routes response shape');
 };
 
 const extractSingleRoute = (raw: SwapRouteDto | SingleRouteEnvelope): SwapRoute => {
