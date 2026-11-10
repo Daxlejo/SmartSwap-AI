@@ -1,13 +1,10 @@
 import { apiClient } from '@/services/http/apiClient';
-import { formatCop } from '@/utils/currency';
 import {
   preferencesStorage,
   type LocalePreference,
 } from '@/services/storage/preferencesStorage';
 import { normalizeUser, type RawUserDto } from '@/services/auth/auth.service';
 import { normalizeItem, type RawItemDto } from '@/services/items/items.service';
-import { findRoutes as findLocalRoutes } from '@/lib/routeFinder';
-import { mockItems, mockSwapRoute, mockUsers } from '@/data/mockData';
 import type { Item, Proposal, ProposalStatus, SwapRoute, User } from '@/types';
 
 export type RouteLifecycleStatus =
@@ -141,9 +138,10 @@ interface SingleRouteEnvelope {
   route?: SwapRouteDto;
 }
 
-export const formatMatchScore = (score?: number): number => {
+/** Percentage to show for a route score, or null when the API sent no usable score. */
+export const formatMatchScore = (score?: number): number | null => {
   if (typeof score !== 'number' || Number.isNaN(score) || score <= 0) {
-    return 96;
+    return null;
   }
   if (score <= 1) {
     return Math.round(score * 100);
@@ -166,97 +164,31 @@ const normalizeStepAcceptance = (raw?: string | null): StepAcceptanceStatus => {
 const resolveStepUser = (
   rawUser: (Partial<RawUserDto> & { id?: string; name?: string }) | undefined,
   fallbackId: string | undefined,
-  stepIndex: number,
 ): User => {
-  if (rawUser && (rawUser.id || rawUser.name)) {
-    const mockMatch = rawUser.id ? mockUsers.find((u) => u.id === rawUser.id) : undefined;
-    return normalizeUser({
-      id: rawUser.id || mockMatch?.id || `user-step-${stepIndex}`,
-      name: rawUser.name || mockMatch?.name || `Usuario ${stepIndex + 1}`,
-      email: rawUser.email || mockMatch?.email || `user${stepIndex + 1}@smartswap.io`,
-      avatarUrl: rawUser.avatarUrl || mockMatch?.avatarUrl,
-      location: rawUser.location || mockMatch?.location || 'Colombia',
-      rating: typeof rawUser.rating === 'number' ? rawUser.rating : mockMatch?.rating ?? 4.9,
-      verified: typeof rawUser.verified === 'boolean' ? rawUser.verified : mockMatch?.verified ?? true,
-      co2SavedKg:
-        typeof rawUser.co2SavedKg === 'number' ? rawUser.co2SavedKg : mockMatch?.co2SavedKg ?? 18.0,
-      initials: rawUser.initials,
-    });
+  const id = rawUser?.id || fallbackId;
+  if (!id) {
+    throw new Error('Route step is missing its participant');
   }
-
-  if (fallbackId) {
-    const foundMock = mockUsers.find((u) => u.id === fallbackId);
-    if (foundMock) {
-      return foundMock;
-    }
-  }
-
-  const defaultMock = mockUsers[stepIndex % mockUsers.length] || mockUsers[0];
-  return {
-    ...defaultMock,
-    id: fallbackId || defaultMock.id,
-  };
+  return normalizeUser({ ...rawUser, id, name: rawUser?.name ?? '', email: rawUser?.email ?? '' });
 };
 
 const resolveStepItem = (
   rawItem: (Partial<RawItemDto> & { id?: string; name?: string }) | undefined,
   fallbackId: string | undefined,
   ownerId: string,
-  stepIndex: number,
 ): Item => {
-  if (rawItem && (rawItem.id || rawItem.name)) {
-    const mockMatch = rawItem.id ? mockItems.find((i) => i.id === rawItem.id) : undefined;
-    return normalizeItem({
-      id: rawItem.id || mockMatch?.id || `item-step-${stepIndex}`,
-      name: rawItem.name || mockMatch?.name || `Artículo #${stepIndex + 1}`,
-      category: rawItem.category || mockMatch?.category || 'Tecnología',
-      condition: rawItem.condition || mockMatch?.condition || 'LIKE_NEW',
-      ownerId: rawItem.ownerId || ownerId || mockMatch?.ownerId || `user-step-${stepIndex}`,
-      imageUrl: rawItem.imageUrl || mockMatch?.imageUrl,
-      images: rawItem.images || (mockMatch?.imageUrl ? [mockMatch.imageUrl] : undefined),
-      wants: rawItem.wants || mockMatch?.wants || [],
-      description: rawItem.description ?? mockMatch?.description,
-      estimatedValue:
-        typeof rawItem.estimatedValue === 'number'
-          ? rawItem.estimatedValue
-          : mockMatch?.estimatedValue ?? 450,
-      location: rawItem.location ?? mockMatch?.location,
-      status: rawItem.status ?? 'AVAILABLE',
-      aiTags: rawItem.aiTags ?? mockMatch?.aiTags,
-      owner: rawItem.owner,
-    });
+  const id = rawItem?.id || fallbackId;
+  if (!id) {
+    throw new Error('Route step is missing its item');
   }
-
-  if (fallbackId) {
-    const foundMock = mockItems.find((i) => i.id === fallbackId);
-    if (foundMock) {
-      return foundMock;
-    }
-  }
-
-  const defaultMock = mockItems[stepIndex % mockItems.length] || mockItems[0];
-  return {
-    ...defaultMock,
-    id: fallbackId || defaultMock.id,
-    ownerId: ownerId || defaultMock.ownerId,
-  };
-};
-
-const buildDefaultAiExplanation = (
-  chainItems: Item[],
-  stepsCount: number,
-  co2SavedKg: number,
-): string => {
-  const firstItem = chainItems[0];
-  const lastItem = chainItems[chainItems.length - 1];
-  const withValue = (item?: Item): string =>
-    item?.estimatedValue !== undefined ? ` (${formatCop(item.estimatedValue)})` : '';
-
-  return `Ciclo circular equilibrado de ${stepsCount} ${
-    stepsCount === 1 ? 'paso' : 'pasos'
-  }: el valor estimado entre ${firstItem?.name || 'tu artículo'}${withValue(firstItem)} y ${
-    lastItem?.name || 'el objetivo deseado'
-  }${withValue(lastItem)} se encuentra dentro del margen de equidad sin requerir dinero adicional, evitando ${co2SavedKg} kg de CO₂.`;
+  return normalizeItem({
+    ...rawItem,
+    id,
+    name: rawItem?.name ?? '',
+    category: rawItem?.category ?? '',
+    condition: rawItem?.condition ?? '',
+    ownerId: rawItem?.ownerId || ownerId,
+  });
 };
 
 export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
@@ -270,27 +202,26 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
       rawStep.fromUserId ||
       rawUserObj?.id ||
       rawStep.givesItem?.ownerId ||
-      rawStep.fromItem?.ownerId ||
-      `user-step-${idx}`;
+      rawStep.fromItem?.ownerId;
 
-    const user = resolveStepUser(rawUserObj, stepUserId, idx);
+    const user = resolveStepUser(rawUserObj, stepUserId);
 
     const rawGivesObj = rawStep.givesItem || rawStep.fromItem;
     const givesItemId =
-      rawStep.givesItemId || rawStep.fromItemId || rawGivesObj?.id || `item-step-${idx}`;
-    const givesItem = resolveStepItem(rawGivesObj, givesItemId, user.id, idx);
+      rawStep.givesItemId || rawStep.fromItemId || rawGivesObj?.id;
+    const givesItem = resolveStepItem(rawGivesObj, givesItemId, user.id);
 
     const rawReceivesObj = rawStep.receivesItem || rawStep.toItem;
     const receivesItemId =
       rawStep.receivesItemId || rawStep.toItemId || rawReceivesObj?.id || '';
     const receivesItem =
       rawReceivesObj || receivesItemId
-        ? resolveStepItem(rawReceivesObj, receivesItemId, '', (idx + 1) % Math.max(1, rawSteps.length))
+        ? resolveStepItem(rawReceivesObj, receivesItemId, '')
         : undefined;
 
     const toUser =
       rawStep.toUser || rawStep.toUserId
-        ? resolveStepUser(rawStep.toUser, rawStep.toUserId, idx + 1)
+        ? resolveStepUser(rawStep.toUser, rawStep.toUserId)
         : undefined;
 
     const respondedAt =
@@ -301,7 +232,7 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
           : undefined;
 
     return {
-      id: rawStep.id || `step-${apiRoute.id || 'route'}-${idx + 1}`,
+      id: rawStep.id || `${apiRoute.id ?? apiRoute.code ?? 'route'}-step-${idx + 1}`,
       stepOrder: typeof rawStep.stepOrder === 'number' ? rawStep.stepOrder : idx + 1,
       userId: user.id,
       user,
@@ -334,20 +265,20 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
 
   let participants: User[];
   if (Array.isArray(apiRoute.participants) && apiRoute.participants.length > 0) {
-    participants = apiRoute.participants.map((p, idx) => resolveStepUser(p, p.id, idx));
+    participants = apiRoute.participants.map((p) => resolveStepUser(p, p.id));
   } else if (orderedStepsForChain.length > 0) {
     participants = orderedStepsForChain.map((s) => s.user);
     if (orderedStepsForChain.length === 1 && orderedStepsForChain[0].toUser) {
       participants.push(orderedStepsForChain[0].toUser);
     }
   } else {
-    participants = [...mockSwapRoute.participants];
+    participants = [];
   }
 
   let chainItems: Item[];
   if (Array.isArray(apiRoute.chainItems) && apiRoute.chainItems.length > 0) {
     chainItems = apiRoute.chainItems.map((item, idx) =>
-      resolveStepItem(item, item.id, participants[idx]?.id || '', idx),
+      resolveStepItem(item, item.id, participants[idx]?.id || ''),
     );
   } else if (orderedStepsForChain.length > 0) {
     chainItems = orderedStepsForChain.map((s) => s.givesItem);
@@ -359,7 +290,7 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
       chainItems.push(orderedStepsForChain[0].receivesItem);
     }
   } else {
-    chainItems = [...mockSwapRoute.chainItems];
+    chainItems = [];
   }
 
   const stepsCount =
@@ -372,13 +303,13 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
   const co2SavedKg =
     typeof apiRoute.co2SavedKg === 'number' && apiRoute.co2SavedKg > 0
       ? Number(apiRoute.co2SavedKg.toFixed(1))
-      : Number((Math.max(2, participants.length) * 10.5).toFixed(1));
+      : 0;
 
   const offeredItemId =
     apiRoute.offeredItemId ||
     normalizedSteps[0]?.givesItemId ||
     chainItems[0]?.id ||
-    mockSwapRoute.offeredItemId;
+    '';
 
   const targetItemId =
     apiRoute.targetItemId ||
@@ -387,22 +318,23 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
       ? normalizedSteps[0].receivesItemId
       : undefined) ||
     chainItems[chainItems.length - 1]?.id ||
-    mockSwapRoute.targetItemId;
+    '';
 
-  const routeId = apiRoute.id || apiRoute.routeId || apiRoute.code || mockSwapRoute.id;
-  const code =
-    apiRoute.code ||
-    (routeId.startsWith('SR-') ? routeId : `SR-${routeId.slice(0, 4).toUpperCase()}`);
+  const routeId = apiRoute.id || apiRoute.routeId || apiRoute.code;
+  if (!routeId) {
+    throw new Error('Route response has no id');
+  }
+  const code = apiRoute.code || routeId;
 
   const aiExplanation =
     typeof apiRoute.aiExplanation === 'string' && apiRoute.aiExplanation.trim().length > 0
       ? apiRoute.aiExplanation.trim()
-      : buildDefaultAiExplanation(chainItems, stepsCount, co2SavedKg);
+      : undefined;
 
   const matchScore =
     typeof apiRoute.matchScore === 'number' && !Number.isNaN(apiRoute.matchScore)
       ? apiRoute.matchScore
-      : 96;
+      : undefined;
 
   const expiresAt =
     typeof apiRoute.expiresAt === 'string'
@@ -421,19 +353,16 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
   return {
     id: routeId,
     code,
-    title: apiRoute.title || 'Ruta Inteligente Multiusuario',
+    title: apiRoute.title || chainItems.map((item) => item.name).join(' → '),
     stepsCount,
     targetItemId,
     offeredItemId,
     participants,
     chainItems,
     co2SavedKg,
-    isLoop: typeof apiRoute.isLoop === 'boolean' ? apiRoute.isLoop : true,
-    initiatorId: apiRoute.initiatorId || participants[0]?.id || 'user-alex',
-    objectiveText:
-      apiRoute.objectiveText ||
-      chainItems[chainItems.length - 1]?.name ||
-      'Cámara Fujifilm X-T30 II',
+    isLoop: typeof apiRoute.isLoop === 'boolean' ? apiRoute.isLoop : normalizedSteps.length > 1,
+    initiatorId: apiRoute.initiatorId || participants[0]?.id,
+    objectiveText: apiRoute.objectiveText || chainItems[chainItems.length - 1]?.name,
     matchScore,
     status: apiRoute.status || 'SUGGESTED',
     aiExplanation,
@@ -445,7 +374,7 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
 
 export const mapRouteToProposal = (
   routeOrDto: SwapRoute | SwapRouteDto,
-  currentUserId = 'user-alex',
+  currentUserId: string,
 ): Proposal => {
   const route =
     'chainItems' in routeOrDto &&
@@ -481,9 +410,9 @@ export const mapRouteToProposal = (
     recipientUserId:
       route.participants[1]?.id ||
       route.participants[route.participants.length - 1]?.id ||
-      'user-carlos',
+      '',
     status,
-    createdAt: route.createdAt || new Date().toISOString(),
+    createdAt: route.createdAt ?? '',
   };
 };
 
@@ -514,105 +443,13 @@ const extractSingleRoute = (raw: SwapRouteDto | SingleRouteEnvelope): SwapRoute 
   return mapApiRouteToUiRoute((raw as SwapRouteDto) ?? {});
 };
 
-const resolveFallbackTargetItemId = (objectiveText: string, desiredCategory?: string): string => {
-  const query = (objectiveText || '').trim().toLowerCase();
-
-  // Direct mock item ID match
-  const exactIdMatch = mockItems.find((i) => i.id.toLowerCase() === query);
-  if (exactIdMatch) {
-    return exactIdMatch.id;
-  }
-
-  // Keyword match against mock items
-  if (query.includes('fujifilm') || query.includes('cámara') || query.includes('camara')) {
-    return 'item-camera';
-  }
-  if (query.includes('ipad') || query.includes('tablet')) {
-    return 'item-ipad';
-  }
-  if (query.includes('ps5') || query.includes('switch') || query.includes('consola')) {
-    return 'item-switch';
-  }
-  if (query.includes('sony') || query.includes('xm5') || query.includes('audífonos') || query.includes('auriculares')) {
-    return 'item-headphones';
-  }
-
-  const nameMatch = mockItems.find(
-    (i) =>
-      i.name.toLowerCase().includes(query) ||
-      (desiredCategory && i.category.toLowerCase() === desiredCategory.toLowerCase()),
-  );
-  return nameMatch?.id || 'item-camera';
-};
-
-export const buildOfflineFallbackRoutes = (payload: SearchRoutesPayload): SwapRoute[] => {
-  const haveItemId =
-    payload.offeredItemId && mockItems.some((i) => i.id === payload.offeredItemId)
-      ? payload.offeredItemId
-      : 'item-bike';
-  const wantItemId = resolveFallbackTargetItemId(payload.objectiveText, payload.desiredCategory);
-
-  const localRoutes = findLocalRoutes(mockItems, mockUsers, haveItemId, wantItemId, {
-    maxSwaps: payload.maxSteps ?? 5,
-    maxRoutes: 10,
-  });
-
-  return localRoutes.map((route, index) => {
-    const steps: NormalizedRouteStep[] = route.chainItems.map((item, stepIdx) => {
-      const user = route.participants[stepIdx] || mockUsers[0];
-      const nextUser = route.participants[(stepIdx + 1) % route.participants.length];
-      const prevItem =
-        stepIdx === 0
-          ? route.chainItems[route.chainItems.length - 1]
-          : route.chainItems[stepIdx - 1];
-
-      return {
-        id: `local-step-${route.id}-${stepIdx + 1}`,
-        stepOrder: stepIdx + 1,
-        userId: user.id,
-        user,
-        toUserId: nextUser?.id,
-        toUser: nextUser,
-        givesItemId: item.id,
-        givesItem: item,
-        receivesItemId: prevItem.id,
-        receivesItem: prevItem,
-        acceptance: 'PENDING',
-        deliveryConfirmed: false,
-      };
-    });
-
-    const matchScore = Math.max(82, 98 - index * 4);
-    const code = `SR-${8492 + index}`;
-
-    return {
-      ...route,
-      code,
-      initiatorId: route.participants[0]?.id || 'user-alex',
-      objectiveText: payload.objectiveText || 'Cámara Fujifilm X-T30 II',
-      matchScore,
-      status: 'SUGGESTED',
-      aiExplanation: buildDefaultAiExplanation(
-        route.chainItems,
-        route.stepsCount,
-        route.co2SavedKg,
-      ),
-      steps,
-    };
-  });
-};
-
 export const routesService = {
   async searchRoutes(payload: SearchRoutesPayload): Promise<SwapRoute[]> {
-    try {
-      const response = await apiClient.post<SwapRouteDto[] | RoutesListEnvelope>(
-        '/routes/search',
-        { ...payload, locale: payload.locale ?? preferencesStorage.getLocale() },
-      );
-      return extractRoutesArray(response);
-    } catch {
-      return buildOfflineFallbackRoutes(payload);
-    }
+    const response = await apiClient.post<SwapRouteDto[] | RoutesListEnvelope>(
+      '/routes/search',
+      { ...payload, locale: payload.locale ?? preferencesStorage.getLocale() },
+    );
+    return extractRoutesArray(response);
   },
 
   async proposeRoute(payload: ProposeRoutePayload): Promise<SwapRoute> {

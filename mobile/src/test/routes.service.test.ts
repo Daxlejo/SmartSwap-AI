@@ -185,19 +185,31 @@ describe('routesService & mapApiRouteToUiRoute', () => {
       );
     });
 
-    it('gracefully falls back to local routeFinder when offline or backend unreachable', async () => {
+    it('propagates the failure instead of inventing offline routes', async () => {
       vi.spyOn(apiClient, 'post').mockRejectedValueOnce(new Error('NetworkError'));
 
-      const routes = await routesService.searchRoutes({
-        offeredItemId: 'item-bike',
-        objectiveText: 'Cámara Fujifilm X-T30 II',
-        maxSteps: 4,
-      });
+      await expect(
+        routesService.searchRoutes({ offeredItemId: 'item-1', objectiveText: 'Cámara', maxSteps: 4 }),
+      ).rejects.toThrow('NetworkError');
+    });
+  });
 
-      expect(routes.length).toBeGreaterThan(0);
-      expect(routes[0].offeredItemId).toBe('item-bike');
-      expect(routes[0].targetItemId).toBe('item-camera');
-      expect(routes[0].aiExplanation).toBeDefined();
+  describe('no invented data', () => {
+    it('returns null for a missing score and keeps absent fields undefined', () => {
+      expect(formatMatchScore(undefined)).toBeNull();
+      expect(formatMatchScore(0)).toBeNull();
+
+      const route = mapApiRouteToUiRoute({ id: 'route-empty' });
+      expect(route.participants).toEqual([]);
+      expect(route.chainItems).toEqual([]);
+      expect(route.matchScore).toBeUndefined();
+      expect(route.aiExplanation).toBeUndefined();
+      expect(route.co2SavedKg).toBe(0);
+    });
+
+    it('rejects a route without id and a step without participant', () => {
+      expect(() => mapApiRouteToUiRoute({})).toThrow();
+      expect(() => mapApiRouteToUiRoute({ id: 'r1', steps: [{ stepOrder: 1 }] })).toThrow();
     });
   });
 
