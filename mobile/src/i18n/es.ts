@@ -511,6 +511,7 @@ export const es = {
     custodyGuarantee: 'Garantía de Depósito en Custodia en todas las rutas',
   },
   trades: {
+    tabsAria: 'Tipo de canje',
     circuitLabel: 'Circuito multi-canje {{code}}',
     progress: 'Progreso: {{pct}}%',
     actionFailed: 'No se pudo completar la acción. Intenta de nuevo.',
@@ -522,23 +523,21 @@ export const es = {
     sentAt: 'Enviada {{time}}',
     participants: '{{count}} participantes',
     cancelling: 'Cancelando...',
-    justReceived: 'Recién recibida',
     you: 'Tú',
     step: 'Paso {{count}}',
     title: 'Mis Canjes',
-    safeMode: 'Modo Seguro',
     tabs: {
       received: 'Recibidas',
       sent: 'Enviadas',
-      inProgress: 'En Curso',
+      inProgress: 'En curso',
     },
     status: {
       accepted: 'Aceptado',
       declined: 'Rechazado',
       pending: 'Pendiente',
     },
-    offers: 'Ofrece:',
-    inExchangeFor: 'A cambio de:',
+    offers: 'Entregas',
+    inExchangeFor: 'Recibes',
     acceptedMessage: '¡Aceptado! El canje continúa.',
     declinedMessage: 'Propuesta rechazada',
     decline: 'Rechazar',
@@ -560,8 +559,6 @@ export const es = {
     completing: 'Completando...',
     completeSwap: 'Completar Canje',
     viewDetails: 'Ver detalles',
-    ecoImpact: 'Impacto Ambiental',
-    co2Saved: 'Ahorraste {{kg}} kg CO₂ con tus canjes',
   },
   publish: {
     steps: {

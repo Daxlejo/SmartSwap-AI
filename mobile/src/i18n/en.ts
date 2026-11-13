@@ -513,6 +513,7 @@ export const en: TranslationSchema = {
     custodyGuarantee: 'Custody deposit guarantee on every route',
   },
   trades: {
+    tabsAria: 'Swap type',
     circuitLabel: 'Multi-swap circuit {{code}}',
     progress: 'Progress: {{pct}}%',
     actionFailed: 'The action could not be completed. Please try again.',
@@ -524,11 +525,9 @@ export const en: TranslationSchema = {
     sentAt: 'Sent {{time}}',
     participants: '{{count}} participants',
     cancelling: 'Cancelling...',
-    justReceived: 'Just received',
     you: 'You',
     step: 'Step {{count}}',
     title: 'My swaps',
-    safeMode: 'Safe mode',
     tabs: {
       received: 'Received',
       sent: 'Sent',
@@ -539,8 +538,8 @@ export const en: TranslationSchema = {
       declined: 'Declined',
       pending: 'Pending',
     },
-    offers: 'Offers:',
-    inExchangeFor: 'In exchange for:',
+    offers: 'You give',
+    inExchangeFor: 'You receive',
     acceptedMessage: 'Accepted! The swap continues.',
     declinedMessage: 'Proposal declined',
     decline: 'Decline',
@@ -562,8 +561,6 @@ export const en: TranslationSchema = {
     completing: 'Completing...',
     completeSwap: 'Complete swap',
     viewDetails: 'View details',
-    ecoImpact: 'Environmental impact',
-    co2Saved: 'You saved {{kg}} kg CO₂ with your swaps',
   },
   publish: {
     steps: {
