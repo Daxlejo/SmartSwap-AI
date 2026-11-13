@@ -7,6 +7,7 @@ This document defines the strict, non-negotiable guardrails and architectural st
 ## 1. Token Optimization & Graph-First Rule
 - **Read First, Scan Never**: Always read `docs/graph/CODE_MAP.md` before navigating the codebase. Locate modules and endpoints directly from the map instead of executing deep searches or scanning the workspace.
 - **Run Indexer When Architecture Changes**: If endpoints, modules, or services are added/renamed, execute `npm run graphify` to keep `docs/graph/CODE_MAP.md` and `docs/graph/CODE_GRAPH.json` up to date.
+- **Mapa antes que código**: Antes de leer código, consulta docs/graph/CODE_MAP.md para ubicar los archivos y endpoints relevantes; abre solo esos. Al cerrar cada fase corre npm run graphify y commitea el mapa si cambió.
 - **Strict Boundary Scoping**: Only open and read files directly within your assigned task domain. Never scan or touch `node_modules/`, `dist/`, `build/`, `android/app/build/`, or unrelated modules.
 
 ---
