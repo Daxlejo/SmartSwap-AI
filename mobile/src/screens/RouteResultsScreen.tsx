@@ -11,6 +11,7 @@ import { formatCop } from '@/utils/currency';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getNoRoutesReason } from '@/utils/swapSearch';
 
 interface ResultsLocationState {
   routes?: SwapRoute[];
@@ -26,7 +27,7 @@ export const RouteResultsScreen: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const location = useLocation();
-  const { searchRoutesReal } = useApp();
+  const { searchRoutesReal, myItems, isItemsLoading, loadStates } = useApp();
   const [searchParams] = useSearchParams();
   const locationState = location.state as ResultsLocationState | null;
 
@@ -100,6 +101,10 @@ export const RouteResultsScreen: React.FC = () => {
     locationState?.routes,
     searchRoutesReal,
   ]);
+
+  // Only blame the inventory once it has actually loaded; an empty list mid-load proves nothing.
+  const inventoryLoaded = !isItemsLoading && loadStates.items === 'ready';
+  const noRoutesReason = inventoryLoaded ? getNoRoutesReason(myItems.length) : 'noCycles';
 
   const filteredRoutes =
     hopFilter === 'all' ? routes : routes.filter((r) => r.stepsCount === hopFilter);
@@ -199,21 +204,36 @@ export const RouteResultsScreen: React.FC = () => {
       <div className="flex-1 overflow-y-auto px-margin py-4">
         {loadFailed && routes.length === 0 ? (
           <ErrorState onRetry={() => setReloadKey((key) => key + 1)} />
+        ) : filteredRoutes.length === 0 && hopFilter !== 'all' ? (
+          <EmptyState
+            iconName="filter_alt_off"
+            title={t('routeResults.emptyFilterTitle')}
+            action={
+              <Button variant="primary" onClick={() => setHopFilter('all')}>
+                {t('routeResults.showAll')}
+              </Button>
+            }
+          />
+        ) : filteredRoutes.length === 0 && noRoutesReason === 'noItems' ? (
+          <EmptyState
+            illustration="routes"
+            title={t('routeResults.noItemsTitle')}
+            description={t('routeResults.noItemsDescription')}
+            action={
+              <Button variant="primary" onClick={() => navigate('/publish')}>
+                {t('routeResults.publishItem')}
+              </Button>
+            }
+          />
         ) : filteredRoutes.length === 0 ? (
           <EmptyState
-            iconName="search"
-            title={t('routeResults.emptyTitle')}
-            description={t('routeResults.emptyDescription')}
+            iconName="search_off"
+            title={t('routeResults.noCyclesTitle')}
+            description={t('routeResults.noCyclesDescription')}
             action={
-              hopFilter !== 'all' ? (
-                <Button variant="primary" onClick={() => setHopFilter('all')}>
-                  {t('routeResults.showAll')}
-                </Button>
-              ) : (
-                <Button variant="primary" onClick={() => navigate('/home')}>
-                  {t('routeResults.backHome')}
-                </Button>
-              )
+              <Button variant="primary" onClick={() => navigate('/swap/configure')}>
+                {t('routeResults.changeSearch')}
+              </Button>
             }
           />
         ) : (

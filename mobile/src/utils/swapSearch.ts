@@ -17,3 +17,13 @@ export const getSwapSearchBlocker = (
   if (objectiveText.trim().length < MIN_OBJECTIVE_LENGTH) return 'noWant';
   return null;
 };
+
+/** Most likely reason a finished search returned no routes. */
+export type NoRoutesReason = 'noItems' | 'noCycles';
+
+/**
+ * With nothing published there is nothing to offer, so the engine cannot close
+ * a cycle; otherwise nobody in the network currently closes one for this item.
+ */
+export const getNoRoutesReason = (publishedItemsCount: number): NoRoutesReason =>
+  publishedItemsCount === 0 ? 'noItems' : 'noCycles';
