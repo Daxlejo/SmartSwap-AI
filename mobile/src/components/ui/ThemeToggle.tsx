@@ -49,7 +49,7 @@ export const ThemeToggle = ({
             <span
               className={clsx(
                 'absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out transform',
-                isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100 text-amber-500',
+                isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100 text-secondary',
               )}
             >
               <Icon name="light_mode" size="xs" filled />
@@ -88,7 +88,7 @@ export const ThemeToggle = ({
             'absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out transform',
             isDark
               ? 'rotate-90 scale-0 opacity-0 pointer-events-none'
-              : 'rotate-0 scale-100 opacity-100 text-amber-500',
+              : 'rotate-0 scale-100 opacity-100 text-secondary',
           )}
         >
           <Icon name="light_mode" size="lg" filled />
