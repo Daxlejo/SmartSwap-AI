@@ -524,12 +524,12 @@ export const ExploreScreen = () => {
                     size="md"
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                    <span className="font-headline-sm text-headline-sm text-on-surface break-words">
                       {selectedItemOwner.name}
                     </span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
+                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 break-words">
                       <Icon name="location_on" size="xs" />
-                      <span className="line-clamp-2 break-words">{selectedItemOwner.location}</span>
+                      <span className="break-words">{selectedItemOwner.location}</span>
                     </span>
                   </div>
                 </div>

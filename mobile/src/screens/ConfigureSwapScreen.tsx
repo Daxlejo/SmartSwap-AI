@@ -141,7 +141,7 @@ export const ConfigureSwapScreen = () => {
 
             {selectedOfferItem && (
               <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high flex flex-col gap-3">
-                <h3 className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                <h3 className="font-headline-sm text-headline-sm text-on-surface break-words">
                   {selectedOfferItem.name}
                 </h3>
                 <div className="flex items-center gap-3">
@@ -258,7 +258,7 @@ export const ConfigureSwapScreen = () => {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-headline-sm text-[14px] text-on-surface font-semibold line-clamp-2">
+                    <p className="font-headline-sm text-[14px] text-on-surface font-semibold">
                       {targetItem.name}
                     </p>
                     {targetItem.estimatedValue !== undefined && (

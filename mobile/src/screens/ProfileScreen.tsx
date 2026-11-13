@@ -344,7 +344,7 @@ export const ProfileScreen = () => {
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface break-words">
                       {item.name}
                     </h3>
                     <button

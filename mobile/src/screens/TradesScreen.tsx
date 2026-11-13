@@ -109,7 +109,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-caption font-semibold text-center mt-1 line-clamp-2 break-words max-w-[62px] ${
+                    className={`font-label-sm text-caption font-semibold text-center mt-1 break-words max-w-[62px] ${
                       idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >
@@ -387,7 +387,7 @@ export const TradesScreen: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <Avatar src={proposal.senderAvatar} alt={proposal.senderName} size="md" />
                   <div className="flex flex-col items-start gap-1 min-w-0">
-                    <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                    <span className="font-headline-sm text-headline-sm text-on-surface break-words">
                       {proposal.senderName}
                     </span>
                     <Badge variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}>
@@ -409,7 +409,7 @@ export const TradesScreen: React.FC = () => {
                       <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.offers')}
                       </span>
-                      <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
+                      <span className="font-label-lg text-label-lg text-on-surface break-words">
                         {proposal.offeredItemName}
                       </span>
                     </div>
@@ -423,7 +423,7 @@ export const TradesScreen: React.FC = () => {
                       <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.inExchangeFor')}
                       </span>
-                      <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
+                      <span className="font-label-lg text-label-lg text-on-surface break-words">
                         {proposal.targetItemName}
                       </span>
                     </div>
@@ -512,7 +512,7 @@ export const TradesScreen: React.FC = () => {
                         verified={recipient?.verified}
                       />
                       <div className="min-w-0">
-                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface line-clamp-2 break-words">
+                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface break-words">
                           {t('trades.offerTo', { name: recipient?.name ?? '' })}
                         </h2>
                         <span className="font-body-sm text-caption text-on-surface-variant">
@@ -533,7 +533,7 @@ export const TradesScreen: React.FC = () => {
                         <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.youOffer')}
                         </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface line-clamp-2 break-words">
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface break-words">
                           {offered?.name}
                         </span>
                       </div>
@@ -549,7 +549,7 @@ export const TradesScreen: React.FC = () => {
                         <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.inExchange')}
                         </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface line-clamp-2 break-words">
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface break-words">
                           {target?.name}
                         </span>
                       </div>

@@ -45,7 +45,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
           className="w-full min-h-12 flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2.5 text-left hover:bg-surface-container active:scale-[0.98] transition-all"
         >
           <span className="flex flex-col flex-1 min-w-0">
-            <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
+            <span className="font-label-lg text-label-lg text-on-surface break-words">
               {itemGiven.name}
             </span>
             {itemGiven.estimatedValue !== undefined && (

@@ -41,7 +41,7 @@ describe('type scale guard', () => {
     expect(findAll(/\btext-\[(?:[0-9]|1[0-3])(?:\.\d+)?px\]/)).toEqual([]);
   });
 
-  it('never cuts text to one line with truncate (use line-clamp-2)', () => {
+  it('never cuts text to one line with truncate (let it wrap with break-words)', () => {
     expect(findAll(/(^|[\s"'`:!])truncate\b/)).toEqual([]);
   });
 });

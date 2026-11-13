@@ -158,7 +158,7 @@ export const HomeScreen = () => {
               )}
               <div className="flex flex-col min-w-0">
                 <span className="font-body-sm text-body-sm text-on-surface-variant">{t('home.route.receives')}</span>
-                <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                <span className="font-headline-sm text-headline-sm text-on-surface break-words">
                   {activeRouteTarget?.name}
                 </span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
