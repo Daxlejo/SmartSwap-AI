@@ -211,10 +211,17 @@ function measureInPage() {
     range.selectNodeContents(node);
     const r = range.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
+    // Text cut with an ellipsis or a line clamp is counted under `elipsis`; its range
+    // still spans the hidden lines, so it is left out here
+    const clamped = [...ancestorsOf(el)].some((n) => {
+      const cs = getComputedStyle(n);
+      return cs.textOverflow === 'ellipsis' || (cs.webkitLineClamp && cs.webkitLineClamp !== 'none');
+    });
+    if (clamped) continue;
     const layer = [...ancestorsOf(el)].find((n) => ['fixed', 'sticky'].includes(getComputedStyle(n).position));
     texts.push({ el, r, icon: isIcon(el), layer: layer ?? null });
-    // Icon glyphs are a few px wider than their box by design; ellipsis is counted apart
-    if (isIcon(el) || getComputedStyle(el).textOverflow === 'ellipsis') continue;
+    // Icon glyphs are a few px wider than their box by design
+    if (isIcon(el)) continue;
     // The text must fit every box that holds it, up to a horizontal scroller (its
     // content may extend past it) or a positioned layer (badges and floating buttons
     // sit outside their parent on purpose)
