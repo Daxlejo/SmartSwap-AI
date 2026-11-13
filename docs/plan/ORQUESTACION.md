@@ -107,11 +107,43 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 **Cierre ampliado:** suites, graphify, `/pr-review-toolkit:review-pr` (corregir o justificar cada hallazgo), APK debug con `VITE_API_URL` de Render y PR hacia `main` sin fusionar. Reporte de puerta con la tabla de `audit:ui` antes y después, capturas a 360 px en claro y oscuro de Home, Explorar, Publicar, Registro y Trades, y espacio para las pruebas en el celular (scroll y tamaño de fuente del sistema en grande).
 
 ## Fase 3: Anillo de intercambio - ACTIVA
+
+### Bloque 0: correcciones de la prueba en un Android real (van primero)
+**0.1 Publicar fotos.** Hoy abre la cámara directamente y no deja elegir de la galería.
+- Al tocar, se muestra una hoja con "Tomar foto" y "Elegir de la galería". La galería permite elegir varias, hasta completar 4.
+- Los permisos se piden con `checkPermissions`/`requestPermissions` de `@capacitor/camera`, con textos en español. Si el usuario los niega, se explica por qué y se ofrece un botón a Ajustes.
+- AndroidManifest: `CAMERA` y, para la galería, el selector de fotos del sistema o `READ_MEDIA_IMAGES`. Si hay un input de archivo, se le quita el atributo `capture`.
+
+**0.2 Geolocalización.** Funcionaba en el APK de la Fase 0 y ahora no, aunque se acepten los permisos.
+- Causa raíz: registro del plugin tras `cap sync` (`capacitor.plugins.json`), permisos `ACCESS_COARSE_LOCATION`/`ACCESS_FINE_LOCATION` en el manifest, el orden `requestPermissions` → `getCurrentPosition`, el timeout, y `enableHighAccuracy` con alternativa de baja precisión.
+- Mensaje específico según el caso: permiso negado, ubicación del celular apagada o tiempo agotado. Nunca un fallo silencioso.
+
+**0.3 Navegación.**
+- En las 4 pestañas principales (Inicio, Explorar, Canjes, Perfil) se quita la barra superior fija con la flecha atrás. El título va dentro del contenido y se desplaza con él. La campana, con insignia de no leídas, queda solo en Inicio, junto al saludo.
+- Las pantallas secundarias sin BottomNav conservan la flecha atrás.
+- Canjes hoy no muestra la BottomNav: debe mostrarla.
+- Botón atrás de Android: en una pestaña vuelve a Inicio; en Inicio sale de la app.
+
+**0.4 Nuevo canje sin artículos.** El estado vacío queda cortado bajo el botón fijo y no se puede hacer scroll. Sin artículos se ocultan el botón Buscar y su pista, y queda solo el estado vacío con "Publicar un artículo".
+
+**0.5 Fuente grande del sistema.**
+- Las etiquetas de la BottomNav se juntan ("ExplorarPublicar").
+- Las pestañas de Canjes se salen ("En curso 0").
+- Se cortan el placeholder del buscador ("Buscar artículos para ca…") y los chips ("Mi departamen…", "Ordenar: Rel…").
+- Corrección: placeholder corto, etiquetas que quepan o pasen a dos líneas, pestañas que se ajusten.
+
+**0.6 `audit:ui`.** Dio 0 y no detectó 0.4 ni 0.5. Se le agregan dos métricas: contenido tapado por barras fijas inferiores y desbordes horizontales. Corre también con la fuente escalada al 130 %. Meta: 0 en todo.
+
+**Cierre del Bloque 0:** suites, `audit:ui`, commits y un APK debug con `VITE_API_URL` de Render para probar en el celular; luego se sigue con el Bloque 1 sin esperar.
+
+### Bloque 1: anillo de intercambio
+- Diseño primero: `docs/architecture/09-swap-ring.md` con la API del componente (props y tipos), la geometría para n = 2, 3 y 4, los estados y la animación. Se implementa solo después del OK de David.
 - Componente `SwapRing` en SVG. Recibe de 2 a 4 participantes (nombre, avatar, objeto que entrega y estado: pendiente, aceptó o rechazó) y tiene variante `compact` y `full`.
 - Geometría: los avatares van repartidos en el círculo empezando arriba. Cada arco de órbita lleva una flecha en el sentido de la entrega y una insignia del objeto en su punto medio. En el centro, un disco con "3 personas" y el estado. Los arcos son punteados mientras alguien no ha aceptado y se vuelven sólidos al aceptar; cuando todos aceptan, el anillo se cierra y aparece el halo.
 - Accesibilidad: `role="img"` con un `aria-label` que narra el ciclo completo, y debajo una lista en texto ("Tú entregas la bicicleta a Laura"), porque un adulto mayor puede no leer el diagrama. Cada avatar es un botón de 48 px. Con `prefers-reduced-motion` no hay animación. Solo se animan `transform` y `stroke-dashoffset`.
 - Se usa en Home (compact), RouteDetail (full), ProposalConfirm, ProposalSent y la pestaña "En curso" de Trades (con el estado de cada persona).
 - Tests de geometría para n = 2, 3 y 4, de estados y del texto accesible.
+- Actualizar las marcas `[PENDIENTE F3]` de `docs/demo/GUION.md`.
 
 **Criterios de salida:** capturas de n = 2, 3 y 4 en cada estado y en ambos temas; video corto en el celular del anillo cerrándose; `audit:ui` sigue en 0; suites en verde.
 
