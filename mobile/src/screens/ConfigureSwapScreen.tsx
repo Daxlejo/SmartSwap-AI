@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { Item } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -122,7 +121,7 @@ export const ConfigureSwapScreen = () => {
                 <button
                   type="button"
                   onClick={handleToggleOfferItem}
-                  className="text-primary font-label-md text-label-md flex items-center gap-0.5 hover:opacity-80 active:scale-95 transition-all"
+                  className="min-h-11 px-2 -mr-2 text-primary font-label-md text-label-md font-bold flex items-center gap-1 hover:opacity-80 active:scale-95 transition-all"
                 >
                   <span>{t('configure.change')}</span>
                   <Icon name="swap_horiz" size="sm" />
@@ -131,48 +130,26 @@ export const ConfigureSwapScreen = () => {
             </div>
 
             {selectedOfferItem && (
-              <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high/60 relative overflow-hidden transition-all duration-300">
-                <div className="flex items-start gap-space-md">
-                  <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container shrink-0">
-                    <ItemImage src={selectedOfferItem.imageUrl} alt={selectedOfferItem.name} category={selectedOfferItem.category} className="w-full h-full" />
-                    <span className="absolute bottom-1.5 left-1.5 bg-surface/90 backdrop-blur-md px-1.5 py-0.5 rounded-md font-label-sm text-caption text-primary font-bold flex items-center gap-0.5">
-                      <Icon name="verified" size="xs" filled />
-                      {t('configure.verified')}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col flex-1 min-w-0 justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-caption">
-                          {t('configure.inInventory')}
-                        </span>
-                        <span className="bg-primary-container/15 text-primary px-2 py-0.5 rounded-full font-label-sm text-caption font-semibold">
-                          {selectedOfferItem.condition}
-                        </span>
-                      </div>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
-                        {selectedOfferItem.name}
-                      </h3>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">
-                        {selectedOfferItem.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 pt-2 bg-surface-container-low/60 -mx-2 -mb-2 px-2.5 py-1.5 rounded-xl">
-                      <div className="flex items-center gap-1.5">
-                        <Icon name="currency_exchange" size="sm" className="text-primary" />
-                        <span className="font-body-sm text-body-sm text-on-surface-variant">
-                          {t('configure.estimatedValue')}
-                        </span>
-                        <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                          {formatCop(selectedOfferItem.estimatedValue)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high flex flex-col gap-3">
+                <h3 className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                  {selectedOfferItem.name}
+                </h3>
+                <div className="flex items-center gap-3">
+                  <ItemImage
+                    src={selectedOfferItem.imageUrl}
+                    alt={selectedOfferItem.name}
+                    category={selectedOfferItem.category}
+                    className="w-16 h-16 rounded-xl bg-surface-container-high shrink-0"
+                  />
+                  <p className="min-w-0 font-body-sm text-body-sm text-on-surface-variant break-words">
+                    {[
+                      t(`catalog.conditions.${selectedOfferItem.condition}`, { defaultValue: selectedOfferItem.condition }),
+                      selectedOfferItem.estimatedValue !== undefined ? formatCop(selectedOfferItem.estimatedValue) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
                 </div>
-
               </div>
             )}
           </section>
@@ -301,16 +278,10 @@ export const ConfigureSwapScreen = () => {
 
             <div className="flex flex-col gap-2.5">
               {/* Circular Loop Option */}
-              <div
-                onClick={() => setSwapMode('circular')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') setSwapMode('circular');
-                }}
-                className={`relative flex items-start gap-3 p-3.5 rounded-2xl cursor-pointer transition-all border-2 select-none active:scale-[0.99] ${
+              <label
+                className={`flex items-start gap-3 min-h-12 p-3.5 rounded-2xl cursor-pointer transition-all border-2 select-none active:scale-[0.99] ${
                   swapMode === 'circular'
-                    ? 'border-secondary-container/60 bg-secondary-container/10'
+                    ? 'border-primary bg-primary/10'
                     : 'border-transparent bg-surface-container-low hover:bg-surface-container'
                 }`}
               >
@@ -319,34 +290,27 @@ export const ConfigureSwapScreen = () => {
                   name="swapMode"
                   checked={swapMode === 'circular'}
                   onChange={() => setSwapMode('circular')}
-                  className="mt-1 accent-secondary"
+                  className="sr-only peer"
                 />
-                <div className="flex flex-col flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-label-lg text-label-lg text-on-surface font-bold">
-                      {t('configure.circularTitle')}
-                    </span>
-                    <Badge variant="secondary" className="text-caption py-0">
-                      {t('configure.recommended')}
-                    </Badge>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">
-                    {t('configure.circularDescription')}
-                  </p>
-                </div>
-              </div>
+                <span
+                  aria-hidden="true"
+                  className={`mt-0.5 w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${
+                    swapMode === 'circular' ? 'border-primary' : 'border-outline'
+                  }`}
+                >
+                  {swapMode === 'circular' && <span className="w-3 h-3 rounded-full bg-primary" />}
+                </span>
+                <span className="flex flex-col flex-1">
+                  <span className="font-label-lg text-label-lg text-on-surface font-bold">{t('configure.circularTitle')}</span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('configure.circularDescription')}</span>
+                </span>
+              </label>
 
               {/* Direct Swap Option */}
-              <div
-                onClick={() => setSwapMode('direct')}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') setSwapMode('direct');
-                }}
-                className={`relative flex items-start gap-3 p-3.5 rounded-2xl cursor-pointer transition-all border-2 select-none active:scale-[0.99] ${
+              <label
+                className={`flex items-start gap-3 min-h-12 p-3.5 rounded-2xl cursor-pointer transition-all border-2 select-none active:scale-[0.99] ${
                   swapMode === 'direct'
-                    ? 'border-primary/60 bg-primary/10'
+                    ? 'border-primary bg-primary/10'
                     : 'border-transparent bg-surface-container-low hover:bg-surface-container'
                 }`}
               >
@@ -355,36 +319,24 @@ export const ConfigureSwapScreen = () => {
                   name="swapMode"
                   checked={swapMode === 'direct'}
                   onChange={() => setSwapMode('direct')}
-                  className="mt-1 accent-primary"
+                  className="sr-only peer"
                 />
-                <div className="flex flex-col flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-label-lg text-label-lg text-on-surface font-semibold">
-                      {t('configure.directTitle')}
-                    </span>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 leading-snug">
-                    {t('configure.directDescription')}
-                  </p>
-                </div>
-              </div>
+                <span
+                  aria-hidden="true"
+                  className={`mt-0.5 w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${
+                    swapMode === 'direct' ? 'border-primary' : 'border-outline'
+                  }`}
+                >
+                  {swapMode === 'direct' && <span className="w-3 h-3 rounded-full bg-primary" />}
+                </span>
+                <span className="flex flex-col flex-1">
+                  <span className="font-label-lg text-label-lg text-on-surface font-bold">{t('configure.directTitle')}</span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('configure.directDescription')}</span>
+                </span>
+              </label>
             </div>
           </section>
 
-          {/* Trust & Circular Impact Teaser */}
-          <div className="bg-gradient-to-r from-primary/10 via-surface-container-low to-tertiary/10 p-space-md rounded-2xl border border-surface-container-high/60 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs">
-              <Icon name="eco" size="md" />
-            </div>
-            <div className="flex flex-col flex-1">
-              <span className="font-label-md text-label-md text-on-surface font-bold">
-                {t('configure.impactTitle')}
-              </span>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">
-                {t('configure.impactDescription')}
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
