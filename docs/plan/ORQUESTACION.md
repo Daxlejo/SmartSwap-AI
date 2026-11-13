@@ -68,7 +68,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 - [ ] APK debug instalado; login y geolocalización funcionan en el celular físico (con capturas)
 - [ ] Regla de puertas en `CLAUDE.md` **fusionada a `main`** mediante PR
 
-## Fase 1: Datos reales y estados vacíos
+## Fase 1: Datos reales y estados vacíos - ACTIVA
 - Quitar todos los restos de demo: `mockSwapRoute` de Home, "1,420 usuarios activos" y los porcentajes de los presets en ConfigureSwap, el fallback mock de "En curso" en Trades, notificaciones e items mock sin sesión, y los mocks de `AppContext`, `RouteDetailScreen`, `ProposalConfirmScreen`, `ProposalSentScreen`, `swapService.ts` y `routes.service.ts`.
 - Seed idempotente con cuentas demo en municipios cercanos de Nariño, objetos con foto en Supabase y precio en COP. El motor debe encontrar de verdad al menos un ciclo de 2, uno de 3 y uno de 4, y debe quedar una propuesta en curso.
 - Estados vacíos diseñados (ilustración, una frase y una acción) en Home, las 3 pestañas de Trades, Notificaciones y Explorar.
