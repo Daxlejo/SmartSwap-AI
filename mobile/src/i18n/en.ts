@@ -453,7 +453,7 @@ export const en: TranslationSchema = {
     estimatedShort: '{{value}} est.',
     detailTitle: 'Item details',
     estimatedValue: 'Est. value {{value}}',
-    defaultDescription: 'Verified item available for a direct swap or a cash-free collaborative chain.',
+    defaultDescription: 'The owner did not add a description.',
     co2Saved: '{{kg}} kg CO₂ saved',
     cashFree: '100% cash-free swap',
     protectedCustody: 'Protected custody',

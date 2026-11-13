@@ -451,7 +451,7 @@ export const es = {
     estimatedShort: '{{value}} est.',
     detailTitle: 'Detalle del artículo',
     estimatedValue: 'Valor est. {{value}}',
-    defaultDescription: 'Artículo verificado disponible para intercambio directo o mediante cadena colaborativa sin dinero.',
+    defaultDescription: 'El dueño no agregó una descripción.',
     co2Saved: '{{kg}} kg CO₂ ahorrados',
     cashFree: 'Canje 100% libre de efectivo',
     protectedCustody: 'Custodia protegida',

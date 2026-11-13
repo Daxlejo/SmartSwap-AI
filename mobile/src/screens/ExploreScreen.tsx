@@ -520,7 +520,6 @@ export const ExploreScreen = () => {
                     src={selectedItemOwner.avatarUrl}
                     alt={selectedItemOwner.name}
                     size="md"
-                    verified={selectedItemOwner.verified}
                   />
                   <div className="flex flex-col min-w-0">
                     <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
@@ -533,14 +532,6 @@ export const ExploreScreen = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0">
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-surface-container-high/60">
-                    <Icon name="star" size="xs" filled className="text-secondary" />
-                    <span className="font-label-md text-label-md font-bold text-on-surface">
-                      {selectedItemOwner.rating.toFixed(1)}
-                    </span>
-                  </div>
-                </div>
               </div>
             )}
 
