@@ -284,7 +284,7 @@ export const es = {
       swap_completed: {
         badge: 'Trueque completado',
         title: '¡Trueque {{code}} finalizado con éxito!',
-        body: 'La ruta circular {{code}} se completó y ahorró CO₂ en la comunidad SmartSwap.',
+        body: 'La ruta {{code}} se completó: cada persona ya recibió su objeto.',
       },
       system: {
         badge: 'Red Circular Activa',

@@ -286,7 +286,7 @@ export const en: TranslationSchema = {
       swap_completed: {
         badge: 'Swap completed',
         title: 'Swap {{code}} completed successfully!',
-        body: 'Circular route {{code}} was completed and saved CO₂ in the SmartSwap community.',
+        body: 'Route {{code}} is complete: everyone has received their item.',
       },
       system: {
         badge: 'Circular network active',

@@ -7,7 +7,6 @@ import {
   type AppNotification,
 } from '@/services/notifications/notifications.service';
 import { Icon } from '@/components/ui/Icon';
-import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -88,33 +87,14 @@ export const NotificationsScreen = () => {
 
   return (
     <div className="flex flex-col px-margin py-4 flex-1">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex flex-col">
-          <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-            {t('notifications.title')}
-          </h1>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">
-            {t('notifications.subtitle')}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleMarkAllAsRead}
-          className="font-label-sm text-label-sm font-bold text-primary hover:underline transition-colors shrink-0 pt-1"
-        >
-          {t('notifications.markAllAsRead')}
-        </button>
-      </div>
-
       {actionError && (
         <p role="alert" className="mb-3 font-body-sm text-body-sm text-error">
           {t('notifications.markReadFailed')}
         </p>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Filter tabs and the bulk action */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {FILTER_TABS.map((tab) => (
           <Chip
             key={tab}
@@ -124,6 +104,13 @@ export const NotificationsScreen = () => {
             {t(`notifications.tabs.${tab}`)}
           </Chip>
         ))}
+        <button
+          type="button"
+          onClick={handleMarkAllAsRead}
+          className="ml-auto min-h-11 px-2 font-label-md text-label-md font-bold text-primary hover:underline"
+        >
+          {t('notifications.markAllAsRead')}
+        </button>
       </div>
 
       {/* Notifications List or Empty State */}
@@ -157,7 +144,7 @@ export const NotificationsScreen = () => {
               className={clsx(
                 'rounded-2xl border p-space-md flex items-start gap-space-sm text-left transition-all cursor-pointer',
                 notif.unread
-                  ? 'bg-surface-container-low border-surface-container-high/60 border-l-2 !border-l-primary'
+                  ? 'bg-surface-container-low border-surface-container-high border-l-4 !border-l-primary'
                   : 'bg-surface-container-lowest border-surface-container-high/60',
               )}
             >
@@ -185,16 +172,13 @@ export const NotificationsScreen = () => {
                       />
                     )}
                   </div>
-                  <Badge variant={notif.badgeVariant} className="shrink-0 text-caption">
-                    {text.badge}
-                  </Badge>
                 </div>
 
                 <p className="font-body-sm text-body-sm text-on-surface-variant mb-2 leading-relaxed">
                   {text.body}
                 </p>
 
-                <span className="font-label-sm text-label-sm text-outline block">
+                <span className="font-body-sm text-body-sm text-on-surface-variant block">
                   {notif.createdAt ? formatRelativeTime(notif.createdAt, language) : notif.time}
                 </span>
               </div>
