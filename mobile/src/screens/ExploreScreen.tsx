@@ -292,7 +292,7 @@ export const ExploreScreen = () => {
 
       {/* Filters and result count (not sticky: they scroll away with the list) */}
       <div className="px-margin pt-3 pb-2 flex flex-col gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto -mx-margin px-margin [scrollbar-width:none]">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleCycleCondition}

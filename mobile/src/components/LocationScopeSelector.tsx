@@ -33,7 +33,7 @@ export const LocationScopeSelector = ({ layout = 'chips' }: LocationScopeSelecto
       <div
         role="radiogroup"
         aria-label={t('location.scope.title')}
-        className="flex items-center gap-space-xs overflow-x-auto [scrollbar-width:none]"
+        className="flex flex-wrap items-center gap-space-xs"
       >
         {OPTIONS.map((option) => (
           <Chip
@@ -56,7 +56,7 @@ export const LocationScopeSelector = ({ layout = 'chips' }: LocationScopeSelecto
     <div
       role="radiogroup"
       aria-label={t('location.scope.title')}
-      className="grid grid-cols-3 gap-2"
+      className="flex flex-wrap gap-2"
     >
       {OPTIONS.map((option) => {
         const isActive = locationScope === option.id;
@@ -68,7 +68,8 @@ export const LocationScopeSelector = ({ layout = 'chips' }: LocationScopeSelecto
             aria-checked={isActive}
             onClick={() => setLocationScope(option.id)}
             className={clsx(
-              'min-h-12 flex flex-col items-start gap-1 p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98]',
+              // Each option is at least as wide as its label; with large text they wrap to a new row
+              'flex-auto basis-0 min-w-fit min-h-12 flex flex-col items-start gap-1 p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98]',
               isActive
                 ? 'border-primary bg-primary/5'
                 : 'border-transparent bg-surface-container-low hover:bg-surface-container',
