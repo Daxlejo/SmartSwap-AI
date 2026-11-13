@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { ServerStatusBanner } from '@/components/ServerStatusBanner';
@@ -54,22 +54,27 @@ export const AppLayout = () => {
   };
 
   const isSwapFlow = pathname.startsWith('/swap');
+  // Screens that pin their own primary action to the bottom of the viewport. They hide the
+  // BottomNav so the two bars never stack and the action never covers the last field.
+  const hasActionBar = pathname === '/publish' || pathname === '/swap/configure';
+  const showBottomNav = !isSwapFlow && !hasActionBar;
   const headerProps = getHeaderProps();
 
+  // The document is the only scroll container (see `index.css`). The bottom padding keeps
+  // the end of every screen above the BottomNav, its floating Publish button or the action bar.
+  const bottomSpace = showBottomNav ? 'pb-nav' : hasActionBar ? 'pb-action-bar' : 'pb-flow';
+
   return (
-    <div className="min-h-[100dvh] w-full bg-surface sm:bg-surface-container-low flex justify-center items-start">
-      <div className="w-full max-w-[390px] min-h-[100dvh] h-[100dvh] bg-surface flex flex-col sm:shadow-2xl sm:ring-1 sm:ring-surface-container-high/20 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full bg-surface sm:bg-surface-container-low flex justify-center">
+      <div className="w-full max-w-[390px] min-h-[100dvh] bg-surface flex flex-col sm:shadow-2xl sm:ring-1 sm:ring-surface-container-high/20 relative overflow-x-clip">
         <TopBar {...headerProps} />
         <ServerStatusBanner />
-        <main
-          className={`flex-1 flex flex-col w-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch] ${
-            isSwapFlow ? 'pb-6' : 'pb-24'
-          }`}
-        >
+        <main className={`flex-1 flex flex-col w-full ${bottomSpace}`}>
           <Outlet />
         </main>
-        {!isSwapFlow && <BottomNav />}
+        {showBottomNav && <BottomNav />}
       </div>
+      <ScrollRestoration />
     </div>
   );
 };

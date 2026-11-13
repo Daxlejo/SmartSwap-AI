@@ -111,7 +111,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface px-margin py-8">
+    <div className="flex flex-col flex-1 bg-surface px-margin py-8">
       {/* Brand Identity & Header */}
       <div className="flex flex-col items-center text-center mb-space-lg">
         <div className="relative mb-space-md">

@@ -213,7 +213,7 @@ export const SearchingScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between h-full min-h-[580px] w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-hidden select-none animate-fade-in relative">
+    <div className="flex flex-col items-center justify-between flex-1 w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-x-clip select-none animate-fade-in relative">
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }

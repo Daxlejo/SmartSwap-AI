@@ -121,7 +121,7 @@ export const RouteResultsScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full bg-surface">
+      <div className="flex flex-col flex-1 bg-surface">
         <div className="px-margin pt-4 pb-2">
           <div className="h-8 w-52 bg-surface-container-low rounded-lg animate-pulse mb-2" />
           <div className="h-4 w-36 bg-surface-container-low rounded-md animate-pulse" />
@@ -160,7 +160,7 @@ export const RouteResultsScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-surface">
+    <div className="flex flex-col flex-1 bg-surface">
       <div className="px-margin pt-4 pb-2 space-y-2.5">
         <div className="flex items-center justify-between">
           <div>

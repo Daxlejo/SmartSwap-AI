@@ -310,7 +310,7 @@ export const TradesScreen: React.FC = () => {
     routes.length > 0 || loadStates.routes === 'ready';
 
   return (
-    <div className="flex flex-col min-h-full bg-surface px-margin pt-4 pb-24 space-y-4">
+    <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">

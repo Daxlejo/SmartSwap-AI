@@ -31,7 +31,7 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
       : route.chainItems.slice(0, 4);
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-full bg-surface px-margin pt-8 pb-8 text-center space-y-6">
+    <div className="flex flex-col items-center justify-between flex-1 bg-surface px-margin pt-8 text-center space-y-6">
       {/* Top Celebration & Title */}
       <div className="flex flex-col items-center space-y-4 w-full">
         {/* Large Checkmark Circle in Primary Color with Scale-in Animation */}

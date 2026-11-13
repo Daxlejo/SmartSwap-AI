@@ -47,7 +47,7 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-surface px-margin pt-4 pb-8 space-y-5">
+    <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-5">
       {/* Screen Header */}
       <div className="flex flex-col space-y-1">
         <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">

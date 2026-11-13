@@ -76,7 +76,7 @@ export const ConfigureSwapScreen = () => {
   };
 
   return (
-    <div className="flex flex-col w-full px-margin pt-2 pb-28">
+    <div className="flex flex-col w-full px-margin pt-2">
       {/* Network Header Pill */}
       <div className="flex items-center justify-between gap-space-sm mb-space-md">
         <div className="flex items-center gap-space-xs bg-surface-container-high px-3 py-1.5 rounded-full">
@@ -389,7 +389,7 @@ export const ConfigureSwapScreen = () => {
       )}
 
       {/* Fixed Bottom Floating CTA - End of ConfigureSwap flow */}
-      <div className="fixed bottom-0 inset-x-0 p-space-md bg-surface/90 backdrop-blur-xl border-t border-surface-container-high/60 z-40 flex flex-col gap-2 max-w-[390px] mx-auto">
+      <div className="fixed bottom-0 inset-x-0 px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 flex flex-col gap-2 max-w-[390px] mx-auto">
         <Button
           data-testid="configure-search-button"
           size="lg"

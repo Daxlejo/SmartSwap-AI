@@ -670,7 +670,7 @@ export const PublishScreen: React.FC = () => {
   // STEP 5: Success Screen (Not counted in step indicator)
   if (currentStep === 5) {
     return (
-      <div className="flex flex-col items-center justify-between min-h-full px-margin pt-8 pb-8 text-center space-y-6">
+      <div className="flex flex-col items-center justify-between flex-1 px-margin pt-8 pb-8 text-center space-y-6">
         {/* Animated Celebration & Header */}
         <div className="flex flex-col items-center space-y-4 w-full">
           <div
@@ -761,7 +761,7 @@ export const PublishScreen: React.FC = () => {
 
   // STEPS 1 - 4 WIZARD VIEW
   return (
-    <div className="flex flex-col min-h-full px-margin pt-4 pb-28">
+    <div className="flex flex-col flex-1 px-margin pt-4">
       {/* Hidden file input for camera / gallery selection */}
       <input
         type="file"
@@ -1438,7 +1438,7 @@ export const PublishScreen: React.FC = () => {
       )}
 
       {/* ================= FIXED BOTTOM ACTION BAR ================= */}
-      <div className="fixed bottom-0 inset-x-0 p-margin bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/60 z-50 max-w-[390px] mx-auto">
+      <div className="fixed bottom-0 inset-x-0 px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 max-w-[390px] mx-auto">
         {currentStep === 1 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep1}>
             {t('publish.continue')}

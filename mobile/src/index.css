@@ -120,8 +120,40 @@
     color: var(--color-on-surface);
   }
 
+  /*
+   * Scroll model: the document is the only scroll container. Layouts never set
+   * `overflow: auto/hidden` or a fixed height on a wrapper, so a drag anywhere
+   * scrolls the page (an inner scroller with `overscroll-behavior: contain`
+   * swallowed the gesture on Android). Bars are `sticky`/`fixed` on top, and the
+   * bottom padding below keeps the end of each screen above them.
+   */
+  :root {
+    --topbar-h: 4rem;
+    --bottom-nav-h: 5rem;
+    /* The floating Publish button rises 1rem above the BottomNav */
+    --bottom-nav-overhang: 1rem;
+    --action-bar-h: 5.5rem;
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pb-nav {
+    padding-bottom: calc(var(--bottom-nav-h) + var(--bottom-nav-overhang) + 1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pb-action-bar {
+    padding-bottom: calc(var(--action-bar-h) + 1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pb-flow {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Sticky elements inside a screen sit right under the TopBar */
+  .top-below-header {
+    top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
   }
 
   .pt-safe {
