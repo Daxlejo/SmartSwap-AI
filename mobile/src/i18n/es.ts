@@ -10,7 +10,7 @@ export const es = {
     back: 'Volver atrás',
     logo: 'Logotipo SmartSwap',
     notifications: 'Notificaciones',
-    unreadCount: '{{count}} sin leer',
+    notificationsUnread: 'Notificaciones, {{count}} sin leer',
     myProfile: 'Mi Perfil',
     switchToLight: 'Cambiar a modo claro',
     switchToDark: 'Cambiar a modo oscuro',

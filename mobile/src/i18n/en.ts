@@ -12,7 +12,7 @@ export const en: TranslationSchema = {
     back: 'Go back',
     logo: 'SmartSwap logo',
     notifications: 'Notifications',
-    unreadCount: '{{count}} unread',
+    notificationsUnread: 'Notifications, {{count}} unread',
     myProfile: 'My profile',
     switchToLight: 'Switch to light mode',
     switchToDark: 'Switch to dark mode',

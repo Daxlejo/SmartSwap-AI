@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { LocationPicker } from '@/components/LocationPicker';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
@@ -219,6 +220,7 @@ export const ProfileScreen = () => {
 
   return (
     <div className="flex flex-col px-margin py-4 space-y-6">
+      <ScreenHeader title={t('headers.profile.title')} />
       {/* Section 1: Profile hero */}
       <section className="flex flex-col items-center text-center pt-2">
         <Avatar
@@ -227,9 +229,9 @@ export const ProfileScreen = () => {
           size="xl"
           className="mb-3"
         />
-        <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
+        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
           {currentUser?.name ?? ''}
-        </h1>
+        </h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 mb-1">
           {currentUser?.email ?? ''}
         </p>

@@ -17,6 +17,7 @@ import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { ScreenHeader } from '@/components/ScreenHeader';
 
 interface CategoryOption {
   id: string;
@@ -228,13 +229,14 @@ export const ExploreScreen = () => {
 
   return (
     <div className="flex flex-col flex-1 w-full">
-      <div className="px-margin pt-3 space-y-3">
+      <div className="px-margin pt-4 space-y-3">
+        <ScreenHeader title={t('headers.explore.title')} />
         <LocationPrompt />
         <LocationScopeSelector />
       </div>
-      {/* Sticky under the TopBar: only search and categories, on an opaque background so the
-          cards scrolling underneath never show through */}
-      <div className="sticky top-below-header z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
+      {/* Sticky at the top (this tab has no TopBar): only search and categories, on an opaque
+          background so the cards scrolling underneath never show through */}
+      <div className="sticky top-safe z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">

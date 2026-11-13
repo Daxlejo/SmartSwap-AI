@@ -177,6 +177,11 @@
     padding-bottom: calc(var(--action-bar-h) + 1rem + env(safe-area-inset-bottom, 0px));
   }
 
+  /* Sticky elements of the main tabs (no TopBar) stop under the status bar */
+  .top-safe {
+    top: env(safe-area-inset-top, 0px);
+  }
+
   .pb-flow {
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }

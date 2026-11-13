@@ -14,6 +14,7 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
+import { ScreenHeader } from '@/components/ScreenHeader';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
@@ -256,6 +257,7 @@ export const TradesScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-4">
+      <ScreenHeader title={t('headers.swaps.title')} />
       {/* Tabs */}
       <div role="tablist" aria-label={t('trades.tabsAria')} className="flex p-1 rounded-2xl bg-surface-container-low border border-surface-container-high gap-1 select-none">
         <button

@@ -11,6 +11,8 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ObjectCard } from '@/components/ObjectCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'COMPLETED']);
 
@@ -63,14 +65,15 @@ export const HomeScreen = () => {
     <div className="flex flex-col w-full px-margin pt-4 space-y-6">
       <LocationPrompt />
 
-      <section className="flex flex-col gap-1">
-        <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold break-words">
-          {currentUser?.name
+      <ScreenHeader
+        title={
+          currentUser?.name
             ? t('home.greeting', { name: currentUser.name.split(' ')[0] })
-            : t('home.greetingAnonymous')}
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">{t('home.subtitle')}</p>
-      </section>
+            : t('home.greetingAnonymous')
+        }
+        subtitle={t('home.subtitle')}
+        trailing={<NotificationBell />}
+      />
 
       <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
         {/* Main action: one title, one line, one button */}
