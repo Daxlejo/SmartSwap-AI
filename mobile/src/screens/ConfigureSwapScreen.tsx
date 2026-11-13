@@ -13,9 +13,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
-import { getSwapSearchBlocker } from '@/utils/swapSearch';
+import { buildSwapSearchNavigation, getSwapSearchBlocker, isOfferableItem } from '@/utils/swapSearch';
 
-const VALUE_TOLERANCE_PCT = 25;
 const MAX_SAVED_WANT_CHIPS = 6;
 
 export const ConfigureSwapScreen = () => {
@@ -29,7 +28,10 @@ export const ConfigureSwapScreen = () => {
   const [searchQuery, setSearchQuery] = useState(preselectedWant?.wantItemName ?? '');
   const [swapMode, setSwapMode] = useState<'circular' | 'direct'>('circular');
 
-  const selectedOfferItem: Item | undefined = myItems[offerIndex % Math.max(1, myItems.length)];
+  // Only published items can be offered; reserved, traded or paused ones cannot enter a route.
+  const offerableItems = useMemo(() => myItems.filter(isOfferableItem), [myItems]);
+  const selectedOfferItem: Item | undefined =
+    offerableItems[offerIndex % Math.max(1, offerableItems.length)];
   const trimmedQuery = searchQuery.trim();
 
   // The catalog item the objective points at: the one chosen in Explore, or the first name match.
@@ -52,35 +54,25 @@ export const ConfigureSwapScreen = () => {
   );
 
   const handleToggleOfferItem = () => {
-    if (myItems.length > 1) setOfferIndex((index) => (index + 1) % myItems.length);
+    if (offerableItems.length > 1) setOfferIndex((index) => (index + 1) % offerableItems.length);
   };
 
-  const searchBlocker = getSwapSearchBlocker(myItems.length, trimmedQuery);
-  const canSearch = searchBlocker === null && selectedOfferItem !== undefined;
+  const searchBlocker = getSwapSearchBlocker(
+    { loaded: !isItemsLoading && loadStates.items === 'ready', publishedCount: offerableItems.length },
+    trimmedQuery,
+  );
+  const searchNavigation = buildSwapSearchNavigation({
+    blocker: searchBlocker,
+    offeredItemId: selectedOfferItem?.id,
+    objectiveText: trimmedQuery,
+    mode: swapMode,
+    target: targetItem,
+  });
 
   const handleSearch = () => {
-    // No published item or no objective: never reach the engine or the AI.
-    if (!selectedOfferItem || !canSearch) return;
-    const maxSteps = swapMode === 'direct' ? 2 : 4;
-    const wantItemId = targetItem?.id ?? '';
-    const params = new URLSearchParams({
-      have: selectedOfferItem.id,
-      q: trimmedQuery,
-      maxSteps: String(maxSteps),
-      tolerance: String(VALUE_TOLERANCE_PCT),
-    });
-    if (wantItemId) params.set('want', wantItemId);
-
-    navigate(`/swap/searching?${params.toString()}`, {
-      state: {
-        offeredItemId: selectedOfferItem.id,
-        wantItemId,
-        objectiveText: trimmedQuery,
-        desiredCategory: targetItem?.category,
-        maxSteps,
-        valueTolerancePct: VALUE_TOLERANCE_PCT,
-      },
-    });
+    // Blocked (no published item or no objective): never reach the engine or the AI.
+    if (!searchNavigation) return;
+    navigate(searchNavigation.path, { state: searchNavigation.state });
   };
 
   return (
@@ -102,7 +94,7 @@ export const ConfigureSwapScreen = () => {
         </div>
       ) : loadStates.items === 'error' && myItems.length === 0 ? (
         <ErrorState onRetry={() => void refreshItems()} />
-      ) : myItems.length === 0 ? (
+      ) : offerableItems.length === 0 ? (
         <EmptyState
           illustration="routes"
           title={t('configure.noItemsTitle')}
@@ -126,7 +118,7 @@ export const ConfigureSwapScreen = () => {
                   {t('configure.youOffer')}
                 </h2>
               </div>
-              {myItems.length > 1 && (
+              {offerableItems.length > 1 && (
                 <button
                   type="button"
                   onClick={handleToggleOfferItem}
@@ -399,11 +391,12 @@ export const ConfigureSwapScreen = () => {
       {/* Fixed Bottom Floating CTA - End of ConfigureSwap flow */}
       <div className="fixed bottom-0 inset-x-0 p-space-md bg-surface/90 backdrop-blur-xl border-t border-surface-container-high/60 z-40 flex flex-col gap-2 max-w-[390px] mx-auto">
         <Button
+          data-testid="configure-search-button"
           size="lg"
           variant="primary"
           fullWidth
           rightIcon="explore"
-          disabled={!canSearch}
+          disabled={searchNavigation === null}
           onClick={handleSearch}
         >
           <span>{t('configure.searchRoutes')}</span>
