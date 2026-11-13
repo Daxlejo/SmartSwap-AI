@@ -135,7 +135,7 @@ export const ConfigureSwapScreen = () => {
                 <div className="flex items-start gap-space-md">
                   <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-surface-container shrink-0">
                     <ItemImage src={selectedOfferItem.imageUrl} alt={selectedOfferItem.name} category={selectedOfferItem.category} className="w-full h-full" />
-                    <span className="absolute bottom-1.5 left-1.5 bg-surface/90 backdrop-blur-md px-1.5 py-0.5 rounded-md font-label-sm text-[10px] text-primary font-bold flex items-center gap-0.5">
+                    <span className="absolute bottom-1.5 left-1.5 bg-surface/90 backdrop-blur-md px-1.5 py-0.5 rounded-md font-label-sm text-caption text-primary font-bold flex items-center gap-0.5">
                       <Icon name="verified" size="xs" filled />
                       {t('configure.verified')}
                     </span>
@@ -144,10 +144,10 @@ export const ConfigureSwapScreen = () => {
                   <div className="flex flex-col flex-1 min-w-0 justify-between">
                     <div>
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-[11px]">
+                        <span className="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-caption">
                           {t('configure.inInventory')}
                         </span>
-                        <span className="bg-primary-container/15 text-primary px-2 py-0.5 rounded-full font-label-sm text-[11px] font-semibold">
+                        <span className="bg-primary-container/15 text-primary px-2 py-0.5 rounded-full font-label-sm text-caption font-semibold">
                           {selectedOfferItem.condition}
                         </span>
                       </div>
@@ -190,7 +190,7 @@ export const ConfigureSwapScreen = () => {
                 <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider">
                   {t('configure.smartSwap')}
                 </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant text-[11px]">
+                <span className="font-body-sm text-body-sm text-on-surface-variant text-caption">
                   {t('configure.noMoney')}
                 </span>
               </div>
@@ -326,7 +326,7 @@ export const ConfigureSwapScreen = () => {
                     <span className="font-label-lg text-label-lg text-on-surface font-bold">
                       {t('configure.circularTitle')}
                     </span>
-                    <Badge variant="secondary" className="text-[10px] py-0">
+                    <Badge variant="secondary" className="text-caption py-0">
                       {t('configure.recommended')}
                     </Badge>
                   </div>

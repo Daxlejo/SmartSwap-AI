@@ -359,10 +359,10 @@ export const ProfileScreen = () => {
                       </div>
 
                       <div className="flex items-center gap-1.5 mt-1">
-                        <Badge variant="surface" className="text-[10px]">
+                        <Badge variant="surface" className="text-caption">
                           {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-caption">
                           {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
                         </Badge>
                       </div>
@@ -389,7 +389,7 @@ export const ProfileScreen = () => {
                         <Icon name="sync_alt" size="xs" />
                         <span>{t('profile.findSwap')}</span>
                       </button>
-                      <span className="text-surface-container-high text-xs">•</span>
+                      <span className="text-surface-container-high text-caption">•</span>
                       <button
                         type="button"
                         disabled={deletingItemId === item.id}

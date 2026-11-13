@@ -66,7 +66,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
     <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
+          <span className="font-label-sm text-caption text-secondary font-bold uppercase tracking-wider">
             {t('trades.circuitLabel', { code: route.code ?? route.id })}
           </span>
           <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
@@ -87,7 +87,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <div className="flex justify-between text-[11px] font-label-sm text-on-surface-variant font-medium">
+        <div className="flex justify-between text-caption font-label-sm text-on-surface-variant font-medium">
           <span>{t('trades.progress', { pct: progressPct })}</span>
           <span>
             {isCompleted
@@ -99,11 +99,11 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
 
       <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
         <div className="flex items-center justify-between">
-          <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold">
+          <span className="font-label-sm text-caption text-on-surface-variant font-semibold">
             {t('trades.circuitChain')}
           </span>
           {route.co2SavedKg > 0 && (
-            <span className="font-label-sm text-[11px] font-bold text-success">
+            <span className="font-label-sm text-caption font-bold text-success">
               -{route.co2SavedKg} kg CO₂
             </span>
           )}
@@ -122,13 +122,13 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
                   >
                     <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
                     {idx === 0 && (
-                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
                         {t('trades.you')}
                       </span>
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[62px] ${
+                    className={`font-label-sm text-caption font-semibold text-center mt-1 truncate max-w-[62px] ${
                       idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >
@@ -147,8 +147,8 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
       </div>
 
       {route.aiExplanation && (
-        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-[12px] leading-snug">
-          <div className="flex items-center gap-1 text-primary font-label-sm text-[11px] font-bold mb-0.5">
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-caption leading-snug">
+          <div className="flex items-center gap-1 text-primary font-label-sm text-caption font-bold mb-0.5">
             <Icon name="auto_awesome" size="xs" filled />
             <span>{t('trades.aiFairness')}</span>
           </div>
@@ -334,7 +334,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.received')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`px-1.5 py-0.2 rounded-full text-caption font-bold ${
               activeTab === 'recibidas'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -355,7 +355,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.sent')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`px-1.5 py-0.2 rounded-full text-caption font-bold ${
               activeTab === 'enviadas'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -376,7 +376,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.inProgress')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`px-1.5 py-0.2 rounded-full text-caption font-bold ${
               activeTab === 'en_curso'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -454,12 +454,12 @@ export const TradesScreen: React.FC = () => {
                         <span className="font-headline-sm text-[14px] font-bold text-on-surface truncate">
                           {proposal.senderName}
                         </span>
-                        <span className="inline-flex items-center gap-0.5 font-label-sm text-[11px] text-on-surface font-semibold">
+                        <span className="inline-flex items-center gap-0.5 font-label-sm text-caption text-on-surface font-semibold">
                           <Icon name="star" size="xs" filled className="text-secondary" />
                           {proposal.senderRating.toFixed(1)}
                         </span>
                       </div>
-                      <span className="font-body-sm text-[11px] text-on-surface-variant">
+                      <span className="font-body-sm text-caption text-on-surface-variant">
                         {proposal.timeAgo}
                       </span>
                     </div>
@@ -482,10 +482,10 @@ export const TradesScreen: React.FC = () => {
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <ItemImage src={proposal.offeredItemImg} alt={proposal.offeredItemName} category={proposal.offeredItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
-                      <span className="font-label-sm text-[10px] text-secondary font-bold uppercase tracking-wider">
+                      <span className="font-label-sm text-caption text-secondary font-bold uppercase tracking-wider">
                         {t('trades.offers')}
                       </span>
-                      <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
+                      <span className="font-body-sm text-caption font-semibold text-on-surface truncate">
                         {proposal.offeredItemName}
                       </span>
                     </div>
@@ -497,10 +497,10 @@ export const TradesScreen: React.FC = () => {
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <ItemImage src={proposal.targetItemImg} alt={proposal.targetItemName} category={proposal.targetItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
-                      <span className="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider">
+                      <span className="font-label-sm text-caption text-primary font-bold uppercase tracking-wider">
                         {t('trades.inExchangeFor')}
                       </span>
-                      <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
+                      <span className="font-body-sm text-caption font-semibold text-on-surface truncate">
                         {proposal.targetItemName}
                       </span>
                     </div>
@@ -592,7 +592,7 @@ export const TradesScreen: React.FC = () => {
                         <h2 className="font-headline-sm text-[15px] font-bold text-on-surface truncate">
                           {t('trades.offerTo', { name: recipient?.name ?? '' })}
                         </h2>
-                        <span className="font-body-sm text-[11px] text-on-surface-variant">
+                        <span className="font-body-sm text-caption text-on-surface-variant">
                           {route.code ? `${route.code} • ` : ''}
                           {route.createdAt
                             ? t('trades.sentAt', { time: formatRelativeTime(route.createdAt, language) })
@@ -607,7 +607,7 @@ export const TradesScreen: React.FC = () => {
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <ItemImage src={offered?.imageUrl} alt={offered?.name ?? ''} category={offered?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.youOffer')}
                         </span>
                         <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
@@ -623,7 +623,7 @@ export const TradesScreen: React.FC = () => {
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <ItemImage src={target?.imageUrl} alt={target?.name ?? ''} category={target?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.inExchange')}
                         </span>
                         <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">

@@ -122,7 +122,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
               className="w-12 h-12 object-contain relative z-10"
             />
           </div>
-          <div className="absolute -bottom-2 -right-2 bg-secondary-container text-on-primary-container text-[11px] font-label-sm font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
+          <div className="absolute -bottom-2 -right-2 bg-secondary-container text-on-primary-container text-caption font-label-sm font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
             <Icon name="cyclone" size="xs" />
             <span>v2.4</span>
           </div>
@@ -314,7 +314,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
               {t('auth.secureDeposit')}
             </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
+            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption">
               {t('auth.protected')}
             </span>
           </div>
@@ -323,7 +323,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
               {t('auth.identity')}
             </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
+            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption">
               {t('auth.verified')}
             </span>
           </div>
@@ -332,7 +332,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             <span className="font-label-sm text-label-sm text-on-surface font-semibold">
               {t('auth.co2Neutral')}
             </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
+            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption">
               {t('auth.zeroFootprint')}
             </span>
           </div>
@@ -345,7 +345,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
 
       {/* Legal Footer */}
       <footer className="text-center px-space-md pb-safe">
-        <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
+        <p className="font-body-sm text-body-sm text-on-surface-variant text-caption leading-relaxed">
           {t('auth.termsNotice')}
         </p>
       </footer>

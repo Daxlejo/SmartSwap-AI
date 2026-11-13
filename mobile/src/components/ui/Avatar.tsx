@@ -13,7 +13,7 @@ export interface AvatarProps {
 }
 
 const sizeClasses: Record<NonNullable<AvatarProps['size']>, string> = {
-  sm: 'w-8 h-8 text-[12px]',
+  sm: 'w-8 h-8 text-caption',
   md: 'w-10 h-10 text-[14px]',
   lg: 'w-12 h-12 text-[16px]',
   xl: 'w-20 h-20 text-[24px]',

@@ -28,7 +28,7 @@ export const ObjectCard = ({
         {/* Item image with category badge */}
         <div className="relative w-24 h-24 rounded-xl bg-surface-container-high overflow-hidden shrink-0">
           <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
-          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm font-label-sm text-[10px] text-primary font-bold">
+          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-sm font-label-sm text-caption text-primary font-bold">
             {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
           </span>
         </div>
@@ -40,7 +40,7 @@ export const ObjectCard = ({
               <h3 className="font-headline-sm text-[15px] font-bold text-on-surface truncate">
                 {item.name}
               </h3>
-              <Badge variant="surface" className="text-[10px] py-0 shrink-0">
+              <Badge variant="surface" className="text-caption py-0 shrink-0">
                 {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
               </Badge>
             </div>
@@ -72,7 +72,7 @@ export const ObjectCard = ({
           {/* Wants preview */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low">
             <Icon name="swap_horizontal_circle" size="xs" className="text-secondary shrink-0" />
-            <span className="font-label-sm text-[11px] text-on-surface truncate">
+            <span className="font-label-sm text-caption text-on-surface truncate">
               {item.description || t('cards.openToCircularOffers')}
             </span>
           </div>

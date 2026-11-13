@@ -916,7 +916,7 @@ export const PublishScreen: React.FC = () => {
                         className="w-full h-full object-cover"
                       />
                       {index === 0 && (
-                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-xs font-label-sm text-[9px] font-bold text-primary shadow-xs">
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-xs font-label-sm text-caption font-bold text-primary shadow-xs">
                           {t('publish.photos.cover')}
                         </span>
                       )}

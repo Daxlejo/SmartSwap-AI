@@ -185,7 +185,7 @@ export const NotificationsScreen = () => {
                       />
                     )}
                   </div>
-                  <Badge variant={notif.badgeVariant} className="shrink-0 text-[10px]">
+                  <Badge variant={notif.badgeVariant} className="shrink-0 text-caption">
                     {text.badge}
                   </Badge>
                 </div>

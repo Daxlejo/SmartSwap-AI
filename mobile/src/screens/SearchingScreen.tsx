@@ -289,7 +289,7 @@ export const SearchingScreen: React.FC = () => {
       <div className="flex flex-col items-center animate-slide-up shrink-0 pt-1">
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high mb-2 shadow-2xs">
           <Icon name="cyclone" size="xs" filled className="text-primary animate-spin-slow" />
-          <span className="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">
+          <span className="font-label-sm text-caption text-primary font-bold uppercase tracking-wider">
             {t('searching.badge')}
           </span>
         </div>
@@ -350,7 +350,7 @@ export const SearchingScreen: React.FC = () => {
               className={routeFound || searchFinishedEmpty ? 'text-[26px] font-bold' : 'animate-spin-slow'}
             />
           </div>
-          <span className="font-label-sm text-[10px] font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
+          <span className="font-label-sm text-caption font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
             {routeFound
               ? t('searching.connected')
               : searchFinishedEmpty
@@ -391,7 +391,7 @@ export const SearchingScreen: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
                       <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
                     </div>
-                    <span className="font-label-sm text-[11px] text-on-surface font-semibold mt-1 truncate max-w-[50px] text-center">
+                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 truncate max-w-[50px] text-center">
                       {step.user}
                     </span>
                   </div>
@@ -445,7 +445,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         ) : (
           <div className="h-[52px] flex items-center justify-center">
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[12px] flex items-center gap-1.5">
+            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
               {t('searching.syncing')}
             </span>

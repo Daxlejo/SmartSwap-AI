@@ -107,7 +107,7 @@ export const BottomNav = () => {
               <div className="relative flex items-center justify-center">
                 <Icon name="sync_alt" size="lg" filled={isActive} />
                 {pendingResponses > 0 && (
-                  <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-[10px] leading-none font-bold shadow-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-caption leading-none font-bold shadow-xs flex items-center justify-center">
                     {pendingResponses}
                   </span>
                 )}

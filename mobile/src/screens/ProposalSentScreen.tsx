@@ -83,7 +83,7 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
                   >
                     <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                     {isFirst && (
-                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
                         {t('proposalSent.you')}
                       </span>
                     )}

@@ -128,13 +128,13 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
                   >
                     <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                     {isFirst && (
-                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
                         {t('cards.you')}
                       </span>
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[58px] ${
+                    className={`font-label-sm text-caption font-semibold text-center mt-1 truncate max-w-[58px] ${
                       isLast ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >

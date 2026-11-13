@@ -121,7 +121,7 @@ export const RouteDetailScreen: React.FC = () => {
                 {t('routeDetail.aiTitle')}
               </h3>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-surface-container-high font-label-sm text-[11px] font-bold text-success flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-surface-container-high font-label-sm text-caption font-bold text-success flex items-center gap-1">
               <Icon name="eco" size="xs" filled />
               {t('routeDetail.co2Saved', { kg: route.co2SavedKg })}
             </span>
@@ -156,10 +156,10 @@ export const RouteDetailScreen: React.FC = () => {
                 <div className="ml-14 -mt-3 mb-4 flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-surface-container-low border border-surface-container-high/50">
                   <div className="flex items-center gap-1.5">
                     <Icon name="payments" size="xs" className="text-primary" />
-                    <span className="font-label-sm text-[11px] text-on-surface-variant">
+                    <span className="font-label-sm text-caption text-on-surface-variant">
                       {t('routeDetail.estimatedValue')}
                     </span>
-                    <span className="font-label-sm text-[11px] font-bold text-on-surface">
+                    <span className="font-label-sm text-caption font-bold text-on-surface">
                       {formatCop(stepValue)}
                     </span>
                   </div>
@@ -173,7 +173,7 @@ export const RouteDetailScreen: React.FC = () => {
                             ? 'error'
                             : 'secondary-subtle'
                       }
-                      className="text-[10px] py-0"
+                      className="text-caption py-0"
                     >
                       {acceptance === 'ACCEPTED'
                         ? t('routeDetail.acceptance.accepted')

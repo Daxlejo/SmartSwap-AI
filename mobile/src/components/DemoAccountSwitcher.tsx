@@ -84,7 +84,7 @@ export const DemoAccountSwitcher = () => {
               <span className="font-label-sm text-label-sm font-semibold">{account.name}</span>
               <span
                 className={clsx(
-                  'font-label-sm text-[10px]',
+                  'font-label-sm text-caption',
                   isActive ? 'text-on-primary/80' : 'text-on-surface-variant',
                 )}
               >

@@ -271,7 +271,7 @@ export const RouteResultsScreen: React.FC = () => {
                           </span>
                         </div>
                       )}
-                      <span className="font-label-sm text-[11px] font-bold text-success flex items-center gap-1">
+                      <span className="font-label-sm text-caption font-bold text-success flex items-center gap-1">
                         <Icon name="eco" size="xs" filled />
                         -{route.co2SavedKg} kg CO₂
                       </span>
@@ -290,11 +290,11 @@ export const RouteResultsScreen: React.FC = () => {
                           key={`${route.id}-${item.id}-${idx}`}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-container-lowest border border-surface-container-high/60 shrink-0"
                         >
-                          <span className="font-label-sm text-[10px] text-on-surface-variant truncate max-w-[85px]">
+                          <span className="font-label-sm text-caption text-on-surface-variant truncate max-w-[85px]">
                             {item.name.split(' ')[0]}:
                           </span>
                           {item.estimatedValue !== undefined && (
-                            <span className="font-label-sm text-[10px] text-primary font-bold">
+                            <span className="font-label-sm text-caption text-primary font-bold">
                               {formatCop(item.estimatedValue)}
                             </span>
                           )}

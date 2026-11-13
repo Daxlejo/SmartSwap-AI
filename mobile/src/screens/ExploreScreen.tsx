@@ -484,7 +484,7 @@ export const ExploreScreen = () => {
 
                   {/* Estimated Value Overlay Pill on Item Thumbnail */}
                   {item.estimatedValue !== undefined && (
-                    <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-[10px] text-inverse-on-surface font-bold shadow-xs">
+                    <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-caption text-inverse-on-surface font-bold shadow-xs">
                       {t('explore.estimatedShort', { value: formatCop(item.estimatedValue) })}
                     </span>
                   )}
@@ -565,7 +565,7 @@ export const ExploreScreen = () => {
                     </span>
                   </div>
                   {selectedItemOwner.co2SavedKg > 0 && (
-                    <span className="font-label-sm text-[10px] text-primary font-semibold mt-1">
+                    <span className="font-label-sm text-caption text-primary font-semibold mt-1">
                       {t('explore.co2Saved', { kg: selectedItemOwner.co2SavedKg })}
                     </span>
                   )}

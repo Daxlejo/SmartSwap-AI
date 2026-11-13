@@ -94,7 +94,7 @@ export const HomeScreen = () => {
           </div>
           <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10">
             <Icon name="swap_horiz" size="xs" className="text-primary" />
-            <span className="font-label-sm text-[11px] text-primary font-bold">
+            <span className="font-label-sm text-caption text-primary font-bold">
               {t('home.tradesCompleted', { count: currentUser?.tradesCompleted ?? 0 })}
             </span>
           </div>
@@ -324,13 +324,13 @@ export const HomeScreen = () => {
                         >
                           <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
                           {isFirst && (
-                            <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                            <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
                               {t('home.route.you')}
                             </span>
                           )}
                         </div>
                         <span
-                          className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[60px] ${
+                          className={`font-label-sm text-caption font-semibold text-center mt-1 truncate max-w-[60px] ${
                             isLast ? 'text-primary font-bold' : 'text-on-surface'
                           }`}
                         >
@@ -405,14 +405,14 @@ export const HomeScreen = () => {
             <Chip
               active={filterMode === 'nearby'}
               onClick={() => setFilterMode('nearby')}
-              className="h-8 px-2.5 text-[12px]"
+              className="h-8 px-2.5 text-caption"
             >
               {t('home.recommended.nearby')}
             </Chip>
             <Chip
               active={filterMode === 'wishlist'}
               onClick={() => setFilterMode('wishlist')}
-              className="h-8 px-2.5 text-[12px]"
+              className="h-8 px-2.5 text-caption"
             >
               {t('home.recommended.wishlist')}
             </Chip>
