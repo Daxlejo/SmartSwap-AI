@@ -151,8 +151,10 @@
    * never set `overflow: auto/hidden` or a fixed height on a wrapper (the one
    * exception is the BottomSheet modal, which scrolls its own content), so a drag anywhere
    * scrolls the page (an inner scroller with `overscroll-behavior: contain`
-   * swallowed the gesture on Android). Bars are `sticky`/`fixed` on top, and the
-   * bottom padding below keeps the end of each screen above them.
+   * swallowed the gesture on Android). Top bars are `sticky`. The BottomNav is
+   * `fixed` and `.pb-nav` keeps the end of each tab above it; the action bars of
+   * Publish and New swap are `sticky bottom-0` at the end of the flow, so they take
+   * their own room and never cover content, however tall the text makes them.
    */
   :root {
     /* TopBar row height (TopBar.tsx uses this variable) */
@@ -161,8 +163,6 @@
     --bottom-nav-h: 5rem;
     /* The floating Publish button rises 1rem above the BottomNav (-top-4 in BottomNav.tsx) */
     --bottom-nav-overhang: 1rem;
-    /* Fixed action bars of Publish and New swap: a 48 px button plus padding and border */
-    --action-bar-h: 5.5rem;
   }
 
   .pb-safe {
@@ -173,17 +173,13 @@
     padding-bottom: calc(var(--bottom-nav-h) + var(--bottom-nav-overhang) + 1rem + env(safe-area-inset-bottom, 0px));
   }
 
-  .pb-action-bar {
-    padding-bottom: calc(var(--action-bar-h) + 1rem + env(safe-area-inset-bottom, 0px));
+  .pb-flow {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   /* Sticky elements of the main tabs (no TopBar) stop under the status bar */
   .top-safe {
     top: env(safe-area-inset-top, 0px);
-  }
-
-  .pb-flow {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   /* Sticky elements inside a screen sit right under the TopBar */

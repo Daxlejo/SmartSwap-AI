@@ -1428,8 +1428,11 @@ export const PublishScreen: React.FC = () => {
         </div>
       )}
 
-      {/* ================= FIXED BOTTOM ACTION BAR ================= */}
-      <div className="fixed bottom-0 inset-x-0 px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 max-w-[390px] mx-auto">
+      {/* ================= BOTTOM ACTION BAR =================
+          Sticky, not fixed: it takes its own room at the end of the flow, so however tall it
+          grows (two-line labels, large system font) it never covers the last field */}
+      <div aria-hidden="true" className="h-6 shrink-0" />
+      <div className="sticky bottom-0 mt-auto -mx-margin px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40">
         {currentStep === 1 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep1}>
             {t('publish.continue')}
