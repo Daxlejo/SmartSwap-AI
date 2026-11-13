@@ -20,7 +20,8 @@
  *              still covered by a fixed bottom bar (BottomNav, action bar)
  *   desborde   horizontal overflow: the page wider than the viewport, text that
  *              sticks out of a box that holds it (outside horizontal scrollers),
- *              texts drawn over each other and placeholders that do not fit
+ *              texts drawn over each other, words split across two lines and
+ *              placeholders that do not fit
  *   errores    uncaught page errors, API calls with no fixture, and landing on a
  *              different path than the screen expects (a redirect or fallback)
  *
@@ -211,6 +212,15 @@ function measureInPage() {
     range.selectNodeContents(node);
     const r = range.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
+    // A word split across two lines ("Camil-o") means its box is narrower than the word
+    const wordPattern = /[\p{L}\p{N}]{4,}/gu;
+    for (const match of node.textContent.matchAll(wordPattern)) {
+      const word = document.createRange();
+      word.setStart(node, match.index);
+      word.setEnd(node, match.index + match[0].length);
+      const lines = new Set([...word.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top)));
+      if (lines.size > 1 && !isIcon(el)) overflow.push(`${describe(el)}: the word "${match[0]}" is split across lines`);
+    }
     // Text cut with an ellipsis or a line clamp is counted under `elipsis`; its range
     // still spans the hidden lines, so it is left out here
     const clamped = [...ancestorsOf(el)].some((n) => {
@@ -452,11 +462,14 @@ const auditScreen = async ({ context, unanswered }, base, screen, theme, fontSca
 
     // Approximates a finger drag with wheel events: same overscroll chaining, not a full touch emulation
     await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
-    for (let i = 0; i < 20; i += 1) {
-      await page.mouse.wheel(0, 800);
-      await page.waitForTimeout(40);
+    // Two passes: some screens grow after a moment (results that appear when a search ends)
+    for (let pass = 0; pass < 2; pass += 1) {
+      for (let i = 0; i < 20; i += 1) {
+        await page.mouse.wheel(0, 800);
+        await page.waitForTimeout(40);
+      }
+      await page.waitForTimeout(600);
     }
-    await page.waitForTimeout(400);
     const end = await page.evaluate(scrollEndInPage);
     await page.screenshot({ path: join(OUT, `${shot}-end.png`) });
 
