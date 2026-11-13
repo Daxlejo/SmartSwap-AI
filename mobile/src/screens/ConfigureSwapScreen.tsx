@@ -13,6 +13,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
+import { getSwapSearchBlocker } from '@/utils/swapSearch';
 
 const VALUE_TOLERANCE_PCT = 25;
 const MAX_SAVED_WANT_CHIPS = 6;
@@ -54,9 +55,11 @@ export const ConfigureSwapScreen = () => {
     if (myItems.length > 1) setOfferIndex((index) => (index + 1) % myItems.length);
   };
 
-  const canSearch = Boolean(selectedOfferItem) && trimmedQuery.length >= 2;
+  const searchBlocker = getSwapSearchBlocker(myItems.length, trimmedQuery);
+  const canSearch = searchBlocker === null && selectedOfferItem !== undefined;
 
   const handleSearch = () => {
+    // No published item or no objective: never reach the engine or the AI.
     if (!selectedOfferItem || !canSearch) return;
     const maxSteps = swapMode === 'direct' ? 2 : 4;
     const wantItemId = targetItem?.id ?? '';
@@ -102,10 +105,11 @@ export const ConfigureSwapScreen = () => {
       ) : myItems.length === 0 ? (
         <EmptyState
           illustration="routes"
-          title={t('states.homeNoItems')}
+          title={t('configure.noItemsTitle')}
+          description={t('configure.noItemsDescription')}
           action={
             <Button variant="primary" size="md" onClick={() => navigate('/publish')}>
-              {t('states.homeNoItemsCta')}
+              {t('configure.publishItem')}
             </Button>
           }
         />
@@ -404,8 +408,15 @@ export const ConfigureSwapScreen = () => {
         >
           <span>{t('configure.searchRoutes')}</span>
         </Button>
-        <p className="text-center font-label-sm text-label-sm text-on-surface-variant">
-          {t('configure.custodyGuarantee')}
+        <p
+          data-testid="configure-search-hint"
+          className="text-center font-label-sm text-label-sm text-on-surface-variant"
+        >
+          {searchBlocker === 'noItems'
+            ? t('configure.needItemHint')
+            : searchBlocker === 'noWant'
+              ? t('configure.needWantHint')
+              : t('configure.custodyGuarantee')}
         </p>
       </div>
     </div>

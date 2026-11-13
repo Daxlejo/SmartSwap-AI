@@ -538,6 +538,11 @@ export const es = {
     impactTitle: 'Impacto Circular Estimado',
     impactDescription: 'Cada trueque extiende la vida útil de los objetos y evita residuos.',
     searchRoutes: 'Buscar Rutas Inteligentes',
+    noItemsTitle: 'Aún no tienes artículos publicados',
+    noItemsDescription: 'Para buscar rutas de canje necesitas ofrecer algo. Publica tu primer artículo y vuelve aquí.',
+    publishItem: 'Publicar un artículo',
+    needItemHint: 'Publica un artículo para poder buscar rutas.',
+    needWantHint: 'Escribe o elige qué quieres recibir para buscar rutas.',
     custodyGuarantee: 'Garantía de Depósito en Custodia en todas las rutas',
   },
   trades: {

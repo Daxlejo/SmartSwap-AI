@@ -540,6 +540,11 @@ export const en: TranslationSchema = {
     impactTitle: 'Estimated circular impact',
     impactDescription: 'Every swap extends the life of items and avoids waste.',
     searchRoutes: 'Search smart routes',
+    noItemsTitle: "You haven't published any items yet",
+    noItemsDescription: 'To search for swap routes you need something to offer. Publish your first item and come back here.',
+    publishItem: 'Publish an item',
+    needItemHint: 'Publish an item to search for routes.',
+    needWantHint: 'Type or pick what you want to receive to search for routes.',
     custodyGuarantee: 'Custody deposit guarantee on every route',
   },
   trades: {
