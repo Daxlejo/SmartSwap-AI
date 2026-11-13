@@ -17,7 +17,7 @@ export interface RouteStepProps {
   onItemClick?: (item: Item) => void;
 }
 
-/** One hand-over of the cycle: who gives what to whom, and whether they accepted. */
+/** One hand-over of the cycle: who gives what to whom, and whether the giver has accepted. */
 export const RouteStep: React.FC<RouteStepProps> = ({
   fromUser,
   toUser,

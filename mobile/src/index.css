@@ -9,10 +9,11 @@
 @layer base {
   /*
    * Color tokens are RGB channels so Tailwind opacity modifiers work
-   * (`bg-primary/10`, `border-surface-container-high/60`). Every text/background
-   * pair used by the UI meets WCAG AA (4.5:1) in both themes; `npm run audit:ui`
-   * checks it with axe. Dark mode has its own slate surfaces, a lighter teal
-   * that reads on dark, and no light tints or gradients.
+   * (`bg-primary/10`, `border-surface-container-high/60`). The text/background
+   * pairs are chosen to meet WCAG AA (4.5:1) in both themes; `npm run audit:ui`
+   * checks the audited screens with axe (nodes axe cannot decide are listed, not
+   * counted). Dark mode has its own slate surfaces, a lighter teal that reads on
+   * dark, and dark tints instead of pastel ones.
    */
   :root {
     color-scheme: light;
@@ -146,17 +147,21 @@
   }
 
   /*
-   * Scroll model: the document is the only scroll container. Layouts never set
-   * `overflow: auto/hidden` or a fixed height on a wrapper, so a drag anywhere
+   * Scroll model: the document is the only scroll container. Layouts and screens
+   * never set `overflow: auto/hidden` or a fixed height on a wrapper (the one
+   * exception is the BottomSheet modal, which scrolls its own content), so a drag anywhere
    * scrolls the page (an inner scroller with `overscroll-behavior: contain`
    * swallowed the gesture on Android). Bars are `sticky`/`fixed` on top, and the
    * bottom padding below keeps the end of each screen above them.
    */
   :root {
+    /* TopBar row height (TopBar.tsx uses this variable) */
     --topbar-h: 4rem;
+    /* BottomNav row: h-20 in BottomNav.tsx */
     --bottom-nav-h: 5rem;
-    /* The floating Publish button rises 1rem above the BottomNav */
+    /* The floating Publish button rises 1rem above the BottomNav (-top-4 in BottomNav.tsx) */
     --bottom-nav-overhang: 1rem;
+    /* Fixed action bars of Publish and New swap: a 48 px button plus padding and border */
     --action-bar-h: 5.5rem;
   }
 

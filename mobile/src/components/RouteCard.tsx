@@ -16,6 +16,7 @@ export interface RouteCardProps {
 export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
   const { t } = useTranslation();
   const targetItem = route.chainItems[route.chainItems.length - 1];
+  // Participants follow the order of the hand-overs: the last one gives the final item to the user
   const giver = route.participants[route.participants.length - 1];
   const people = route.participants.length || route.stepsCount;
 

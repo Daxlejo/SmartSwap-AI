@@ -104,8 +104,8 @@ const config: Config = {
        * Type scale for adults of every age: nothing renders under 14 px and body
        * text is 16 px with a 1.5 line height. Plan tokens: caption 14, body 16,
        * body-lg 18, titles 20/24/28. The older names (label-*, body-sm/md,
-       * headline-*) map onto the same steps so no screen can fall below 14 px.
-       * `text-xs` and arbitrary sizes under 14 px are rejected by
+       * headline-*) map onto the same sizes so no screen can fall below 14 px.
+       * `text-xs` and arbitrary px sizes under 14 px are rejected by
        * src/test/typeScale.test.ts and by ESLint.
        */
       fontSize: {

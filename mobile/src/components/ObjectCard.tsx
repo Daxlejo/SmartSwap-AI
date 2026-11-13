@@ -10,7 +10,7 @@ export interface ObjectCardProps {
   className?: string;
 }
 
-/** Catalog card: photo, full name (up to two lines), one support line and one action. */
+/** Catalog card: full name (up to two lines), photo, one support text (condition · place) and one action. */
 export const ObjectCard = ({ item, owner, onOfferSwap, className }: ObjectCardProps) => {
   const { t } = useTranslation();
   const hasDistance = item.distanceKm !== null && item.distanceKm !== undefined;
