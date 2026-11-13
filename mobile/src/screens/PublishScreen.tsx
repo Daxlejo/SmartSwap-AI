@@ -947,7 +947,7 @@ export const PublishScreen: React.FC = () => {
                       size="sm"
                       className="group-hover:text-primary transition-colors"
                     />
-                    <span className="font-label-sm text-label-sm text-on-surface-variant/70 mt-0.5">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
                       {index + 1}
                     </span>
                   </button>
@@ -1016,7 +1016,7 @@ export const PublishScreen: React.FC = () => {
               }}
               className={clsx(
                 'w-full p-3.5 bg-surface-container-low text-on-surface rounded-2xl font-body-md text-body-md resize-none',
-                'placeholder:text-on-surface-variant/70 transition-all duration-150',
+                'placeholder:text-on-surface-variant transition-all duration-150',
                 'focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/30',
                 errors.description && 'ring-2 ring-error/50 bg-error-container/20',
               )}

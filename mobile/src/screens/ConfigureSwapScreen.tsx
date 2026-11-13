@@ -160,7 +160,7 @@ export const ConfigureSwapScreen = () => {
               <div className="w-0.5 h-full bg-gradient-to-b from-primary via-secondary-container to-primary opacity-30" />
             </div>
             <div className="relative z-10 flex items-center gap-2 bg-surface-container-lowest border border-surface-container-high/60 px-4 py-2 rounded-full shadow-sm">
-              <div className="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary shadow-xs">
+              <div className="w-7 h-7 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shadow-xs">
                 <Icon name="sync" size="sm" className="animate-spin" />
               </div>
               <div className="flex flex-col">
@@ -178,7 +178,7 @@ export const ConfigureSwapScreen = () => {
           <section className="flex flex-col gap-space-xs">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary font-label-sm text-label-sm flex items-center justify-center font-bold">
+                <span className="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm flex items-center justify-center font-bold">
                   2
                 </span>
                 <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
@@ -198,7 +198,7 @@ export const ConfigureSwapScreen = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('configure.searchPlaceholder')}
-                  className="w-full h-12 pl-12 pr-11 py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all"
+                  className="w-full h-12 pl-12 pr-11 py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all"
                 />
                 {searchQuery && (
                   <button
