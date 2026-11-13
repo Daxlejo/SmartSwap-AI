@@ -353,16 +353,14 @@ export const ConfigureSwapScreen = () => {
         >
           <span>{t('configure.searchRoutes')}</span>
         </Button>
-        <p
-          data-testid="configure-search-hint"
-          className="text-center font-label-sm text-label-sm text-on-surface-variant"
-        >
-          {searchBlocker === 'noItems'
-            ? t('configure.needItemHint')
-            : searchBlocker === 'noWant'
-              ? t('configure.needWantHint')
-              : t('configure.custodyGuarantee')}
-        </p>
+        {searchBlocker && (
+          <p
+            data-testid="configure-search-hint"
+            className="text-center font-body-sm text-body-sm text-on-surface-variant"
+          >
+            {searchBlocker === 'noItems' ? t('configure.needItemHint') : t('configure.needWantHint')}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -533,9 +533,6 @@ export const ProfileScreen = () => {
         >
           {t('profile.logout')}
         </Button>
-        <p className="font-body-sm text-body-sm text-on-surface-variant text-center mt-3">
-          {t('profile.version')}
-        </p>
       </section>
 
       {/* Edit Profile BottomSheet connected to PATCH /users/me */}
