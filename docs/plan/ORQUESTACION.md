@@ -25,13 +25,13 @@
 ## Tablero
 | Fase | Fechas | Rama | Estado |
 |---|---|---|---|
-| 0. Línea base, integración y APK de humo | lun 2 – mié 11 | `chore/fase-0-integracion` | **ACTIVA — cierre** (3 de 5 criterios; rechazada el 10 por Render y APK) |
-| 1. Datos reales y estados vacíos | mié 11 – jue 12 | `feat/real-data` | Bloqueada |
-| 2. Tipografía, táctil y contraste | jue 12 – vie 13 | `feat/ui-type-scale` | Bloqueada |
+| 0. Línea base, integración y APK de humo | lun 2 – mié 11 | `chore/fase-0-integracion` | Aprobada |
+| 1. Datos reales y estados vacíos | mié 11 – jue 12 | `feat/real-data` | Aprobada |
+| 2. Tipografía, táctil y contraste | jue 12 – vie 13 | `feat/ui-type-scale` | **ACTIVA** |
 | 3. Anillo de intercambio | sáb 14 – dom 15 | `feat/swap-ring` | Bloqueada |
 | 4. Pulido de flujos y comportamiento nativo Android | lun 16 (mañana) | `feat/ui-polish` | Bloqueada |
 | 5. APK release firmado | lun 16 (tarde) | `chore/release-apk` | Bloqueada |
-| 6. Arquitectura 4+1 y guion de demo | jue 12 – dom 15, **en paralelo** | `docs/architecture` | Bloqueada (arranca al aprobar la Fase 1) |
+| 6. Arquitectura 4+1 y guion de demo | jue 12 – dom 15, **en paralelo** | `docs/architecture` | **ACTIVA** |
 | 7. Congelación, tag v1.0.0 y ensayo | mar 17 | `main` | Bloqueada |
 
 ## Plugins y subagentes por fase
@@ -68,7 +68,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 - [ ] APK debug instalado; login y geolocalización funcionan en el celular físico (con capturas)
 - [ ] Regla de puertas en `CLAUDE.md` **fusionada a `main`** mediante PR
 
-## Fase 1: Datos reales y estados vacíos - ACTIVA
+## Fase 1: Datos reales y estados vacíos
 - Quitar todos los restos de demo: `mockSwapRoute` de Home, "1,420 usuarios activos" y los porcentajes de los presets en ConfigureSwap, el fallback mock de "En curso" en Trades, notificaciones e items mock sin sesión, y los mocks de `AppContext`, `RouteDetailScreen`, `ProposalConfirmScreen`, `ProposalSentScreen`, `swapService.ts` y `routes.service.ts`.
 - Seed idempotente con cuentas demo en municipios cercanos de Nariño, objetos con foto en Supabase y precio en COP. El motor debe encontrar de verdad al menos un ciclo de 2, uno de 3 y uno de 4, y debe quedar una propuesta en curso.
 - Estados vacíos diseñados (ilustración, una frase y una acción) en Home, las 3 pestañas de Trades, Notificaciones y Explorar.
@@ -76,7 +76,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Criterios de salida:** `rg -n -i "mock" api/src mobile/src` solo devuelve tests y fixtures; el seed corre dos veces sin duplicar datos; capturas de un usuario nuevo con estados vacíos y de un usuario demo con una ruta real; cambio de cuenta probado; suites en verde; revisión de PR sin hallazgos abiertos.
 
-## Fase 2: Tipografía, área táctil y contraste
+## Fase 2: Tipografía, área táctil y contraste - ACTIVA
 - Tokens en Tailwind: `caption` 14 px, `body` 16 px, `body-lg` 18 px y títulos de 20, 24 y 28 px, con interlineado de 1,5 en el cuerpo. Se prohíben `text-xs` y los tamaños arbitrarios menores de 14 px; si se puede, con una regla de lint.
 - Áreas táctiles: `min-h-11 min-w-11` en todo lo que se pueda tocar y 48 px en las acciones principales.
 - Nombres y títulos de objetos: `line-clamp-2` en lugar de `truncate`.
@@ -110,7 +110,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Criterios de salida:** salida de `apksigner verify`, `aapt dump badging` (versión y permisos), tamaño del APK y grabación de pantalla de un flujo completo en el celular.
 
-## Fase 6: Arquitectura 4+1 y guion de demo (en paralelo, solo `docs/`)
+## Fase 6: Arquitectura 4+1 y guion de demo (en paralelo, solo `docs/`) - ACTIVA
 - `docs/architecture/` en Mermaid y dibujable a mano, en el orden del profesor: **Contexto → Funcional (casos de uso) → Lógica (clases y módulos de Nest) → Desarrollo (paquetes del monorepo) → Despliegue (APK, Render, PostgreSQL, Supabase, OpenAI)**. Además: secuencia del consenso de propuestas, explicación del algoritmo de ciclos de 2 a 4, ER desde Prisma y ADRs cortos (Capacitor frente a React Native, COP en enteros, ciclos de máximo 4).
 - Actualizar el README y la sección de deuda conocida (las vulnerabilidades que exigen `--force`, el E2E sobre doble en memoria) dicha con honestidad.
 - `docs/demo/GUION.md`: 7 a 10 minutos cronometrados, quién habla en cada parte, qué cuenta usar y un plan B (video de respaldo, hotspot propio, calentar Render 10 minutos antes). El guion se ajusta al final con lo que entregue la Fase 3.
