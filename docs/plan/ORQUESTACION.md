@@ -85,6 +85,26 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Criterios de salida:** tabla antes/después de la auditoría con 0 en las cuatro métricas y en ambos temas; capturas de Home, Trades y RouteDetail a 360 px en claro y oscuro; prueba en el celular con "Tamaño de fuente" del sistema en grande sin que se rompa el layout.
 
+### Alcance ampliado (12 de noviembre): legibilidad, densidad y tema oscuro
+**A. Bloqueante, va primero (encontrado en un Android real)**
+- En Iniciar sesión/Crear cuenta y en Publicar no se puede hacer scroll. Se busca la causa raíz (overflow hidden, `h-screen` o `100vh`, contenedores fijos) y se corrige de forma global, no pantalla por pantalla.
+- El contenido queda tapado por la BottomNav y el botón Publicar: padding inferior que corresponda.
+- En Explorar, el encabezado fijo (buscador y filtros) se monta sobre las tarjetas: fondo opaco y z-index correcto.
+- Comprobación con Playwright a 360×800 de que en cada pantalla se llega al final con scroll.
+
+**B. Lo que ya decía el plan:** tokens de tipografía (nada menor de 14 px), áreas táctiles de 44 y 48 px, `line-clamp-2` en lugar de `truncate`, y títulos del encabezado que no se corten ("Configurar C…", "Buscando Ru…"): títulos más cortos o en dos líneas.
+
+**C. Modo oscuro rediseñado:** tokens propios para fondo, superficies, bordes, texto principal y secundario, un teal que se lea bien sobre oscuro, y el mango. Sin degradados claros en oscuro (el hero del Home pasa a azul claro). Contraste AA verificado con axe en los dos temas.
+
+**D. Densidad y honestidad**
+- Menos texto: máximo una línea de apoyo por tarjeta; se quitan los subtítulos decorativos.
+- Se quita toda promesa de algo que no existe: "Garantía de Depósito en Custodia", "Intercambio verificado", "Modo Seguro", el ticker "CANJE EN VIVO" si no es real y cualquier cifra de CO₂ que no salga de datos reales. Si el CO₂ se calcula, la fórmula queda documentada.
+- Skills `design:design-critique` sobre capturas de antes y después, y `design:ux-copy` para los textos en es y en.
+
+**E. `npm run audit:ui`** a 360×800 en los dos temas. Cuenta textos de menos de 14 px, objetivos táctiles de menos de 44 px, elipsis, contraste (axe) y pantallas donde no se llega al final con scroll. La meta es 0 en todo.
+
+**Cierre ampliado:** suites, graphify, `/pr-review-toolkit:review-pr` (corregir o justificar cada hallazgo), APK debug con `VITE_API_URL` de Render y PR hacia `main` sin fusionar. Reporte de puerta con la tabla de `audit:ui` antes y después, capturas a 360 px en claro y oscuro de Home, Explorar, Publicar, Registro y Trades, y espacio para las pruebas en el celular (scroll y tamaño de fuente del sistema en grande).
+
 ## Fase 3: Anillo de intercambio
 - Componente `SwapRing` en SVG. Recibe de 2 a 4 participantes (nombre, avatar, objeto que entrega y estado: pendiente, aceptó o rechazó) y tiene variante `compact` y `full`.
 - Geometría: los avatares van repartidos en el círculo empezando arriba. Cada arco de órbita lleva una flecha en el sentido de la entrega y una insignia del objeto en su punto medio. En el centro, un disco con "3 personas" y el estado. Los arcos son punteados mientras alguien no ha aceptado y se vuelven sólidos al aceptar; cuando todos aceptan, el anillo se cierra y aparece el halo.
