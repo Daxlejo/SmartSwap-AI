@@ -77,8 +77,8 @@ export const RouteDetailScreen: React.FC = () => {
     t('routeDetail.fallbackExplanation', { count: route.stepsCount, kg: route.co2SavedKg });
 
   return (
-    <div className="flex flex-col h-full bg-surface relative">
-      <div className="px-margin pt-4 pb-4 border-b border-surface-container-high/60 bg-surface z-10 sticky top-0">
+    <div className="flex flex-col flex-1 bg-surface relative">
+      <div className="px-margin pt-4 pb-4 border-b border-surface-container-high/60 bg-surface z-30 sticky top-below-header">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <Badge variant="success" className="flex items-center gap-1">
             <Icon name="check" size="xs" />

@@ -227,11 +227,14 @@ export const ExploreScreen = () => {
         : null;
 
   return (
-    <div className="flex flex-col flex-1 w-full pb-6">
-      {/* Sticky Header: Search Bar + Category Chips */}
-      <div className="sticky top-16 z-30 bg-surface/90 backdrop-blur-xl border-b border-surface-container-high/50 px-margin pt-3 pb-3 space-y-3 transition-colors">
+    <div className="flex flex-col flex-1 w-full">
+      <div className="px-margin pt-3 space-y-3">
         <LocationPrompt />
         <LocationScopeSelector />
+      </div>
+      {/* Sticky under the TopBar: only search and categories, on an opaque background so the
+          cards scrolling underneath never show through */}
+      <div className="sticky top-below-header z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">
