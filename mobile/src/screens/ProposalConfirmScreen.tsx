@@ -39,7 +39,9 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
       navigate('/swap/proposal/sent', { state: { route: proposedRoute } });
     } catch (error) {
       setSubmitError(
-        error instanceof ApiError && error.message ? error.message : t('proposalConfirm.sendFailed'),
+        error instanceof ApiError && error.message
+          ? error.message
+          : t('proposalConfirm.sendFailed'),
       );
     } finally {
       setIsSubmitting(false);
@@ -48,15 +50,9 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-5">
-      {/* Screen Header */}
-      <div className="flex flex-col space-y-1">
-        <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-          {t('proposalConfirm.title')}
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant">
-          {t('proposalConfirm.subtitle')}
-        </p>
-      </div>
+      <p className="font-body-md text-body-md text-on-surface-variant">
+        {t('proposalConfirm.subtitle')}
+      </p>
 
       {/* Exchange Cards Container */}
       <div className="flex flex-col space-y-3">
@@ -75,35 +71,35 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
           </div>
 
           <div className="flex items-center gap-3.5">
-            <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
+            <ItemImage
+              src={offeredItem.imageUrl}
+              alt={offeredItem.name}
+              category={offeredItem.category}
+              className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0"
+            />
             <div className="flex-1 min-w-0 space-y-1">
               <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                 {offeredItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant line-clamp-2 break-words">
-                {t(`catalog.conditions.${offeredItem.condition}`, { defaultValue: offeredItem.condition })}
+                {t(`catalog.conditions.${offeredItem.condition}`, {
+                  defaultValue: offeredItem.condition,
+                })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
                   {offeredItem.estimatedValue !== undefined &&
-                    t('proposalConfirm.estimatedValue', { value: formatCop(offeredItem.estimatedValue) })}
+                    t('proposalConfirm.estimatedValue', {
+                      value: formatCop(offeredItem.estimatedValue),
+                    })}
                 </span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Divider with sync icon in center */}
-        <div className="relative flex items-center justify-center py-1">
-          <div className="w-full border-t border-surface-container-high/60" />
-          <div className="absolute flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-surface-container-high/60 shadow-xs">
-            <div className="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center">
-              <Icon name="sync_alt" size="xs" />
-            </div>
-            <span className="font-label-sm text-label-sm text-on-surface font-bold whitespace-nowrap">
-              {t('proposalConfirm.smartSwap', { kg: route.co2SavedKg })}
-            </span>
-          </div>
+        <div aria-hidden="true" className="flex justify-center text-primary">
+          <Icon name="swap_vert" size="lg" />
         </div>
 
         {/* Section: Quiero recibir */}
@@ -121,42 +117,33 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
           </div>
 
           <div className="flex items-center gap-3.5">
-            <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
+            <ItemImage
+              src={targetItem.imageUrl}
+              alt={targetItem.name}
+              category={targetItem.category}
+              className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0"
+            />
             <div className="flex-1 min-w-0 space-y-1">
               <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                 {targetItem.name}
               </h3>
               <p className="font-body-md text-body-md text-on-surface-variant line-clamp-2 break-words">
-                {t(`catalog.conditions.${targetItem.condition}`, { defaultValue: targetItem.condition })}
+                {t(`catalog.conditions.${targetItem.condition}`, {
+                  defaultValue: targetItem.condition,
+                })}
               </p>
               <div className="flex items-center gap-2">
                 <span className="font-label-md text-label-md text-primary font-bold">
                   {targetItem.estimatedValue !== undefined &&
-                    t('proposalConfirm.estimatedValue', { value: formatCop(targetItem.estimatedValue) })}
+                    t('proposalConfirm.estimatedValue', {
+                      value: formatCop(targetItem.estimatedValue),
+                    })}
                 </span>
               </div>
             </div>
           </div>
         </section>
       </div>
-
-      {/* AI Explanation Summary if present */}
-      {route.aiExplanation && (
-        <section
-          aria-label={t('proposalConfirm.fairnessAria')}
-          className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-1.5"
-        >
-          <div className="flex items-center gap-1.5 text-primary">
-            <Icon name="auto_awesome" size="xs" filled />
-            <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
-              {t('proposalConfirm.aiVerified')}
-            </span>
-          </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant leading-snug">
-            {route.aiExplanation}
-          </p>
-        </section>
-      )}
 
       {/* Recipient Info Card */}
       {recipientUser && (
@@ -168,30 +155,17 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
               {t('proposalConfirm.goesTo', { name: recipientDisplayName })}
             </h2>
-            <Badge
-              variant="tertiary-subtle"
-              className="text-tertiary bg-tertiary-fixed"
-              icon="verified_user"
-            >
+            <Badge variant="tertiary-subtle">
               {t('proposalConfirm.stepOf', { count: route.stepsCount })}
             </Badge>
           </div>
 
           <div className="flex items-center gap-3.5 pt-1">
-            <Avatar
-              src={recipientUser.avatarUrl}
-              alt={recipientDisplayName}
-              size="lg"
-              verified={recipientUser.verified}
-            />
+            <Avatar src={recipientUser.avatarUrl} alt={recipientDisplayName} size="lg" />
             <div className="flex-1 min-w-0 space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                   {recipientDisplayName}
-                </span>
-                <span className="inline-flex items-center gap-0.5 font-label-md text-label-md text-on-surface font-bold">
-                  <Icon name="star" size="xs" filled className="text-secondary-container" />
-                  {recipientUser.rating.toFixed(1)}
                 </span>
               </div>
               <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
@@ -212,19 +186,27 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
         </div>
       )}
 
-      {/* Terms Checkbox */}
+      {/* The proposal locks the user's item until everyone answers: say so plainly */}
       <label
         htmlFor="custody-terms"
-        className="flex items-start gap-3 p-3.5 rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest shadow-sm cursor-pointer select-none"
+        className="flex items-start gap-3 min-h-12 p-3.5 rounded-2xl border border-surface-container-high bg-surface-container-lowest shadow-sm cursor-pointer select-none"
       >
         <input
           id="custody-terms"
           type="checkbox"
           checked={acceptedTerms}
           onChange={(e) => setAcceptedTerms(e.target.checked)}
-          className="mt-0.5 w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
+          className="sr-only peer"
         />
-        <span className="font-body-md text-body-md text-on-surface-variant leading-snug">
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 w-6 h-6 rounded-md border-2 shrink-0 flex items-center justify-center peer-focus-visible:ring-2 peer-focus-visible:ring-primary ${
+            acceptedTerms ? 'bg-primary border-primary text-on-primary' : 'border-outline'
+          }`}
+        >
+          {acceptedTerms && <Icon name="check" size="sm" />}
+        </span>
+        <span className="font-body-md text-body-md text-on-surface">
           {t('proposalConfirm.acceptTerms')}
         </span>
       </label>
