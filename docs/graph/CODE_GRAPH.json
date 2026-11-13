@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T01:48:09.037Z",
+  "generatedAt": "2026-11-13T01:52:41.686Z",
   "stats": {
     "totalFiles": 140,
     "apiFiles": 66,
@@ -2886,8 +2886,6 @@
       "exports": [],
       "imports": [
         "@/i18n",
-        "@/services/ai/ai.service",
-        "@/services/routes/routes.service",
         "@/types",
         "@/utils/swapSearch",
         "react-dom/server",
@@ -2958,11 +2956,18 @@
     "mobile/src/utils/swapSearch.ts": {
       "module": "mobile/utils",
       "exports": [
+        "InventorySnapshot",
         "MIN_OBJECTIVE_LENGTH",
         "NoRoutesReason",
         "SwapSearchBlocker",
+        "SwapSearchInput",
+        "SwapSearchNavigation",
+        "SwapSearchState",
+        "VALUE_TOLERANCE_PCT",
+        "buildSwapSearchNavigation",
         "getNoRoutesReason",
-        "getSwapSearchBlocker"
+        "getSwapSearchBlocker",
+        "isOfferableItem"
       ],
       "imports": []
     }
