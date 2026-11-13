@@ -17,9 +17,11 @@
     "openapi:check": "npm --workspace=api run openapi:check",
     "typecheck": "npm --workspace=mobile run typecheck && npm --workspace=api run typecheck",
     "graphify": "node scripts/graphify.mjs",
-    "smoke:demo": "node scripts/smoke-demo.mjs"
+    "smoke:demo": "node scripts/smoke-demo.mjs",
+    "audit:ui": "node scripts/audit-ui.mjs"
   },
   "devDependencies": {
+    "axe-core": "^4.10.2",
     "playwright-core": "^1.48.2"
   }
 }
