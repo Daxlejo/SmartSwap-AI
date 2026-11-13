@@ -27,10 +27,10 @@ describe('i18n', () => {
   });
 
   it('resolves plurals in both languages', async () => {
-    expect(i18n.t('home.activeRoutes.circuits', { count: 1 })).toBe('1 circuito');
-    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 circuitos');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 1 })).toBe('1 ruta en curso');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 rutas en curso');
     await i18n.changeLanguage('en');
-    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 circuits');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 routes in progress');
   });
 
   it('translates catalog values while keeping the stored Spanish value as the key', async () => {

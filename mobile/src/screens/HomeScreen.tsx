@@ -1,12 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { formatMatchScore } from '@/services/routes/routes.service';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
-import { formatRelativeTime } from '@/utils/relativeTime';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -19,13 +16,12 @@ const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'COMPLETED']);
 
 export const HomeScreen = () => {
   const navigate = useNavigate();
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const {
     currentUser,
     items,
     myItems,
     routes,
-    notifications,
     loadStates,
     isItemsLoading,
     refreshItems,
@@ -34,21 +30,13 @@ export const HomeScreen = () => {
   } = useApp();
 
   const [filterMode, setFilterMode] = useState<'nearby' | 'wishlist'>('nearby');
-  const [showRouteExplanation, setShowRouteExplanation] = useState(false);
 
-  const activeRoute = routes.find(
+  const activeRoutes = routes.filter(
     (route) => !INACTIVE_ROUTE_STATUSES.has((route.status || '').toUpperCase()),
   );
-  const activeRoutesCount = routes.filter(
-    (route) => !INACTIVE_ROUTE_STATUSES.has((route.status || '').toUpperCase()),
-  ).length;
-  const latestNotification = notifications[0];
+  const activeRoute = activeRoutes[0];
   const activeRouteTarget = activeRoute?.chainItems[activeRoute.chainItems.length - 1];
-  const activeRouteChain = (activeRoute?.chainItems ?? [])
-    .map((item) => item.name.split(' ')[0])
-    .join(' → ');
   const activeUserItemsCount = myItems.length;
-  const activeMatchPct = formatMatchScore(activeRoute?.matchScore);
 
   const isLoading = isItemsLoading || loadStates.items === 'loading';
   const hasError = loadStates.items === 'error';
@@ -66,160 +54,74 @@ export const HomeScreen = () => {
     });
   }, [filterMode, otherItems, myItems]);
 
+  const openActiveRoute = () => {
+    if (!activeRoute) return;
+    navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, { state: { route: activeRoute } });
+  };
+
   return (
-    <div className="flex flex-col w-full px-margin pt-4 pb-8 space-y-5">
+    <div className="flex flex-col w-full px-margin pt-4 space-y-6">
       <LocationPrompt />
 
-      {/* Greeting & Environmental Impact Pill */}
-      <section className="flex items-start justify-between gap-space-sm">
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-space-xs">
-            <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
-              {currentUser?.name
-                ? t('home.greeting', { name: currentUser.name.split(' ')[0] })
-                : t('home.greetingAnonymous')}
-            </h1>
-            <span className="text-xl">👋</span>
-          </div>
-          <p className="font-body-md text-body-md text-on-surface-variant mt-0.5">
-            {t('home.subtitle')}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high shadow-xs">
-            <Icon name="eco" size="sm" filled className="text-primary" />
-            <span className="font-label-sm text-label-sm text-primary font-bold">
-              {t('home.co2Saved', { kg: currentUser?.co2SavedKg ?? 0 })}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10">
-            <Icon name="swap_horiz" size="xs" className="text-primary" />
-            <span className="font-label-sm text-caption text-primary font-bold">
-              {t('home.tradesCompleted', { count: currentUser?.tradesCompleted ?? 0 })}
-            </span>
-          </div>
-        </div>
+      <section className="flex flex-col gap-1">
+        <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold break-words">
+          {currentUser?.name
+            ? t('home.greeting', { name: currentUser.name.split(' ')[0] })
+            : t('home.greetingAnonymous')}
+        </h1>
+        <p className="font-body-md text-body-md text-on-surface-variant">{t('home.subtitle')}</p>
       </section>
 
-      {/* Live Swap Ticker: latest real notification */}
-      {latestNotification && (
-        <section
-          aria-label={t('home.liveAria')}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-surface-container-low shadow-xs border border-surface-container-high/60 overflow-hidden"
-        >
-          <div className="relative flex items-center justify-center shrink-0 w-6 h-6 rounded-full bg-secondary-container text-on-primary">
-            <Icon name="electric_bolt" size="xs" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-2 ring-surface" />
-          </div>
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider shrink-0">
-              {t('home.liveSwap')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface line-clamp-2 break-words">
-              {latestNotification.title}
-            </span>
-          </div>
-          <span className="font-label-sm text-label-sm text-outline shrink-0">
-            {latestNotification.createdAt
-              ? formatRelativeTime(latestNotification.createdAt, language)
-              : latestNotification.time}
-          </span>
-        </section>
-      )}
-
-      {/* Quick Action Bento Grid */}
       <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
-        {/* Card 1: Primary Action -> ConfigureSwap */}
-        <div className="col-span-2 relative overflow-hidden rounded-2xl bg-hero p-space-md text-on-hero shadow-md">
-          <div className="relative z-10 flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-on-hero/15">
-                <Icon name="auto_awesome" size="xs" className="text-on-hero-variant" />
-                <span className="font-label-sm text-label-sm font-bold text-on-hero-variant">
-                  {t('home.engine.badge')}
-                </span>
-              </div>
-              <Icon name="swap_calls" size="lg" className="text-on-hero-variant" />
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="font-headline-sm text-headline-sm text-on-hero font-bold">
-                {t('home.engine.title')}
-              </h2>
-              <p className="font-body-sm text-body-sm text-on-hero-variant leading-relaxed">
-                {t('home.engine.description')}
-              </p>
-            </div>
-
-            <div className="pt-1 flex items-center justify-between">
-              <Button
-                variant="tonal"
-                size="md"
-                rightIcon="arrow_forward"
-                onClick={() => navigate('/swap/configure')}
-                className="bg-surface text-primary hover:bg-surface-container-low font-bold shadow-xs"
-              >
-                {t('home.engine.cta')}
-              </Button>
-              <span className="font-label-sm text-label-sm text-on-hero-variant font-medium">
-                {t('home.engine.hops')}
-              </span>
-            </div>
+        {/* Main action: one title, one line, one button */}
+        <div className="col-span-2 rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-headline-md text-headline-md text-on-hero font-bold">{t('home.engine.title')}</h2>
+            <p className="font-body-md text-body-md text-on-hero-variant">{t('home.engine.description')}</p>
           </div>
+          <Button
+            variant="tonal"
+            size="lg"
+            fullWidth
+            rightIcon="arrow_forward"
+            onClick={() => navigate('/swap/configure')}
+            className="bg-surface text-primary hover:bg-surface-container-low"
+          >
+            {t('home.engine.cta')}
+          </Button>
         </div>
 
-        {/* Card 2: Publish Item / Live Active User Items */}
         <button
           type="button"
           onClick={() => navigate('/publish')}
-          className="flex flex-col justify-between p-3.5 rounded-2xl bg-surface-container-lowest border border-surface-container-high/60 shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
+          className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
         >
-          <div className="flex items-center justify-between w-full">
-            <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-primary">
-              <Icon name="add_a_photo" size="md" />
-            </div>
-            <span className="font-label-sm text-label-sm text-outline font-semibold">
+          <Icon name="add_a_photo" size="lg" className="text-primary" />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-headline-sm text-headline-sm text-on-surface">{t('home.publish.title')}</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
               {activeUserItemsCount > 0
-                ? t('home.publish.activeCount', { count: activeUserItemsCount })
-                : t('home.publish.quick')}
+                ? t('home.publish.itemsPublished', { count: activeUserItemsCount })
+                : t('home.publish.empty')}
             </span>
-          </div>
-          <div className="mt-3">
-            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">{t('home.publish.title')}</h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {activeUserItemsCount > 0
-                ? t('home.publish.itemsInSwap', { count: activeUserItemsCount })
-                : t('home.publish.inSeconds')}
-            </p>
-          </div>
+          </span>
         </button>
 
-        {/* Card 3: Active Swaps / Live Route Counts */}
         <button
           type="button"
           onClick={() => navigate('/swaps')}
-          className="flex flex-col justify-between p-3.5 rounded-2xl bg-surface-container-lowest border border-surface-container-high/60 shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
+          className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
         >
-          <div className="flex items-center justify-between w-full">
-            <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center text-secondary">
-              <Icon name="sync_alt" size="md" />
-            </div>
-            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold animate-pulse">
-              {t('home.activeRoutes.badge', { count: activeRoutesCount })}
+          <Icon name="sync_alt" size="lg" className="text-secondary" />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-headline-sm text-headline-sm text-on-surface">{t('home.activeRoutes.title')}</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {t('home.activeRoutes.circuits', { count: activeRoutes.length })}
             </span>
-          </div>
-          <div className="mt-3">
-            <h3 className="font-headline-sm text-[15px] font-bold text-on-surface">
-              {t('home.activeRoutes.title')}
-            </h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {t('home.activeRoutes.circuits', { count: activeRoutesCount })}
-            </p>
-          </div>
+          </span>
         </button>
       </section>
 
-      {/* Signature Section: Recommended Circular Chain */}
       {!activeRoute && loadStates.routes === 'ready' && (
         <EmptyState
           illustration="routes"
@@ -236,208 +138,72 @@ export const HomeScreen = () => {
         />
       )}
 
-      {!activeRoute && loadStates.routes === 'error' && (
-        <ErrorState onRetry={() => void refreshItems()} />
-      )}
+      {!activeRoute && loadStates.routes === 'error' && <ErrorState onRetry={() => void refreshItems()} />}
 
       {activeRoute && (
-        <section aria-label={t('home.route.aria')} className="flex flex-col space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Icon name="route" size="md" className="text-secondary" />
-              <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-                {t('home.route.title')}
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, {
-                  state: { route: activeRoute },
-                })
-              }
-              className="font-label-sm text-label-sm text-primary font-bold flex items-center gap-0.5 hover:underline"
-            >
-              <span>{t('home.route.view')}</span>
-              <Icon name="chevron_right" size="xs" />
-            </button>
-          </div>
-
-          {/* Chain Card */}
-          <div className="flex flex-col rounded-2xl bg-surface-container-lowest border border-surface-container-high/60 p-space-md shadow-sm space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <Badge variant="secondary-subtle" icon="auto_mode">
-                {t('home.route.circuit', { count: activeRoute.stepsCount })}
-              </Badge>
-              {activeMatchPct !== null && (
-                <div className="flex items-center gap-1 text-primary bg-surface-container-low px-2.5 py-1 rounded-full">
-                  <Icon name="verified" size="xs" />
-                  <span className="font-label-sm text-label-sm font-bold">
-                    {t('home.route.match', { percent: activeMatchPct })}
-                  </span>
-                </div>
+        <section aria-label={t('home.route.aria')} className="flex flex-col gap-3">
+          <h2 className="font-headline-md text-headline-md text-on-surface font-bold">{t('home.route.title')}</h2>
+          <div className="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high p-space-md shadow-sm">
+            <div className="flex items-center gap-3">
+              {activeRouteTarget && (
+                <ItemImage
+                  src={activeRouteTarget.imageUrl}
+                  alt={activeRouteTarget.name}
+                  category={activeRouteTarget.category}
+                  className="w-16 h-16 rounded-xl bg-surface-container-high shrink-0"
+                />
               )}
-            </div>
-
-            {/* Target and economics */}
-            <div className="flex items-center justify-between pb-1">
               <div className="flex flex-col min-w-0">
-                <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
-                  {t('home.route.desiredTarget')}
-                </span>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
+                <span className="font-body-sm text-body-sm text-on-surface-variant">{t('home.route.receives')}</span>
+                <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
                   {activeRouteTarget?.name}
                 </span>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="font-headline-sm text-headline-sm text-primary font-bold">
-                  {t('home.route.zeroSpent')}
+                <span className="font-body-sm text-body-sm text-on-surface-variant">
+                  {t('home.route.people', { count: activeRoute.participants?.length || activeRoute.stepsCount })}
                 </span>
-                <p className="font-label-sm text-label-sm text-on-surface-variant">
-                  {t('home.route.people', { count: activeRoute.participants?.length || 0 })}
-                </p>
               </div>
             </div>
-
-            {/* Visual Chain Horizontal Flow */}
-            <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low">
-              <div className="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
-                <span>{t('home.route.yourItem')}</span>
-                <Icon name="trending_flat" size="sm" className="text-primary" />
-                <span>{t('home.route.desiredItem')}</span>
-              </div>
-
-              {/* Chain Steps */}
-              <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
-                {activeRoute.chainItems?.map((item, index) => {
-                  const isFirst = index === 0;
-                  const isLast = index === activeRoute.chainItems.length - 1;
-
-                  return (
-                    <div key={item.id} className="flex items-center shrink-0">
-                      <div className="flex flex-col items-center min-w-[56px]">
-                        <div
-                          className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
-                            isLast ? 'ring-2 ring-primary ring-offset-1' : ''
-                          }`}
-                        >
-                          <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-full h-full" />
-                          {isFirst && (
-                            <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
-                              {t('home.route.you')}
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          className={`font-label-sm text-caption font-semibold text-center mt-1 line-clamp-2 break-words max-w-[60px] ${
-                            isLast ? 'text-primary font-bold' : 'text-on-surface'
-                          }`}
-                        >
-                          {item.name.split(' ')[0]}
-                        </span>
-                      </div>
-
-                      {!isLast && (
-                        <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
-                          <Icon name="sync_alt" size="xs" />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <Button
-                variant="tonal"
-                size="sm"
-                leftIcon="lightbulb"
-                onClick={() => setShowRouteExplanation(!showRouteExplanation)}
-              >
-                {t('home.route.howItWorks')}
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                rightIcon="explore"
-                onClick={() =>
-                  navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, {
-                    state: { route: activeRoute },
-                  })
-                }
-              >
-                {t('home.route.view')}
-              </Button>
-            </div>
-
-            {/* Explainer Drawer */}
-            {showRouteExplanation && (
-              <div className="p-3 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm leading-relaxed border border-surface-container-high">
-                <div className="flex items-center gap-1.5 font-headline-sm text-label-md font-bold text-on-surface mb-1">
-                  <Icon name="psychology" size="sm" className="text-secondary" />
-                  <span>{t('home.route.dynamicsTitle')}</span>
-                </div>
-                <p>
-                  {activeRoute.aiExplanation ||
-                    t('home.route.fallbackExplanation', { chain: activeRouteChain })}
-                </p>
-              </div>
-            )}
+            <Button variant="primary" size="lg" fullWidth rightIcon="arrow_forward" onClick={openActiveRoute}>
+              {t('home.route.view')}
+            </Button>
           </div>
         </section>
       )}
 
-      {/* 'You Might Like' Section */}
-      <section aria-label={t('home.recommended.aria')} className="flex flex-col space-y-3 pt-1">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
-              {t('home.recommended.title')}
-            </h2>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              {t('home.recommended.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 bg-surface-container-high p-0.5 rounded-xl">
-            <Chip
-              active={filterMode === 'nearby'}
-              onClick={() => setFilterMode('nearby')}
-              className="h-8 px-2.5 text-caption"
-            >
-              {t('home.recommended.nearby')}
-            </Chip>
-            <Chip
-              active={filterMode === 'wishlist'}
-              onClick={() => setFilterMode('wishlist')}
-              className="h-8 px-2.5 text-caption"
-            >
-              {t('home.recommended.wishlist')}
-            </Chip>
-          </div>
+      <section aria-label={t('home.recommended.aria')} className="flex flex-col gap-3">
+        <h2 className="font-headline-md text-headline-md text-on-surface font-bold">{t('home.recommended.title')}</h2>
+        <div role="group" aria-label={t('home.recommended.filterAria')} className="flex items-center gap-2">
+          <Chip
+            active={filterMode === 'nearby'}
+            aria-pressed={filterMode === 'nearby'}
+            onClick={() => setFilterMode('nearby')}
+          >
+            {t('home.recommended.nearby')}
+          </Chip>
+          <Chip
+            active={filterMode === 'wishlist'}
+            aria-pressed={filterMode === 'wishlist'}
+            onClick={() => setFilterMode('wishlist')}
+          >
+            {t('home.recommended.wishlist')}
+          </Chip>
         </div>
 
         <LocationScopeSelector />
 
-
-        {/* Data Loading State */}
         {isLoading && (
           <div className="flex flex-col space-y-3">
             {[1, 2, 3].map((n) => (
               <div
                 key={n}
-                className="h-36 rounded-2xl bg-surface-container-low animate-pulse border border-surface-container-high/60"
+                className="h-36 rounded-2xl bg-surface-container-low animate-pulse border border-surface-container-high"
               />
             ))}
           </div>
         )}
 
-        {/* Error State */}
         {!isLoading && hasError && <ErrorState onRetry={() => void refreshItems()} />}
 
-        {/* Empty State */}
         {!isLoading && !hasError && displayedItems.length === 0 && (
           <EmptyState
             illustration="search"
@@ -466,7 +232,6 @@ export const HomeScreen = () => {
           />
         )}
 
-        {/* Item List */}
         {!isLoading && !hasError && displayedItems.length > 0 && (
           <div className="flex flex-col space-y-3">
             {displayedItems.map((item) => (
