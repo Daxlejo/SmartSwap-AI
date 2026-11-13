@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T01:52:41.686Z",
+  "generatedAt": "2026-11-13T03:40:28.213Z",
   "stats": {
-    "totalFiles": 140,
+    "totalFiles": 141,
     "apiFiles": 66,
-    "mobileFiles": 74,
+    "mobileFiles": 75,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -565,6 +565,7 @@
       "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts",
+      "mobile/src/utils/routeView.ts",
       "mobile/src/utils/swapSearch.ts"
     ]
   },
@@ -1962,9 +1963,7 @@
         "ObjectCardProps"
       ],
       "imports": [
-        "./ui/Badge",
         "./ui/Button",
-        "./ui/Icon",
         "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types"
@@ -1993,9 +1992,7 @@
         "RouteCardProps"
       ],
       "imports": [
-        "@/components/ui/Badge",
         "@/components/ui/Button",
-        "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types",
@@ -2012,9 +2009,10 @@
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
+        "@/services/routes/routes.service",
         "@/types",
+        "@/utils/currency",
         "react"
       ]
     },
@@ -2330,7 +2328,6 @@
         "@/components/BottomNav",
         "@/components/ServerStatusBanner",
         "@/components/TopBar",
-        "@/context/AppContext",
         "@/hooks/useTranslation",
         "react-router-dom"
       ]
@@ -2393,7 +2390,6 @@
       "imports": [
         "@/components/LocationPrompt",
         "@/components/LocationScopeSelector",
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
@@ -2455,7 +2451,6 @@
         "@/components/LocationPrompt",
         "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
@@ -2464,8 +2459,6 @@
         "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
-        "@/services/routes/routes.service",
-        "@/utils/relativeTime",
         "react",
         "react-router-dom"
       ]
@@ -2480,7 +2473,6 @@
         "@/assets/logo.svg",
         "@/components/DemoAccountSwitcher",
         "@/components/LocationPicker",
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
         "@/components/ui/Input",
@@ -2497,7 +2489,6 @@
         "NotificationsScreen"
       ],
       "imports": [
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
@@ -2521,7 +2512,6 @@
         "@/components/DemoAccountSwitcher",
         "@/components/LocationPicker",
         "@/components/ui/Avatar",
-        "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2566,10 +2556,8 @@
         "ProposalSentScreen"
       ],
       "imports": [
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types",
         "react",
@@ -2620,17 +2608,16 @@
       ],
       "imports": [
         "@/components/RouteStep",
-        "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/ErrorState",
-        "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
         "@/utils/currency",
+        "@/utils/routeView",
         "react",
         "react-router-dom"
       ]
@@ -2642,16 +2629,12 @@
       ],
       "imports": [
         "@/components/RouteCard",
-        "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
-        "@/components/ui/Icon",
         "@/context/AppContext",
         "@/hooks/useTranslation",
-        "@/services/routes/routes.service",
         "@/types",
-        "@/utils/currency",
         "@/utils/swapSearch",
         "react",
         "react-router-dom"
@@ -2704,6 +2687,7 @@
         "@/services/http/apiClient",
         "@/types",
         "@/utils/relativeTime",
+        "@/utils/routeView",
         "react",
         "react-router-dom"
       ]
@@ -2951,6 +2935,18 @@
       ],
       "imports": [
         "@/services/storage/preferencesStorage"
+      ]
+    },
+    "mobile/src/utils/routeView.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "ReceivedProposal",
+        "canProposeRoute",
+        "isSignedInUser",
+        "toReceivedProposals"
+      ],
+      "imports": [
+        "@/types"
       ]
     },
     "mobile/src/utils/swapSearch.ts": {

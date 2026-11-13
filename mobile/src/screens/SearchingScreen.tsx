@@ -213,7 +213,7 @@ export const SearchingScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between h-full min-h-[580px] w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-hidden select-none animate-fade-in relative">
+    <div className="flex flex-col items-center justify-between flex-1 w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-x-clip select-none animate-fade-in relative">
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -289,7 +289,7 @@ export const SearchingScreen: React.FC = () => {
       <div className="flex flex-col items-center animate-slide-up shrink-0 pt-1">
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high mb-2 shadow-2xs">
           <Icon name="cyclone" size="xs" filled className="text-primary animate-spin-slow" />
-          <span className="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">
+          <span className="font-label-sm text-caption text-primary font-bold uppercase tracking-wider">
             {t('searching.badge')}
           </span>
         </div>
@@ -310,13 +310,13 @@ export const SearchingScreen: React.FC = () => {
         <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple searching-ripple-delayed" />
 
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 240 240">
-          <circle cx="120" cy="120" r="96" fill="none" stroke="#00685f" strokeOpacity="0.18" strokeWidth="2.5" />
+          <circle cx="120" cy="120" r="96" fill="none" stroke="rgb(var(--color-primary))" strokeOpacity="0.18" strokeWidth="2.5" />
           <circle
             cx="120"
             cy="120"
             r="96"
             fill="none"
-            stroke={routeFound ? '#1a7a4a' : '#00685f'}
+            stroke={routeFound ? 'rgb(var(--color-success))' : 'rgb(var(--color-primary))'}
             strokeOpacity={routeFound ? 0.85 : 0.6}
             strokeWidth={isPhase3 ? 3.5 : 2.5}
             strokeDasharray={isPhase3 ? undefined : '8 6'}
@@ -340,7 +340,7 @@ export const SearchingScreen: React.FC = () => {
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md transition-all duration-500 ${
               routeFound
-                ? 'bg-[#1a7a4a] text-on-primary animate-pulse-success'
+                ? 'bg-success text-on-success animate-pulse-success'
                 : 'bg-primary text-on-primary ring-4 ring-primary/20'
             }`}
           >
@@ -350,7 +350,7 @@ export const SearchingScreen: React.FC = () => {
               className={routeFound || searchFinishedEmpty ? 'text-[26px] font-bold' : 'animate-spin-slow'}
             />
           </div>
-          <span className="font-label-sm text-[10px] font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
+          <span className="font-label-sm text-caption font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
             {routeFound
               ? t('searching.connected')
               : searchFinishedEmpty
@@ -367,7 +367,7 @@ export const SearchingScreen: React.FC = () => {
             {/* Reveal Badges & Percentage */}
             {topRoute && (
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a7a4a]/12 border border-[#1a7a4a]/30 text-[#1a7a4a] shadow-2xs">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/30 text-success shadow-2xs">
                 <Icon name="verified" size="xs" filled />
                 <span className="font-label-sm text-label-sm font-bold">
                   {t('searching.routeFound', { code: topRoute?.code ?? '' })}
@@ -391,7 +391,7 @@ export const SearchingScreen: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
                       <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
                     </div>
-                    <span className="font-label-sm text-[11px] text-on-surface font-semibold mt-1 truncate max-w-[50px] text-center">
+                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 line-clamp-2 break-words max-w-[50px] text-center">
                       {step.user}
                     </span>
                   </div>
@@ -415,7 +415,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[44px]">
-            <p className="font-body-md text-body-md text-on-surface-variant font-medium animate-pulse">
+            <p className="font-body-md text-body-md text-on-surface-variant font-medium">
               {t(`searching.messages.${MESSAGE_KEYS[messageIndex]}`)}
             </p>
           </div>
@@ -445,7 +445,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         ) : (
           <div className="h-[52px] flex items-center justify-center">
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[12px] flex items-center gap-1.5">
+            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
               {t('searching.syncing')}
             </span>

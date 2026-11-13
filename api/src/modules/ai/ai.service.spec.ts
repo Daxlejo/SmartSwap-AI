@@ -213,7 +213,8 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.source).toBe('fallback');
       expect(typeof result.explanation).toBe('string');
       expect(result.explanation).toContain('Carlos Mendoza');
-      expect(result.explanation).toContain('CO₂');
+      expect(result.explanation).toContain('nuevo dueño');
+      expect(result.explanation).not.toContain('CO₂');
       expect(result.fairnessScore).toBeGreaterThanOrEqual(85);
       expect(result.fairnessScore).toBeLessThanOrEqual(100);
     });
@@ -242,7 +243,8 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
 
       expect(result.source).toBe('fallback');
       expect(result.explanation).toContain('circular route');
-      expect(result.explanation).toContain('CO₂ emissions');
+      expect(result.explanation).toContain('new owner');
+      expect(result.explanation).not.toContain('CO₂');
       expect(result.explanation).not.toContain('Esta ruta');
     });
   });

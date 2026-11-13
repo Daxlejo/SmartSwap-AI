@@ -13,24 +13,9 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
-
-interface ReceivedProposal {
-  id: string;
-  senderName: string;
-  senderAvatar?: string;
-  senderRating: number;
-  senderVerified: boolean;
-  offeredItemName: string;
-  offeredItemImg?: string;
-  offeredItemCategory?: string;
-  targetItemName: string;
-  targetItemImg?: string;
-  targetItemCategory?: string;
-  timeAgo: string;
-  status: 'pending' | 'accepted' | 'declined';
-}
 
 interface InProgressRouteCardProps {
   route: SwapRoute;
@@ -66,7 +51,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
     <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
+          <span className="font-label-sm text-caption text-secondary font-bold uppercase tracking-wider">
             {t('trades.circuitLabel', { code: route.code ?? route.id })}
           </span>
           <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
@@ -87,7 +72,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <div className="flex justify-between text-[11px] font-label-sm text-on-surface-variant font-medium">
+        <div className="flex justify-between text-caption font-label-sm text-on-surface-variant font-medium">
           <span>{t('trades.progress', { pct: progressPct })}</span>
           <span>
             {isCompleted
@@ -99,14 +84,9 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
 
       <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
         <div className="flex items-center justify-between">
-          <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold">
+          <span className="font-label-sm text-caption text-on-surface-variant font-semibold">
             {t('trades.circuitChain')}
           </span>
-          {route.co2SavedKg > 0 && (
-            <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a]">
-              -{route.co2SavedKg} kg CO₂
-            </span>
-          )}
         </div>
 
         <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
@@ -122,13 +102,13 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
                   >
                     <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
                     {idx === 0 && (
-                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-[8px] font-bold">
+                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
                         {t('trades.you')}
                       </span>
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-[11px] font-semibold text-center mt-1 truncate max-w-[62px] ${
+                    className={`font-label-sm text-caption font-semibold text-center mt-1 line-clamp-2 break-words max-w-[62px] ${
                       idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >
@@ -147,8 +127,8 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
       </div>
 
       {route.aiExplanation && (
-        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-[12px] leading-snug">
-          <div className="flex items-center gap-1 text-primary font-label-sm text-[11px] font-bold mb-0.5">
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-caption leading-snug">
+          <div className="flex items-center gap-1 text-primary font-label-sm text-caption font-bold mb-0.5">
             <Icon name="auto_awesome" size="xs" filled />
             <span>{t('trades.aiFairness')}</span>
           </div>
@@ -206,45 +186,10 @@ export const TradesScreen: React.FC = () => {
 
   // Recibidas: routes started by other users
   useEffect(() => {
-    const apiProposals: ReceivedProposal[] = routes
-      .filter((r) => r.initiatorId !== currentUser?.id)
-      .map((r) => {
-        const initiator = r.participants[0];
-        const offered = r.chainItems[0];
-        const target = r.chainItems[r.chainItems.length - 1];
-        const upperStatus = (r.status || 'ACTIVE').toUpperCase();
-        const userStep = r.steps?.find((s) => s.userId === currentUser?.id);
-
-        let status: 'pending' | 'accepted' | 'declined' = 'pending';
-        if (
-          upperStatus === 'CONFIRMED' ||
-          upperStatus === 'COMPLETED' ||
-          userStep?.acceptance === 'ACCEPTED'
-        ) {
-          status = 'accepted';
-        } else if (upperStatus === 'CANCELLED' || userStep?.acceptance === 'DECLINED') {
-          status = 'declined';
-        }
-
-        return {
-          id: r.id,
-          senderName: initiator?.name || '—',
-          senderAvatar: initiator?.avatarUrl,
-          senderRating: initiator?.rating ?? 0,
-          senderVerified: initiator?.verified ?? false,
-          offeredItemName: offered?.name ?? '',
-          offeredItemImg: offered?.imageUrl,
-          offeredItemCategory: offered?.category,
-          targetItemName: target?.name ?? '',
-          targetItemImg: target?.imageUrl,
-          targetItemCategory: target?.category,
-          timeAgo: t('trades.justReceived'),
-          status,
-        };
-      });
+    const apiProposals = toReceivedProposals(routes, currentUser?.id);
 
     setReceivedProposals(apiProposals);
-  }, [routes, currentUser?.id, t]);
+  }, [routes, currentUser?.id]);
 
   const describeError = (error: unknown): string =>
     error instanceof ApiError && error.message ? error.message : t('trades.actionFailed');
@@ -310,23 +255,15 @@ export const TradesScreen: React.FC = () => {
     routes.length > 0 || loadStates.routes === 'ready';
 
   return (
-    <div className="flex flex-col min-h-full bg-surface px-margin pt-4 pb-24 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-headline-lg text-headline-lg text-on-surface font-bold">
-          {t('trades.title')}
-        </h1>
-        <Badge variant="primary-subtle" icon="verified_user">
-          {t('trades.safeMode')}
-        </Badge>
-      </div>
-
+    <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-4">
       {/* Tabs */}
-      <div className="flex p-1 rounded-2xl bg-surface-container-low border border-surface-container-high/60 gap-1 select-none">
+      <div role="tablist" aria-label={t('trades.tabsAria')} className="flex p-1 rounded-2xl bg-surface-container-low border border-surface-container-high gap-1 select-none">
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'recibidas'}
           onClick={() => setActiveTab('recibidas')}
-          className={`flex-1 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
             activeTab === 'recibidas'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
@@ -334,7 +271,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.received')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'recibidas'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -346,8 +283,10 @@ export const TradesScreen: React.FC = () => {
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'enviadas'}
           onClick={() => setActiveTab('enviadas')}
-          className={`flex-1 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
             activeTab === 'enviadas'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
@@ -355,7 +294,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.sent')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'enviadas'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -367,8 +306,10 @@ export const TradesScreen: React.FC = () => {
 
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'en_curso'}
           onClick={() => setActiveTab('en_curso')}
-          className={`flex-1 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
             activeTab === 'en_curso'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
@@ -376,7 +317,7 @@ export const TradesScreen: React.FC = () => {
         >
           <span>{t('trades.tabs.inProgress')}</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'en_curso'
                 ? 'bg-primary text-on-primary'
                 : 'bg-surface-container-high text-on-surface-variant'
@@ -397,7 +338,7 @@ export const TradesScreen: React.FC = () => {
             type="button"
             onClick={() => setActionError(null)}
             aria-label={t('trades.dismissError')}
-            className="shrink-0"
+            className="shrink-0 w-11 h-11 -m-2 flex items-center justify-center rounded-full"
           >
             <Icon name="close" size="xs" />
           </button>
@@ -440,67 +381,47 @@ export const TradesScreen: React.FC = () => {
                 key={proposal.id}
                 className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-3"
               >
-                {/* Header: Sender + Rating + Status Badge */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Avatar
-                      src={proposal.senderAvatar}
-                      alt={proposal.senderName}
-                      size="md"
-                      verified={proposal.senderVerified}
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-headline-sm text-[14px] font-bold text-on-surface truncate">
-                          {proposal.senderName}
-                        </span>
-                        <span className="inline-flex items-center gap-0.5 font-label-sm text-[11px] text-on-surface font-semibold">
-                          <Icon name="star" size="xs" filled className="text-secondary" />
-                          {proposal.senderRating.toFixed(1)}
-                        </span>
-                      </div>
-                      <span className="font-body-sm text-[11px] text-on-surface-variant">
-                        {proposal.timeAgo}
-                      </span>
-                    </div>
+                {/* Header: who proposed it and where the proposal stands */}
+                <div className="flex items-center gap-3">
+                  <Avatar src={proposal.senderAvatar} alt={proposal.senderName} size="md" />
+                  <div className="flex flex-col items-start gap-1 min-w-0">
+                    <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                      {proposal.senderName}
+                    </span>
+                    <Badge variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}>
+                      {isAccepted
+                        ? t('trades.status.accepted')
+                        : isDeclined
+                          ? t('trades.status.declined')
+                          : t('trades.status.pending')}
+                    </Badge>
                   </div>
-
-                  <Badge
-                    variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}
-                  >
-                    {isAccepted
-                      ? t('trades.status.accepted')
-                      : isDeclined
-                        ? t('trades.status.declined')
-                        : t('trades.status.pending')}
-                  </Badge>
                 </div>
 
                 {/* Items exchanged comparison */}
-                <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-surface-container-low border border-surface-container-high/50">
+                <div className="flex flex-col gap-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high">
                   {/* Offers */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <ItemImage src={proposal.offeredItemImg} alt={proposal.offeredItemName} category={proposal.offeredItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
-                      <span className="font-label-sm text-[10px] text-secondary font-bold uppercase tracking-wider">
+                      <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.offers')}
                       </span>
-                      <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
+                      <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
                         {proposal.offeredItemName}
                       </span>
                     </div>
                   </div>
 
-                  <Icon name="sync_alt" size="xs" className="text-outline shrink-0" />
 
                   {/* Wants */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <ItemImage src={proposal.targetItemImg} alt={proposal.targetItemName} category={proposal.targetItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
                     <div className="flex flex-col min-w-0">
-                      <span className="font-label-sm text-[10px] text-primary font-bold uppercase tracking-wider">
+                      <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.inExchangeFor')}
                       </span>
-                      <span className="font-body-sm text-[12px] font-semibold text-on-surface truncate">
+                      <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
                         {proposal.targetItemName}
                       </span>
                     </div>
@@ -589,10 +510,10 @@ export const TradesScreen: React.FC = () => {
                         verified={recipient?.verified}
                       />
                       <div className="min-w-0">
-                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface truncate">
+                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface line-clamp-2 break-words">
                           {t('trades.offerTo', { name: recipient?.name ?? '' })}
                         </h2>
-                        <span className="font-body-sm text-[11px] text-on-surface-variant">
+                        <span className="font-body-sm text-caption text-on-surface-variant">
                           {route.code ? `${route.code} • ` : ''}
                           {route.createdAt
                             ? t('trades.sentAt', { time: formatRelativeTime(route.createdAt, language) })
@@ -607,10 +528,10 @@ export const TradesScreen: React.FC = () => {
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <ItemImage src={offered?.imageUrl} alt={offered?.name ?? ''} category={offered?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.youOffer')}
                         </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface line-clamp-2 break-words">
                           {offered?.name}
                         </span>
                       </div>
@@ -623,10 +544,10 @@ export const TradesScreen: React.FC = () => {
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <ItemImage src={target?.imageUrl} alt={target?.name ?? ''} category={target?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-[10px] text-outline uppercase font-bold">
+                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.inExchange')}
                         </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface truncate">
+                        <span className="font-body-sm text-body-sm font-semibold text-on-surface line-clamp-2 break-words">
                           {target?.name}
                         </span>
                       </div>
@@ -691,22 +612,6 @@ export const TradesScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom Eco Banner */}
-      <div className="mt-auto pt-2">
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-primary-container/10 border border-primary/20 text-primary shadow-xs">
-          <div className="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0 text-primary">
-            <Icon name="eco" size="md" filled />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="font-label-md text-label-md font-bold text-on-surface">
-              {t('trades.ecoImpact')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {t('trades.co2Saved', { kg: currentUser?.co2SavedKg ?? 0 })}
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

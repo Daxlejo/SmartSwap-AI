@@ -565,12 +565,11 @@ export const PublishScreen: React.FC = () => {
   const coverPhoto = photos[0];
   const ownerName = currentUser?.name ?? '';
   const ownerAvatar = currentUser?.avatarUrl;
-  const ownerRating = typeof currentUser?.rating === 'number' ? currentUser.rating.toFixed(1) : '—';
 
   const renderAiAssistantBanner = () => (
     <div className="rounded-2xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-3.5 space-y-2.5 transition-all">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-xs">
             <Icon
               name={isAnalyzingAi ? 'progress_activity' : 'auto_awesome'}
@@ -580,10 +579,10 @@ export const PublishScreen: React.FC = () => {
             />
           </div>
           <div className="min-w-0">
-            <p className="font-label-md text-label-md font-bold text-on-surface truncate">
+            <p className="font-label-lg text-label-lg font-bold text-on-surface">
               {t('publish.ai.assistant')}
             </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
               {isAnalyzingAi
                 ? t('publish.ai.analyzing')
                 : t('publish.ai.hint')}
@@ -597,10 +596,10 @@ export const PublishScreen: React.FC = () => {
           disabled={!canAutocompleteWithAi || isAnalyzingAi}
           data-testid="ai-autocomplete-btn"
           className={clsx(
-            'shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-label-md text-label-md font-bold transition-all shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            'w-full min-h-11 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-label-lg text-label-lg font-bold transition-all shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
             canAutocompleteWithAi && !isAnalyzingAi
               ? 'bg-primary text-on-primary hover:opacity-95 active:scale-95 cursor-pointer'
-              : 'bg-surface-container-high text-on-surface-variant/60 cursor-not-allowed',
+              : 'bg-surface-container-high text-on-surface-variant cursor-not-allowed',
           )}
         >
           <span>
@@ -670,7 +669,7 @@ export const PublishScreen: React.FC = () => {
   // STEP 5: Success Screen (Not counted in step indicator)
   if (currentStep === 5) {
     return (
-      <div className="flex flex-col items-center justify-between min-h-full px-margin pt-8 pb-8 text-center space-y-6">
+      <div className="flex flex-col items-center justify-between flex-1 px-margin pt-8 pb-8 text-center space-y-6">
         {/* Animated Celebration & Header */}
         <div className="flex flex-col items-center space-y-4 w-full">
           <div
@@ -703,11 +702,11 @@ export const PublishScreen: React.FC = () => {
 
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1 mb-1">
-              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
+              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
                 {name}
               </h2>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-[#1a7a4a]/10 text-[#1a7a4a] shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a4a]" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-success/10 text-success shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 {t('publish.success.active')}
               </span>
             </div>
@@ -761,7 +760,7 @@ export const PublishScreen: React.FC = () => {
 
   // STEPS 1 - 4 WIZARD VIEW
   return (
-    <div className="flex flex-col min-h-full px-margin pt-4 pb-28">
+    <div className="flex flex-col flex-1 px-margin pt-4">
       {/* Hidden file input for camera / gallery selection */}
       <input
         type="file"
@@ -781,9 +780,9 @@ export const PublishScreen: React.FC = () => {
           <button
             type="button"
             onClick={handlePrevStep}
-            className="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors mb-3 select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
+            className="min-h-11 -ml-1 px-1 inline-flex items-center gap-1 font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors mb-2 select-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
           >
-            <Icon name="arrow_back" size="xs" />
+            <Icon name="arrow_back" size="sm" />
             <span>{t('publish.previousStep')}</span>
           </button>
         )}
@@ -815,7 +814,7 @@ export const PublishScreen: React.FC = () => {
                     }
                   }}
                   className={clsx(
-                    'flex flex-col items-center gap-1 select-none focus-visible:outline-none',
+                    'min-w-11 min-h-11 flex flex-col items-center gap-1 select-none focus-visible:outline-none',
                     isCompleted && 'cursor-pointer',
                     !isCompleted && 'cursor-default',
                   )}
@@ -840,7 +839,7 @@ export const PublishScreen: React.FC = () => {
                       'font-label-sm text-label-sm transition-colors',
                       isActive && 'text-primary font-bold',
                       isCompleted && 'text-on-surface font-semibold',
-                      isUpcoming && 'text-on-surface-variant/70 font-medium',
+                      isUpcoming && 'text-on-surface-variant font-medium',
                     )}
                   >
                     {t(`publish.steps.${step.id}`, { defaultValue: step.label })}
@@ -916,7 +915,7 @@ export const PublishScreen: React.FC = () => {
                         className="w-full h-full object-cover"
                       />
                       {index === 0 && (
-                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-xs font-label-sm text-[9px] font-bold text-primary shadow-xs">
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-surface/90 backdrop-blur-xs font-label-sm text-caption font-bold text-primary shadow-xs">
                           {t('publish.photos.cover')}
                         </span>
                       )}
@@ -948,7 +947,7 @@ export const PublishScreen: React.FC = () => {
                       size="sm"
                       className="group-hover:text-primary transition-colors"
                     />
-                    <span className="font-label-sm text-label-sm text-on-surface-variant/70 mt-0.5">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
                       {index + 1}
                     </span>
                   </button>
@@ -1017,7 +1016,7 @@ export const PublishScreen: React.FC = () => {
               }}
               className={clsx(
                 'w-full p-3.5 bg-surface-container-low text-on-surface rounded-2xl font-body-md text-body-md resize-none',
-                'placeholder:text-on-surface-variant/70 transition-all duration-150',
+                'placeholder:text-on-surface-variant transition-all duration-150',
                 'focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/30',
                 errors.description && 'ring-2 ring-error/50 bg-error-container/20',
               )}
@@ -1155,7 +1154,7 @@ export const PublishScreen: React.FC = () => {
                   }
                 }}
                 placeholder={t('publish.info.valuePlaceholder')}
-                className="w-full bg-transparent text-on-surface font-body-md text-body-md focus:outline-none"
+                className="w-full h-12 bg-transparent text-on-surface font-body-md text-body-md focus:outline-none"
               />
               <span className="font-label-md text-label-md font-bold text-on-surface-variant ml-2 select-none">
                 COP
@@ -1423,22 +1422,16 @@ export const PublishScreen: React.FC = () => {
                       {ownerName}
                     </span>
                   </div>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    {t('publish.preview.verifiedOwner', { rating: ownerRating })}
-                  </span>
                 </div>
               </div>
 
-              <Badge variant="primary-subtle" icon="verified_user">
-                {t('publish.preview.guaranteed')}
-              </Badge>
             </div>
           </article>
         </div>
       )}
 
       {/* ================= FIXED BOTTOM ACTION BAR ================= */}
-      <div className="fixed bottom-0 inset-x-0 p-margin bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/60 z-50 max-w-[390px] mx-auto">
+      <div className="fixed bottom-0 inset-x-0 px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 max-w-[390px] mx-auto">
         {currentStep === 1 && (
           <Button variant="primary" size="lg" fullWidth onClick={handleNextStep1}>
             {t('publish.continue')}

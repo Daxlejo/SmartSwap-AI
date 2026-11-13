@@ -47,7 +47,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
       
       <div className="flex items-center justify-between mb-4 bg-surface-container-low p-3 rounded-xl border border-surface-container-high/60">
         <div className="flex-1 flex flex-col items-center">
-          <span className="font-label-sm text-[10px] uppercase tracking-wider text-secondary font-bold mb-1">
+          <span className="font-label-sm text-caption uppercase tracking-wider text-secondary font-bold mb-1">
             {isReceived ? t('cards.theyOffer') : t('cards.youOffer')}
           </span>
           <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />
@@ -57,7 +57,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
         </div>
         
         <div className="px-3 text-primary flex flex-col items-center">
-          <span className="font-label-sm text-[10px] uppercase tracking-wider text-on-surface-variant mb-1 font-semibold">
+          <span className="font-label-sm text-caption uppercase tracking-wider text-on-surface-variant mb-1 font-semibold">
             {t('cards.swapFor')}
           </span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -67,7 +67,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
         </div>
         
         <div className="flex-1 flex flex-col items-center">
-          <span className="font-label-sm text-[10px] uppercase tracking-wider text-primary font-bold mb-1">
+          <span className="font-label-sm text-caption uppercase tracking-wider text-primary font-bold mb-1">
             {isReceived ? t('cards.yourItem') : t('cards.youWant')}
           </span>
           <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />

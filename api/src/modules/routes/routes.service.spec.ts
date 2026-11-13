@@ -929,6 +929,19 @@ describe('RoutesService', () => {
           co2SavedKg: { increment: 2.4 },
         },
       });
+      // One completion notice per participant, with the route code and no invented CO₂ figure
+      const notices = mockTx.notification.createMany.mock.calls[0][0].data as Array<{
+        userId: string;
+        type: string;
+        body: string;
+      }>;
+      expect(notices.map((n) => n.userId).sort()).toEqual([userAId, userBId, userCId].sort());
+      for (const notice of notices) {
+        expect(notice.type).toBe('ROUTE_COMPLETED');
+        expect(notice.body).toContain(result.code);
+        expect(notice.body).not.toContain('CO₂');
+      }
+
       expect(result.status).toBe('COMPLETED');
       expect(result.steps[0].givesItem.status).toBe('TRADED');
       expect(result.steps.every((s) => s.deliveryConfirmed)).toBe(true);

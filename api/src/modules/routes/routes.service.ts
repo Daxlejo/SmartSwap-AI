@@ -661,7 +661,7 @@ export class RoutesService {
             type: 'ROUTE_COMPLETED',
             badge: 'Trueque completado',
             title: `¡Trueque ${route.code} finalizado con éxito!`,
-            body: `La ruta circular ${route.code} se completó exitosamente, ahorrando ${totalCo2.toFixed(1)} kg de CO₂ en la comunidad SmartSwap.`,
+            body: `La ruta circular ${route.code} se completó: cada participante ya recibió su artículo.`,
             routeId: route.id,
           })),
         });

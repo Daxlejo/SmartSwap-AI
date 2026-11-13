@@ -227,11 +227,14 @@ export const ExploreScreen = () => {
         : null;
 
   return (
-    <div className="flex flex-col flex-1 w-full pb-6">
-      {/* Sticky Header: Search Bar + Category Chips */}
-      <div className="sticky top-16 z-30 bg-surface/90 backdrop-blur-xl border-b border-surface-container-high/50 px-margin pt-3 pb-3 space-y-3 transition-colors">
+    <div className="flex flex-col flex-1 w-full">
+      <div className="px-margin pt-3 space-y-3">
         <LocationPrompt />
         <LocationScopeSelector />
+      </div>
+      {/* Sticky under the TopBar: only search and categories, on an opaque background so the
+          cards scrolling underneath never show through */}
+      <div className="sticky top-below-header z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">
@@ -251,47 +254,11 @@ export const ExploreScreen = () => {
                 type="button"
                 onClick={() => setSearchQuery('')}
                 aria-label={t('explore.clearSearch')}
-                className="absolute right-3 w-7 h-7 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all"
+                className="absolute right-0.5 w-11 h-11 rounded-full text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all"
               >
-                <Icon name="close" size="xs" />
+                <Icon name="close" size="sm" />
               </button>
             )}
-          </div>
-
-          <div className="flex items-center justify-between px-1">
-            <span className="font-label-sm text-label-sm text-on-surface-variant font-medium">
-              {showSkeleton
-                ? t('explore.loadingCatalog')
-                : t('explore.itemsFound', { count: filteredItems.length })}
-            </span>
-
-            <div className="flex items-center gap-3">
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="font-label-sm text-label-sm text-primary font-bold hover:underline flex items-center gap-0.5"
-                >
-                  <Icon name="restart_alt" size="xs" />
-                  <span>{t('explore.clearFilters')}</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleManualRefresh}
-                disabled={isRefreshing || isItemsLoading}
-                aria-label={t('explore.refreshAria')}
-                className="font-label-sm text-label-sm text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
-              >
-                <Icon
-                  name="refresh"
-                  size="xs"
-                  className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined}
-                />
-                <span>{isRefreshing ? t('explore.refreshing') : t('explore.refresh')}</span>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -321,45 +288,63 @@ export const ExploreScreen = () => {
         </div>
       </div>
 
-      {/* Section 3: Filter Row */}
-      <div className="px-margin pt-3 pb-2 flex items-center justify-between gap-space-xs">
-        <div className="flex items-center gap-space-xs overflow-x-auto [scrollbar-width:none]">
-          {/* Condition Cycle Toggle */}
+      {/* Filters and result count (not sticky: they scroll away with the list) */}
+      <div className="px-margin pt-3 pb-2 flex flex-col gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto -mx-margin px-margin [scrollbar-width:none]">
           <button
             type="button"
             onClick={handleCycleCondition}
             aria-label={t('explore.filterByCondition', { value: conditionLabel })}
-            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full font-label-sm text-label-sm transition-all active:scale-95 shrink-0 border ${
+            className={`inline-flex shrink-0 items-center gap-1.5 min-h-11 px-4 rounded-full font-label-md text-label-md transition-all active:scale-95 border ${
               selectedCondition !== 'Todos'
                 ? 'bg-secondary-fixed text-on-secondary-fixed border-secondary/30 font-bold'
-                : 'bg-surface-container-lowest text-on-surface-variant border-surface-container-high hover:bg-surface-container-low font-semibold'
+                : 'bg-surface-container-lowest text-on-surface border-outline/60 hover:bg-surface-container-low font-semibold'
             }`}
           >
-            <Icon name="tune" size="xs" />
+            <Icon name="tune" size="sm" />
             <span>{t('explore.condition', { value: conditionLabel })}</span>
-            <Icon name="expand_more" size="xs" />
           </button>
-
-          {/* Sort Cycle Toggle */}
           <button
             type="button"
             onClick={handleCycleSort}
             aria-label={t('explore.sortBy', { value: sortLabel })}
-            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full font-label-sm text-label-sm transition-all active:scale-95 shrink-0 border ${
+            className={`inline-flex shrink-0 items-center gap-1.5 min-h-11 px-4 rounded-full font-label-md text-label-md transition-all active:scale-95 border ${
               selectedSort !== 'Relevancia'
                 ? 'bg-tertiary-fixed text-on-tertiary-fixed border-tertiary/30 font-bold'
-                : 'bg-surface-container-lowest text-on-surface-variant border-surface-container-high hover:bg-surface-container-low font-semibold'
+                : 'bg-surface-container-lowest text-on-surface border-outline/60 hover:bg-surface-container-low font-semibold'
             }`}
           >
-            <Icon name="swap_vert" size="xs" />
+            <Icon name="swap_vert" size="sm" />
             <span>{t('explore.sort', { value: sortLabel })}</span>
-            <Icon name="expand_more" size="xs" />
           </button>
         </div>
-
-        <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold shrink-0">
-          {t('explore.itemsCount', { count: filteredItems.length })}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-body-sm text-body-sm text-on-surface-variant">
+            {showSkeleton ? t('explore.loadingCatalog') : t('explore.itemsFound', { count: filteredItems.length })}
+          </span>
+          <div className="flex items-center">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="min-h-11 px-2 font-label-md text-label-md text-primary font-bold hover:underline inline-flex items-center gap-1"
+              >
+                <Icon name="restart_alt" size="sm" />
+                <span>{t('explore.clearFilters')}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing || isItemsLoading}
+              aria-label={t('explore.refreshAria')}
+              className="min-h-11 px-2 font-label-md text-label-md text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              <Icon name="refresh" size="sm" className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined} />
+              <span>{isRefreshing ? t('explore.refreshing') : t('explore.refresh')}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {actionError && (
@@ -479,12 +464,6 @@ export const ExploreScreen = () => {
                     }
                   />
 
-                  {/* Estimated Value Overlay Pill on Item Thumbnail */}
-                  {item.estimatedValue !== undefined && (
-                    <span className="pointer-events-none absolute top-[84px] left-5 px-1.5 py-0.5 rounded-md bg-inverse-surface/85 backdrop-blur-xs font-label-sm text-[10px] text-inverse-on-surface font-bold shadow-xs">
-                      {t('explore.estimatedShort', { value: formatCop(item.estimatedValue) })}
-                    </span>
-                  )}
                 </div>
               );
             })}
@@ -507,12 +486,12 @@ export const ExploreScreen = () => {
                 <Badge variant="primary" icon="category">
                   {t(`catalog.categories.${selectedItem.category}`, { defaultValue: selectedItem.category })}
                 </Badge>
-                <Badge variant="surface" icon="verified">
+                <Badge variant="surface">
                   {t(`catalog.conditions.${selectedItem.condition}`, { defaultValue: selectedItem.condition })}
                 </Badge>
               </div>
               {selectedItem.estimatedValue !== undefined && (
-                <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface/90 backdrop-blur-md border border-surface-container-high shadow-xs">
+                <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface border border-surface-container-high shadow-xs">
                   <span className="font-label-md text-label-md text-primary font-bold">
                     {t('explore.estimatedValue', { value: formatCop(selectedItem.estimatedValue) })}
                   </span>
@@ -541,47 +520,20 @@ export const ExploreScreen = () => {
                     src={selectedItemOwner.avatarUrl}
                     alt={selectedItemOwner.name}
                     size="md"
-                    verified={selectedItemOwner.verified}
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="font-headline-sm text-[14px] font-bold text-on-surface truncate">
+                    <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
                       {selectedItemOwner.name}
                     </span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 truncate">
+                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
                       <Icon name="location_on" size="xs" />
-                      <span className="truncate">{selectedItemOwner.location}</span>
+                      <span className="line-clamp-2 break-words">{selectedItemOwner.location}</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0">
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest border border-surface-container-high/60">
-                    <Icon name="star" size="xs" filled className="text-secondary" />
-                    <span className="font-label-md text-label-md font-bold text-on-surface">
-                      {selectedItemOwner.rating.toFixed(1)}
-                    </span>
-                  </div>
-                  {selectedItemOwner.co2SavedKg > 0 && (
-                    <span className="font-label-sm text-[10px] text-primary font-semibold mt-1">
-                      {t('explore.co2Saved', { kg: selectedItemOwner.co2SavedKg })}
-                    </span>
-                  )}
-                </div>
               </div>
             )}
-
-            {/* Environmental & Verification Info */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-surface-container-lowest border border-surface-container-high/60">
-              <div className="flex items-center gap-2 text-primary">
-                <Icon name="eco" size="sm" filled />
-                <span className="font-label-sm text-label-sm font-bold">
-                  {t('explore.cashFree')}
-                </span>
-              </div>
-              <span className="font-label-sm text-label-sm text-on-surface-variant">
-                {t('explore.protectedCustody')}
-              </span>
-            </div>
 
             {/* Primary CTA or Own Item Delete */}
             {isSelectedItemMine ? (

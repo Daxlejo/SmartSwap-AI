@@ -22,7 +22,7 @@ export const Chip = ({
     <button
       type={type}
       className={clsx(
-        'inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full font-label-md text-label-md select-none transition-all duration-150',
+        'inline-flex items-center gap-1.5 min-h-11 px-4 rounded-full font-label-md text-label-md select-none transition-all duration-150',
         'active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         active
           ? 'bg-primary-container text-on-primary-container shadow-xs font-bold'

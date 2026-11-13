@@ -68,7 +68,7 @@ export const LocationScopeSelector = ({ layout = 'chips' }: LocationScopeSelecto
             aria-checked={isActive}
             onClick={() => setLocationScope(option.id)}
             className={clsx(
-              'flex flex-col items-start gap-1 p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98]',
+              'min-h-12 flex flex-col items-start gap-1 p-3 rounded-xl text-left transition-all border-2 active:scale-[0.98]',
               isActive
                 ? 'border-primary bg-primary/5'
                 : 'border-transparent bg-surface-container-low hover:bg-surface-container',
@@ -86,9 +86,6 @@ export const LocationScopeSelector = ({ layout = 'chips' }: LocationScopeSelecto
               )}
             >
               {t(`location.scope.${option.id}`)}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {t(`location.scope.${option.id}Hint`)}
             </span>
           </button>
         );

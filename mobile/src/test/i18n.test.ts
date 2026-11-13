@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import i18n from '@/i18n';
 import { es } from '@/i18n/es';
@@ -27,10 +29,10 @@ describe('i18n', () => {
   });
 
   it('resolves plurals in both languages', async () => {
-    expect(i18n.t('home.activeRoutes.circuits', { count: 1 })).toBe('1 circuito');
-    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 circuitos');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 1 })).toBe('1 ruta en curso');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 rutas en curso');
     await i18n.changeLanguage('en');
-    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 circuits');
+    expect(i18n.t('home.activeRoutes.circuits', { count: 3 })).toBe('3 routes in progress');
   });
 
   it('translates catalog values while keeping the stored Spanish value as the key', async () => {
@@ -52,5 +54,26 @@ describe('i18n', () => {
       });
     });
     expect(emptyKeys).toEqual([]);
+  });
+
+  it('defines every literal key the code asks for', () => {
+    // t('some.key'), t("some.key") and t(`some.key`) calls with a plain literal (no interpolation)
+    const KEY_CALL = new RegExp(String.raw`\bt\((['"\x60])([a-zA-Z0-9_.]+)\1`, 'g');
+    const sourceFiles = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) return name === 'test' || name === 'i18n' ? [] : sourceFiles(path);
+        return /\.tsx?$/.test(name) ? [path] : [];
+      });
+    const keys = new Set(
+      sourceFiles(join(__dirname, '..')).flatMap((file) =>
+        [...readFileSync(file, 'utf8').matchAll(KEY_CALL)].map((match) => match[2]),
+      ),
+    );
+    const defined = new Set(flattenKeys(es as Tree));
+    const missing = [...keys].filter(
+      (key) => !defined.has(key) && !defined.has(`${key}_one`) && !defined.has(`${key}_other`),
+    );
+    expect(missing).toEqual([]);
   });
 });

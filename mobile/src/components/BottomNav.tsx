@@ -17,7 +17,7 @@ export const BottomNav = () => {
   return (
     <nav
       aria-label={t('nav.mainNavigation')}
-      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/40 shadow-[0_-4px_20px_rgba(15,23,42,0.05)] max-w-[390px] mx-auto"
+      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface border-t border-surface-container-high shadow-[0_-4px_20px_rgba(15,23,42,0.05)] max-w-[390px] mx-auto"
     >
       <div className="flex items-center justify-around h-20 px-space-xs max-w-md mx-auto">
         {/* Home */}
@@ -107,7 +107,7 @@ export const BottomNav = () => {
               <div className="relative flex items-center justify-center">
                 <Icon name="sync_alt" size="lg" filled={isActive} />
                 {pendingResponses > 0 && (
-                  <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error font-label-sm text-[10px] leading-none font-bold shadow-xs flex items-center justify-center">
+                  <span className="absolute -top-1.5 -right-3 min-w-[22px] h-[22px] px-1 rounded-full bg-error text-on-error font-label-sm text-caption leading-none font-bold shadow-xs flex items-center justify-center">
                     {pendingResponses}
                   </span>
                 )}

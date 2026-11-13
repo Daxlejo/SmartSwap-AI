@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import logoImg from '@/assets/logo.svg';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useApp } from '@/context/AppContext';
 import { ApiError } from '@/services/http/apiClient';
@@ -111,27 +110,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-surface px-margin py-8">
+    <div className="flex flex-col flex-1 bg-surface px-margin py-8">
       {/* Brand Identity & Header */}
       <div className="flex flex-col items-center text-center mb-space-lg">
         <div className="relative mb-space-md">
           <div className="w-20 h-20 rounded-2xl bg-surface-container-lowest shadow-md flex items-center justify-center p-space-sm relative overflow-hidden border border-surface-container-high/60">
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-secondary-container/10" />
             <img
               src={logoImg}
               alt={t('auth.logoAlt')}
               className="w-12 h-12 object-contain relative z-10"
             />
           </div>
-          <div className="absolute -bottom-2 -right-2 bg-secondary-container text-on-primary-container text-[11px] font-label-sm font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
-            <Icon name="cyclone" size="xs" />
-            <span>v2.4</span>
-          </div>
         </div>
-
-        <Badge variant="surface" icon="verified_user" iconFilled className="mb-space-sm">
-          {t('auth.badgeNetwork')}
-        </Badge>
 
         <h1 className="font-headline-xl-mobile text-headline-xl-mobile text-on-surface tracking-tight mb-space-xs font-bold">
           {mode === 'login' ? t('auth.welcomeTitle') : t('auth.registerTitle')}
@@ -293,63 +283,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
         </form>
       </div>
 
-      {/* Mode Switch Link */}
-      <div className="text-center mb-space-md">
-        <p className="font-body-sm text-body-sm text-on-surface-variant">
-          {mode === 'login' ? t('auth.noAccount') : t('auth.haveAccount')}{' '}
-          <button
-            type="button"
-            onClick={() => handleModeSwitch(mode === 'login' ? 'register' : 'login')}
-            className="text-primary font-bold hover:underline inline-flex items-center gap-0.5"
-          >
-            {mode === 'login' ? t('auth.register') : t('auth.login')}
-          </button>
-        </p>
-      </div>
-
-      {/* Trust micro-badges */}
-      <div className="bg-surface-container rounded-2xl p-space-md mb-space-lg border border-surface-container-high/40 mt-auto">
-        <div className="grid grid-cols-3 gap-space-sm text-center">
-          <div className="flex flex-col items-center">
-            <Icon name="sync_saved_locally" size="md" className="text-primary mb-1" />
-            <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              {t('auth.secureDeposit')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              {t('auth.protected')}
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Icon name="verified" size="md" className="text-primary mb-1" />
-            <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              {t('auth.identity')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              {t('auth.verified')}
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Icon name="eco" size="md" className="text-primary mb-1" />
-            <span className="font-label-sm text-label-sm text-on-surface font-semibold">
-              {t('auth.co2Neutral')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-[10px]">
-              {t('auth.zeroFootprint')}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-space-md">
+      <div className="mt-space-lg">
         <DemoAccountSwitcher />
       </div>
 
-      {/* Legal Footer */}
-      <footer className="text-center px-space-md pb-safe">
-        <p className="font-body-sm text-body-sm text-on-surface-variant text-[11px] leading-relaxed">
-          {t('auth.termsNotice')}
-        </p>
-      </footer>
     </div>
   );
 };

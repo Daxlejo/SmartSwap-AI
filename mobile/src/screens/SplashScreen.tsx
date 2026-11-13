@@ -62,7 +62,7 @@ export const SplashScreen: React.FC = () => {
         if (e.key === 'Enter' || e.key === ' ') handleSkip();
       }}
       aria-label={t('splash.aria')}
-      style={{ '--color-primary': '#00685f', backgroundColor: '#00685f' } as React.CSSProperties}
+      style={{ '--color-primary': '0 104 95', backgroundColor: '#00685f' } as React.CSSProperties}
       className={`fixed inset-0 z-50 flex flex-col items-center justify-between min-h-[100dvh] w-full bg-primary px-margin py-8 select-none overflow-hidden cursor-pointer ${
         reducedMotion ? '' : phase >= 6 ? 'animate-screen-out' : 'animate-screen-in'
       }`}
@@ -165,14 +165,6 @@ export const SplashScreen: React.FC = () => {
         </p>
       </div>
 
-      {/* Bottom: Version tag */}
-      <div
-        className={`font-label-sm text-label-sm text-white/50 tracking-wider font-semibold uppercase pb-safe ${
-          reducedMotion ? '' : phase >= 4 ? 'animate-subtitle-fade' : 'opacity-0'
-        }`}
-      >
-        v2.4
-      </div>
     </div>
   );
 };
