@@ -162,7 +162,7 @@ export const en: TranslationSchema = {
     login: 'Sign in',
     register: 'Create account',
     fullName: 'Full name',
-    fullNamePlaceholder: 'e.g. Alex Morales',
+    fullNamePlaceholder: 'e.g. Ana María López',
     email: 'Email',
     emailPlaceholder: 'you@example.com',
     password: 'Password',

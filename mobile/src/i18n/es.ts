@@ -160,7 +160,7 @@ export const es = {
     login: 'Iniciar sesión',
     register: 'Crear cuenta',
     fullName: 'Nombre completo',
-    fullNamePlaceholder: 'Ej. Alex Morales',
+    fullNamePlaceholder: 'Ej. Ana María López',
     email: 'Correo Electrónico',
     emailPlaceholder: 'tu.correo@ejemplo.com',
     password: 'Contraseña',
