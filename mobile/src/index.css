@@ -7,106 +7,131 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Color tokens are RGB channels so Tailwind opacity modifiers work
+   * (`bg-primary/10`, `border-surface-container-high/60`). Every text/background
+   * pair used by the UI meets WCAG AA (4.5:1) in both themes; `npm run audit:ui`
+   * checks it with axe. Dark mode has its own slate surfaces, a lighter teal
+   * that reads on dark, and no light tints or gradients.
+   */
   :root {
     color-scheme: light;
-    --color-background: #faf8ff;
-    --color-on-background: #131b2e;
-    --color-surface: #faf8ff;
-    --color-surface-dim: #d2d9f4;
-    --color-surface-bright: #faf8ff;
-    --color-surface-container-lowest: #ffffff;
-    --color-surface-container-low: #f2f3ff;
-    --color-surface-container: #eaedff;
-    --color-surface-container-high: #e2e7ff;
-    --color-surface-container-highest: #dae2fd;
-    --color-surface-variant: #dae2fd;
-    --color-on-surface: #131b2e;
-    --color-on-surface-variant: #3d4947;
-    --color-inverse-surface: #283044;
-    --color-inverse-on-surface: #eef0ff;
-    --color-outline: #6d7a77;
-    --color-outline-variant: #bcc9c6;
-    --color-surface-tint: #006a61;
-    --color-primary: #00685f;
-    --color-on-primary: #ffffff;
-    --color-primary-container: #008378;
-    --color-on-primary-container: #f4fffc;
-    --color-inverse-primary: #6bd8cb;
-    --color-primary-fixed: #89f5e7;
-    --color-primary-fixed-dim: #6bd8cb;
-    --color-on-primary-fixed: #00201d;
-    --color-on-primary-fixed-variant: #005049;
-    --color-secondary: #9d4300;
-    --color-on-secondary: #ffffff;
-    --color-secondary-container: #fd761a;
-    --color-on-secondary-container: #5c2400;
-    --color-secondary-fixed: #ffdbca;
-    --color-secondary-fixed-dim: #ffb690;
-    --color-on-secondary-fixed: #341100;
-    --color-on-secondary-fixed-variant: #783200;
-    --color-tertiary: #006194;
-    --color-on-tertiary: #ffffff;
-    --color-tertiary-container: #007bb9;
-    --color-on-tertiary-container: #fdfcff;
-    --color-tertiary-fixed: #cce5ff;
-    --color-tertiary-fixed-dim: #93ccff;
-    --color-on-tertiary-fixed: #001d31;
-    --color-on-tertiary-fixed-variant: #004b73;
-    --color-error: #ba1a1a;
-    --color-on-error: #ffffff;
-    --color-error-container: #ffdad6;
-    --color-on-error-container: #93000a;
+    --color-background: 248 250 252; /* #f8fafc */
+    --color-on-background: 15 23 42; /* #0f172a */
+    --color-surface: 248 250 252; /* #f8fafc */
+    --color-surface-dim: 226 232 240; /* #e2e8f0 */
+    --color-surface-bright: 255 255 255; /* #ffffff */
+    --color-surface-container-lowest: 255 255 255; /* #ffffff */
+    --color-surface-container-low: 241 245 249; /* #f1f5f9 */
+    --color-surface-container: 234 240 246; /* #eaf0f6 */
+    --color-surface-container-high: 226 232 240; /* #e2e8f0 */
+    --color-surface-container-highest: 216 224 234; /* #d8e0ea */
+    --color-surface-variant: 226 232 240; /* #e2e8f0 */
+    --color-on-surface: 15 23 42; /* #0f172a */
+    --color-on-surface-variant: 71 85 105; /* #475569 */
+    --color-inverse-surface: 30 41 59; /* #1e293b */
+    --color-inverse-on-surface: 241 245 249; /* #f1f5f9 */
+    --color-outline: 91 102 120; /* #5b6678 */
+    --color-outline-variant: 203 213 225; /* #cbd5e1 */
+    --color-surface-tint: 0 104 95; /* #00685f */
+    --color-primary: 0 104 95; /* #00685f */
+    --color-on-primary: 255 255 255; /* #ffffff */
+    --color-primary-container: 0 87 79; /* #00574f */
+    --color-on-primary-container: 255 255 255; /* #ffffff */
+    --color-inverse-primary: 107 216 203; /* #6bd8cb */
+    --color-primary-fixed: 213 245 240; /* #d5f5f0 */
+    --color-primary-fixed-dim: 167 230 221; /* #a7e6dd */
+    --color-on-primary-fixed: 0 32 29; /* #00201d */
+    --color-on-primary-fixed-variant: 0 80 73; /* #005049 */
+    --color-secondary: 157 67 0; /* #9d4300 */
+    --color-on-secondary: 255 255 255; /* #ffffff */
+    --color-secondary-container: 253 118 26; /* #fd761a */
+    --color-on-secondary-container: 15 23 42; /* #0f172a */
+    --color-secondary-fixed: 255 228 212; /* #ffe4d4 */
+    --color-secondary-fixed-dim: 255 182 144; /* #ffb690 */
+    --color-on-secondary-fixed: 61 20 0; /* #3d1400 */
+    --color-on-secondary-fixed-variant: 120 50 0; /* #783200 */
+    --color-tertiary: 0 97 148; /* #006194 */
+    --color-on-tertiary: 255 255 255; /* #ffffff */
+    --color-tertiary-container: 0 90 138; /* #005a8a */
+    --color-on-tertiary-container: 255 255 255; /* #ffffff */
+    --color-tertiary-fixed: 220 238 255; /* #dceeff */
+    --color-tertiary-fixed-dim: 147 204 255; /* #93ccff */
+    --color-on-tertiary-fixed: 0 29 49; /* #001d31 */
+    --color-on-tertiary-fixed-variant: 0 75 115; /* #004b73 */
+    --color-error: 179 38 30; /* #b3261e */
+    --color-on-error: 255 255 255; /* #ffffff */
+    --color-error-container: 253 226 224; /* #fde2e0 */
+    --color-on-error-container: 122 11 11; /* #7a0b0b */
+    --color-hero: 0 104 95; /* #00685f */
+    --color-on-hero: 255 255 255; /* #ffffff */
+    --color-on-hero-variant: 213 245 240; /* #d5f5f0 */
+    --color-success: 26 122 74; /* #1a7a4a */
+    --color-on-success: 255 255 255; /* #ffffff */
+    --color-success-container: 227 244 234; /* #e3f4ea */
+    --color-on-success-container: 20 83 45; /* #14532d */
+    --color-warning-container: 255 244 214; /* #fff4d6 */
+    --color-on-warning-container: 107 79 0; /* #6b4f00 */
   }
 
   .dark {
     color-scheme: dark;
-    --color-background: #0f1514;
-    --color-on-background: #e0eae8;
-    --color-surface: #1a2322;
-    --color-surface-dim: #0f1514;
-    --color-surface-bright: #374847;
-    --color-surface-container-lowest: #141f1e;
-    --color-surface-container-low: #1e2b2a;
-    --color-surface-container: #233130;
-    --color-surface-container-high: #2d3c3b;
-    --color-surface-container-highest: #374847;
-    --color-surface-variant: #374847;
-    --color-on-surface: #e0eae8;
-    --color-on-surface-variant: #bec9c7;
-    --color-inverse-surface: #e0eae8;
-    --color-inverse-on-surface: #2d3c3b;
-    --color-outline: #889390;
-    --color-outline-variant: #3e4c4a;
-    --color-surface-tint: #6bd8cb;
-    --color-primary: #6bd8cb;
-    --color-on-primary: #003731;
-    --color-primary-container: #005049;
-    --color-on-primary-container: #89f5e7;
-    --color-inverse-primary: #00685f;
-    --color-primary-fixed: #89f5e7;
-    --color-primary-fixed-dim: #6bd8cb;
-    --color-on-primary-fixed: #00201d;
-    --color-on-primary-fixed-variant: #005049;
-    --color-secondary: #ffb690;
-    --color-on-secondary: #542100;
-    --color-secondary-container: #c45a0e;
-    --color-on-secondary-container: #ffdbca;
-    --color-secondary-fixed: #ffdbca;
-    --color-secondary-fixed-dim: #ffb690;
-    --color-on-secondary-fixed: #341100;
-    --color-on-secondary-fixed-variant: #783200;
-    --color-tertiary: #93ccff;
-    --color-on-tertiary: #003353;
-    --color-tertiary-container: #004b73;
-    --color-on-tertiary-container: #cce5ff;
-    --color-tertiary-fixed: #cce5ff;
-    --color-tertiary-fixed-dim: #93ccff;
-    --color-on-tertiary-fixed: #001d31;
-    --color-on-tertiary-fixed-variant: #004b73;
-    --color-error: #ffb4ab;
-    --color-on-error: #690005;
-    --color-error-container: #93000a;
-    --color-on-error-container: #ffdad6;
+    --color-background: 15 23 42; /* #0f172a */
+    --color-on-background: 248 250 252; /* #f8fafc */
+    --color-surface: 15 23 42; /* #0f172a */
+    --color-surface-dim: 11 18 34; /* #0b1222 */
+    --color-surface-bright: 51 65 85; /* #334155 */
+    --color-surface-container-lowest: 22 33 58; /* #16213a */
+    --color-surface-container-low: 26 37 64; /* #1a2540 */
+    --color-surface-container: 30 41 59; /* #1e293b */
+    --color-surface-container-high: 42 55 80; /* #2a3750 */
+    --color-surface-container-highest: 51 65 85; /* #334155 */
+    --color-surface-variant: 51 65 85; /* #334155 */
+    --color-on-surface: 248 250 252; /* #f8fafc */
+    --color-on-surface-variant: 203 213 225; /* #cbd5e1 */
+    --color-inverse-surface: 226 232 240; /* #e2e8f0 */
+    --color-inverse-on-surface: 30 41 59; /* #1e293b */
+    --color-outline: 163 177 198; /* #a3b1c6 */
+    --color-outline-variant: 71 85 105; /* #475569 */
+    --color-surface-tint: 95 212 198; /* #5fd4c6 */
+    --color-primary: 95 212 198; /* #5fd4c6 */
+    --color-on-primary: 3 43 40; /* #032b28 */
+    --color-primary-container: 19 78 74; /* #134e4a */
+    --color-on-primary-container: 204 251 241; /* #ccfbf1 */
+    --color-inverse-primary: 0 104 95; /* #00685f */
+    --color-primary-fixed: 18 63 61; /* #123f3d */
+    --color-primary-fixed-dim: 27 92 87; /* #1b5c57 */
+    --color-on-primary-fixed: 204 251 241; /* #ccfbf1 */
+    --color-on-primary-fixed-variant: 153 246 228; /* #99f6e4 */
+    --color-secondary: 255 166 107; /* #ffa66b */
+    --color-on-secondary: 43 16 0; /* #2b1000 */
+    --color-secondary-container: 253 118 26; /* #fd761a */
+    --color-on-secondary-container: 15 23 42; /* #0f172a */
+    --color-secondary-fixed: 67 32 10; /* #43200a */
+    --color-secondary-fixed-dim: 107 52 18; /* #6b3412 */
+    --color-on-secondary-fixed: 255 216 191; /* #ffd8bf */
+    --color-on-secondary-fixed-variant: 255 182 144; /* #ffb690 */
+    --color-tertiary: 124 196 245; /* #7cc4f5 */
+    --color-on-tertiary: 0 38 63; /* #00263f */
+    --color-tertiary-container: 12 74 110; /* #0c4a6e */
+    --color-on-tertiary-container: 224 242 254; /* #e0f2fe */
+    --color-tertiary-fixed: 15 56 84; /* #0f3854 */
+    --color-tertiary-fixed-dim: 21 81 117; /* #155175 */
+    --color-on-tertiary-fixed: 224 242 254; /* #e0f2fe */
+    --color-on-tertiary-fixed-variant: 186 230 253; /* #bae6fd */
+    --color-error: 255 168 160; /* #ffa8a0 */
+    --color-on-error: 69 10 10; /* #450a0a */
+    --color-error-container: 92 21 21; /* #5c1515 */
+    --color-on-error-container: 255 218 214; /* #ffdad6 */
+    --color-hero: 19 78 74; /* #134e4a */
+    --color-on-hero: 248 250 252; /* #f8fafc */
+    --color-on-hero-variant: 204 251 241; /* #ccfbf1 */
+    --color-success: 110 231 168; /* #6ee7a8 */
+    --color-on-success: 5 46 22; /* #052e16 */
+    --color-success-container: 15 58 36; /* #0f3a24 */
+    --color-on-success-container: 187 247 208; /* #bbf7d0 */
+    --color-warning-container: 61 46 5; /* #3d2e05 */
+    --color-on-warning-container: 253 230 138; /* #fde68a */
   }
 
   html,
@@ -116,8 +141,8 @@
     padding: 0;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
-    background-color: var(--color-background);
-    color: var(--color-on-surface);
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-on-surface));
   }
 
   /*
