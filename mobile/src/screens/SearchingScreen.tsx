@@ -310,13 +310,13 @@ export const SearchingScreen: React.FC = () => {
         <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple searching-ripple-delayed" />
 
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 240 240">
-          <circle cx="120" cy="120" r="96" fill="none" stroke="#00685f" strokeOpacity="0.18" strokeWidth="2.5" />
+          <circle cx="120" cy="120" r="96" fill="none" stroke="rgb(var(--color-primary))" strokeOpacity="0.18" strokeWidth="2.5" />
           <circle
             cx="120"
             cy="120"
             r="96"
             fill="none"
-            stroke={routeFound ? '#1a7a4a' : '#00685f'}
+            stroke={routeFound ? 'rgb(var(--color-success))' : 'rgb(var(--color-primary))'}
             strokeOpacity={routeFound ? 0.85 : 0.6}
             strokeWidth={isPhase3 ? 3.5 : 2.5}
             strokeDasharray={isPhase3 ? undefined : '8 6'}
@@ -340,7 +340,7 @@ export const SearchingScreen: React.FC = () => {
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md transition-all duration-500 ${
               routeFound
-                ? 'bg-[#1a7a4a] text-on-primary animate-pulse-success'
+                ? 'bg-success text-on-success animate-pulse-success'
                 : 'bg-primary text-on-primary ring-4 ring-primary/20'
             }`}
           >
@@ -367,7 +367,7 @@ export const SearchingScreen: React.FC = () => {
             {/* Reveal Badges & Percentage */}
             {topRoute && (
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1a7a4a]/12 border border-[#1a7a4a]/30 text-[#1a7a4a] shadow-2xs">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/30 text-success shadow-2xs">
                 <Icon name="verified" size="xs" filled />
                 <span className="font-label-sm text-label-sm font-bold">
                   {t('searching.routeFound', { code: topRoute?.code ?? '' })}

@@ -65,7 +65,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
             variant="tertiary-subtle"
             icon="eco"
             iconFilled
-            className="text-[#1a7a4a] bg-surface-container-low border border-surface-container-high/60"
+            className="text-success bg-surface-container-low border border-surface-container-high/60"
           >
             {route.co2SavedKg} kg CO₂ ahorrados
           </Badge>

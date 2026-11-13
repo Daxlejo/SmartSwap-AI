@@ -706,8 +706,8 @@ export const PublishScreen: React.FC = () => {
               <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
                 {name}
               </h2>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-[#1a7a4a]/10 text-[#1a7a4a] shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a4a]" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-success/10 text-success shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 {t('publish.success.active')}
               </span>
             </div>

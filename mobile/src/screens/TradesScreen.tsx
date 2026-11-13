@@ -103,7 +103,7 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
             {t('trades.circuitChain')}
           </span>
           {route.co2SavedKg > 0 && (
-            <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a]">
+            <span className="font-label-sm text-[11px] font-bold text-success">
               -{route.co2SavedKg} kg CO₂
             </span>
           )}

@@ -121,7 +121,7 @@ export const RouteDetailScreen: React.FC = () => {
                 {t('routeDetail.aiTitle')}
               </h3>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-surface-container-high font-label-sm text-[11px] font-bold text-[#1a7a4a] flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest border border-surface-container-high font-label-sm text-[11px] font-bold text-success flex items-center gap-1">
               <Icon name="eco" size="xs" filled />
               {t('routeDetail.co2Saved', { kg: route.co2SavedKg })}
             </span>

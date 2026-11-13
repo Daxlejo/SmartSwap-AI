@@ -111,7 +111,7 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
           <span className="font-body-md text-body-md text-on-surface-variant">
             {t('proposalSent.estimatedImpact')}
           </span>
-          <span className="font-label-md text-label-md font-bold text-[#1a7a4a] flex items-center gap-1">
+          <span className="font-label-md text-label-md font-bold text-success flex items-center gap-1">
             <Icon name="eco" size="xs" filled />
             {t('proposalSent.co2Saved', { kg: route.co2SavedKg })}
           </span>

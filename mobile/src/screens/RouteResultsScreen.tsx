@@ -271,7 +271,7 @@ export const RouteResultsScreen: React.FC = () => {
                           </span>
                         </div>
                       )}
-                      <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a] flex items-center gap-1">
+                      <span className="font-label-sm text-[11px] font-bold text-success flex items-center gap-1">
                         <Icon name="eco" size="xs" filled />
                         -{route.co2SavedKg} kg CO₂
                       </span>
