@@ -46,13 +46,13 @@ export const AppLayout = () => {
       case '/notifications':
         return { title: t('headers.notifications.title'), showBack: true, showNotifications: false };
       default:
-        return { showNotifications: true, showProfile: true, showThemeToggle: true };
+        return { showNotifications: true, showProfile: true };
     }
   };
 
   const isSwapFlow = pathname.startsWith('/swap');
   // Screens that pin their own primary action to the bottom of the viewport. They hide the
-  // BottomNav so the two bars never stack and the action never covers the last field.
+  // BottomNav so the two bars never stack; pb-action-bar keeps the last field above the action.
   const hasActionBar = pathname === '/publish' || pathname === '/swap/configure';
   const showBottomNav = !isSwapFlow && !hasActionBar;
   const headerProps = getHeaderProps();

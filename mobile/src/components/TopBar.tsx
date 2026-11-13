@@ -12,13 +12,14 @@ export interface TopBarProps {
   onBack?: () => void;
   showNotifications?: boolean;
   showProfile?: boolean;
-  /** Only the Home bar carries the theme toggle; Profile has the full setting. */
+  /** Compact theme toggle; AppLayout shows it on Home. Profile has the full setting. */
   showThemeToggle?: boolean;
 }
 
 /**
- * Fixed-height bar (`--topbar-h`, see index.css) so sticky elements below it can
- * align. Titles are short and may wrap to two lines instead of being cut.
+ * Its row is `--topbar-h` tall (index.css), the same value `.top-below-header` uses
+ * so sticky elements line up under it. Titles are short and may wrap to two lines
+ * instead of being cut.
  */
 export const TopBar = ({
   title,
@@ -42,7 +43,7 @@ export const TopBar = ({
 
   return (
     <header className="sticky top-0 w-full z-40 shrink-0 pt-safe bg-surface border-b border-surface-container-high">
-      <div className="h-16 px-margin flex items-center justify-between gap-space-sm max-w-md mx-auto">
+      <div className="h-[var(--topbar-h)] px-margin flex items-center justify-between gap-space-sm max-w-md mx-auto">
         <div className="flex items-center gap-space-xs min-w-0 flex-1">
           {showBack && (
             <button
