@@ -123,7 +123,7 @@ export const RouteResultsScreen: React.FC = () => {
           <div className="h-4 w-36 bg-surface-container-low rounded-md animate-pulse" />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-margin py-4">
+        <div className="flex-1 px-margin py-4">
           <div className="flex flex-col gap-4">
             {[1, 2, 3].map((index) => (
               <div
@@ -194,7 +194,7 @@ export const RouteResultsScreen: React.FC = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-margin py-4">
+      <div className="flex-1 px-margin py-4">
         {loadFailed && routes.length === 0 ? (
           <ErrorState onRetry={() => setReloadKey((key) => key + 1)} />
         ) : filteredRoutes.length === 0 && hopFilter !== 'all' ? (
