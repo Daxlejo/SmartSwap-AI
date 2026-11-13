@@ -175,7 +175,7 @@ export const NotificationsScreen = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
+                    <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
                       {text.title}
                     </h2>
                     {notif.unread && (

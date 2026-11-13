@@ -580,10 +580,10 @@ export const PublishScreen: React.FC = () => {
             />
           </div>
           <div className="min-w-0">
-            <p className="font-label-md text-label-md font-bold text-on-surface truncate">
+            <p className="font-label-md text-label-md font-bold text-on-surface line-clamp-2 break-words">
               {t('publish.ai.assistant')}
             </p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
+            <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 break-words">
               {isAnalyzingAi
                 ? t('publish.ai.analyzing')
                 : t('publish.ai.hint')}
@@ -703,7 +703,7 @@ export const PublishScreen: React.FC = () => {
 
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1 mb-1">
-              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
+              <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
                 {name}
               </h2>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-success/10 text-success shrink-0">

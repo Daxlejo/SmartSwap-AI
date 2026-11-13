@@ -391,7 +391,7 @@ export const SearchingScreen: React.FC = () => {
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
                       <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
                     </div>
-                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 truncate max-w-[50px] text-center">
+                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 line-clamp-2 break-words max-w-[50px] text-center">
                       {step.user}
                     </span>
                   </div>

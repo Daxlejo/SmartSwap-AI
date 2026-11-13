@@ -77,10 +77,10 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
           <div className="flex items-center gap-3.5">
             <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
             <div className="flex-1 min-w-0 space-y-1">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                 {offeredItem.name}
               </h3>
-              <p className="font-body-md text-body-md text-on-surface-variant truncate">
+              <p className="font-body-md text-body-md text-on-surface-variant line-clamp-2 break-words">
                 {t(`catalog.conditions.${offeredItem.condition}`, { defaultValue: offeredItem.condition })}
               </p>
               <div className="flex items-center gap-2">
@@ -123,10 +123,10 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
           <div className="flex items-center gap-3.5">
             <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-16 h-16 rounded-xl bg-surface-container-low border border-surface-container-high/60 shrink-0" />
             <div className="flex-1 min-w-0 space-y-1">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                 {targetItem.name}
               </h3>
-              <p className="font-body-md text-body-md text-on-surface-variant truncate">
+              <p className="font-body-md text-body-md text-on-surface-variant line-clamp-2 break-words">
                 {t(`catalog.conditions.${targetItem.condition}`, { defaultValue: targetItem.condition })}
               </p>
               <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
             />
             <div className="flex-1 min-w-0 space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+                <span className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                   {recipientDisplayName}
                 </span>
                 <span className="inline-flex items-center gap-0.5 font-label-md text-label-md text-on-surface font-bold">
@@ -194,9 +194,9 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
                   {recipientUser.rating.toFixed(1)}
                 </span>
               </div>
-              <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 truncate">
+              <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
                 <Icon name="location_on" size="xs" className="text-primary shrink-0" />
-                <span className="truncate">{recipientUser.location}</span>
+                <span className="line-clamp-2 break-words">{recipientUser.location}</span>
               </p>
             </div>
           </div>

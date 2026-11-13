@@ -85,10 +85,10 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
             <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
               {t('cards.desiredTarget')}
             </span>
-            <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+            <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
               {targetItem.name}
             </h4>
-            <p className="font-body-sm text-body-sm text-on-surface-variant truncate">
+            <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 break-words">
               {t('cards.receiveFrom', { name: receiverSource?.name ?? t('cards.verifiedUser') })}
             </p>
           </div>
@@ -107,7 +107,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
           <span className="font-label-sm text-label-sm text-on-surface-variant font-semibold">
             {t('cards.swapChain')}
           </span>
-          <span className="font-label-sm text-label-sm text-primary font-bold truncate">
+          <span className="font-label-sm text-label-sm text-primary font-bold line-clamp-2 break-words">
             {chainPreviewText}
           </span>
         </div>
@@ -134,7 +134,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-caption font-semibold text-center mt-1 truncate max-w-[58px] ${
+                    className={`font-label-sm text-caption font-semibold text-center mt-1 line-clamp-2 break-words max-w-[58px] ${
                       isLast ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >

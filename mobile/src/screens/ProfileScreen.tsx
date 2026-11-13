@@ -343,7 +343,7 @@ export const ProfileScreen = () => {
                     <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-14 h-14 rounded-xl shrink-0 bg-surface-container-high" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">
-                        <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
+                        <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
                           {item.name}
                         </h3>
                         <button

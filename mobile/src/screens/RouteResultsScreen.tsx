@@ -290,7 +290,7 @@ export const RouteResultsScreen: React.FC = () => {
                           key={`${route.id}-${item.id}-${idx}`}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface-container-lowest border border-surface-container-high/60 shrink-0"
                         >
-                          <span className="font-label-sm text-caption text-on-surface-variant truncate max-w-[85px]">
+                          <span className="font-label-sm text-caption text-on-surface-variant line-clamp-2 break-words max-w-[85px]">
                             {item.name.split(' ')[0]}:
                           </span>
                           {item.estimatedValue !== undefined && (

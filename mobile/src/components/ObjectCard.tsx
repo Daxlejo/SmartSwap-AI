@@ -37,7 +37,7 @@ export const ObjectCard = ({
         <div className="flex flex-col flex-1 min-w-0 justify-between h-24">
           <div>
             <div className="flex items-center justify-between gap-1">
-              <h3 className="font-headline-sm text-[15px] font-bold text-on-surface truncate">
+              <h3 className="font-headline-sm text-[15px] font-bold text-on-surface line-clamp-2 break-words">
                 {item.name}
               </h3>
               <Badge variant="surface" className="text-caption py-0 shrink-0">
@@ -49,7 +49,7 @@ export const ObjectCard = ({
               <div className="flex items-center gap-1.5 mt-1 text-on-surface-variant font-body-sm text-body-sm">
                 <span className="flex items-center gap-0.5 min-w-0">
                   <Icon name="location_on" size="xs" />
-                  <span className="truncate">
+                  <span className="line-clamp-2 break-words">
                     {!hasDistance
                       ? owner?.location
                       : (item.distanceKm as number) < 1
@@ -60,7 +60,7 @@ export const ObjectCard = ({
                 {owner && (
                   <>
                     <span>•</span>
-                    <span className="font-semibold text-on-surface truncate">
+                    <span className="font-semibold text-on-surface line-clamp-2 break-words">
                       {owner.name} (★ {owner.rating})
                     </span>
                   </>
@@ -72,7 +72,7 @@ export const ObjectCard = ({
           {/* Wants preview */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low">
             <Icon name="swap_horizontal_circle" size="xs" className="text-secondary shrink-0" />
-            <span className="font-label-sm text-caption text-on-surface truncate">
+            <span className="font-label-sm text-caption text-on-surface line-clamp-2 break-words">
               {item.description || t('cards.openToCircularOffers')}
             </span>
           </div>

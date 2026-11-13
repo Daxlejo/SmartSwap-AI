@@ -53,11 +53,11 @@ export const TopBar = ({
 
           {title ? (
             <div className="flex flex-col min-w-0">
-              <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface truncate max-w-[200px]">
+              <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words max-w-[200px]">
                 {title}
               </h1>
               {subtitle && (
-                <span className="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider truncate max-w-[200px]">
+                <span className="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider line-clamp-2 break-words max-w-[200px]">
                   {subtitle}
                 </span>
               )}

@@ -48,7 +48,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
           {/* From User -> To User Header */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <span className="font-headline-sm text-headline-sm font-bold text-on-surface truncate">
+              <span className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
                 {fromUser.name}
               </span>
               {isFirst && (
@@ -61,7 +61,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
                 size="sm"
                 className="text-primary shrink-0 mx-0.5"
               />
-              <span className="font-body-md text-body-md text-on-surface-variant font-medium truncate">
+              <span className="font-body-md text-body-md text-on-surface-variant font-medium line-clamp-2 break-words">
                 {toUser.name}
               </span>
             </div>
@@ -82,7 +82,7 @@ export const RouteStep: React.FC<RouteStepProps> = ({
           >
             <ItemImage src={itemGiven.imageUrl} alt={itemGiven.name} category={itemGiven.category} className="w-12 h-12 rounded-xl bg-surface-container-lowest shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="font-body-md text-body-md font-semibold text-on-surface truncate">
+              <p className="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 break-words">
                 {itemGiven.name}
               </p>
               <p className="font-label-sm text-label-sm text-primary font-bold mt-0.5">

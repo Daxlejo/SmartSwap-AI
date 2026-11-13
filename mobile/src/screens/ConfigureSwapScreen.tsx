@@ -151,7 +151,7 @@ export const ConfigureSwapScreen = () => {
                           {selectedOfferItem.condition}
                         </span>
                       </div>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                         {selectedOfferItem.name}
                       </h3>
                       <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">

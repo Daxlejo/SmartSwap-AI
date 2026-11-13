@@ -547,12 +547,12 @@ export const ExploreScreen = () => {
                     verified={selectedItemOwner.verified}
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="font-headline-sm text-[14px] font-bold text-on-surface truncate">
+                    <span className="font-headline-sm text-[14px] font-bold text-on-surface line-clamp-2 break-words">
                       {selectedItemOwner.name}
                     </span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 truncate">
+                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
                       <Icon name="location_on" size="xs" />
-                      <span className="truncate">{selectedItemOwner.location}</span>
+                      <span className="line-clamp-2 break-words">{selectedItemOwner.location}</span>
                     </span>
                   </div>
                 </div>

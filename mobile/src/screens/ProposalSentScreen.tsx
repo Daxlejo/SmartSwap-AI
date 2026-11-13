@@ -89,7 +89,7 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
                     )}
                   </div>
                   <span
-                    className={`font-label-sm text-label-sm mt-1 truncate max-w-[64px] ${
+                    className={`font-label-sm text-label-sm mt-1 line-clamp-2 break-words max-w-[64px] ${
                       isLast ? 'text-primary font-bold' : 'text-on-surface'
                     }`}
                   >

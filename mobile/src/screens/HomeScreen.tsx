@@ -115,7 +115,7 @@ export const HomeScreen = () => {
             <span className="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider shrink-0">
               {t('home.liveSwap')}
             </span>
-            <span className="font-body-sm text-body-sm text-on-surface truncate">
+            <span className="font-body-sm text-body-sm text-on-surface line-clamp-2 break-words">
               {latestNotification.title}
             </span>
           </div>
@@ -286,7 +286,7 @@ export const HomeScreen = () => {
                 <span className="font-label-sm text-label-sm text-outline font-semibold uppercase tracking-wider">
                   {t('home.route.desiredTarget')}
                 </span>
-                <span className="font-headline-sm text-headline-sm text-on-surface font-bold truncate">
+                <span className="font-headline-sm text-headline-sm text-on-surface font-bold line-clamp-2 break-words">
                   {activeRouteTarget?.name}
                 </span>
               </div>
@@ -330,7 +330,7 @@ export const HomeScreen = () => {
                           )}
                         </div>
                         <span
-                          className={`font-label-sm text-caption font-semibold text-center mt-1 truncate max-w-[60px] ${
+                          className={`font-label-sm text-caption font-semibold text-center mt-1 line-clamp-2 break-words max-w-[60px] ${
                             isLast ? 'text-primary font-bold' : 'text-on-surface'
                           }`}
                         >

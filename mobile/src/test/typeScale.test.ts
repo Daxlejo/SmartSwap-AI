@@ -3,7 +3,8 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Guard for the type scale (tailwind.config.ts): no text under 14 px. The runtime check is `npm run audit:ui`;
+ * Guard for the type scale (tailwind.config.ts): no text under 14 px and no
+ * single-line ellipsis on names. The runtime check is `npm run audit:ui`;
  * this catches the classes before they reach a screen.
  */
 const SRC = join(__dirname, '..');
@@ -33,4 +34,7 @@ describe('type scale guard', () => {
     expect(findAll(/\btext-\[(?:[0-9]|1[0-3])(?:\.\d+)?px\]/)).toEqual([]);
   });
 
+  it('never cuts text to one line with truncate (use line-clamp-2)', () => {
+    expect(findAll(/(^|[\s"'`])truncate\b/)).toEqual([]);
+  });
 });
