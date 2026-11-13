@@ -57,8 +57,8 @@ describe('i18n', () => {
   });
 
   it('defines every literal key the code asks for', () => {
-    // t('some.key') calls with a plain string literal
-    const KEY_CALL = new RegExp(String.raw`\bt\('([a-zA-Z0-9_.]+)'`, 'g');
+    // t('some.key'), t("some.key") and t(`some.key`) calls with a plain literal (no interpolation)
+    const KEY_CALL = new RegExp(String.raw`\bt\((['"\x60])([a-zA-Z0-9_.]+)\1`, 'g');
     const sourceFiles = (dir: string): string[] =>
       readdirSync(dir).flatMap((name) => {
         const path = join(dir, name);
@@ -67,7 +67,7 @@ describe('i18n', () => {
       });
     const keys = new Set(
       sourceFiles(join(__dirname, '..')).flatMap((file) =>
-        [...readFileSync(file, 'utf8').matchAll(KEY_CALL)].map((match) => match[1]),
+        [...readFileSync(file, 'utf8').matchAll(KEY_CALL)].map((match) => match[2]),
       ),
     );
     const defined = new Set(flattenKeys(es as Tree));

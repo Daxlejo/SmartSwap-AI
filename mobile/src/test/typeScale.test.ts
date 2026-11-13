@@ -26,8 +26,15 @@ const findAll = (pattern: RegExp): string[] =>
   );
 
 describe('type scale guard', () => {
-  it('never uses text-xs', () => {
-    expect(findAll(/(^|[\s"'`])text-xs\b/)).toEqual([]);
+  it('never uses text-xs, with or without a variant prefix (sm:, hover:, !)', () => {
+    expect(findAll(/(^|[\s"'`:!])text-xs\b/)).toEqual([]);
+  });
+
+  it('defines no font size under 14 px in the Tailwind theme', () => {
+    const config = readFileSync(join(SRC, '..', 'tailwind.config.ts'), 'utf8');
+    const sizes = [...config.matchAll(/\['(\d+)px', \{ lineHeight/g)].map((match) => Number(match[1]));
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(sizes.filter((size) => size < 14)).toEqual([]);
   });
 
   it('never uses an arbitrary font size under 14 px', () => {
@@ -35,6 +42,6 @@ describe('type scale guard', () => {
   });
 
   it('never cuts text to one line with truncate (use line-clamp-2)', () => {
-    expect(findAll(/(^|[\s"'`])truncate\b/)).toEqual([]);
+    expect(findAll(/(^|[\s"'`:!])truncate\b/)).toEqual([]);
   });
 });
