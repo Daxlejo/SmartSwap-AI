@@ -17,7 +17,7 @@ export const BottomNav = () => {
   return (
     <nav
       aria-label={t('nav.mainNavigation')}
-      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/95 backdrop-blur-xl border-t border-surface-container-high/40 shadow-[0_-4px_20px_rgba(15,23,42,0.05)] max-w-[390px] mx-auto"
+      className="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface border-t border-surface-container-high shadow-[0_-4px_20px_rgba(15,23,42,0.05)] max-w-[390px] mx-auto"
     >
       <div className="flex items-center justify-around h-20 px-space-xs max-w-md mx-auto">
         {/* Home */}

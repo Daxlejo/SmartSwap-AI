@@ -36,7 +36,7 @@ export const TopBar = ({
   };
 
   return (
-    <header className="sticky top-0 w-full z-40 shrink-0 pt-safe bg-surface/95 backdrop-blur-xl border-b border-surface-container-high/40 shadow-[0_1px_12px_rgba(19,27,46,0.04)]">
+    <header className="sticky top-0 w-full z-40 shrink-0 pt-safe bg-surface border-b border-surface-container-high shadow-[0_1px_12px_rgba(19,27,46,0.04)]">
       <div className="h-16 px-margin flex items-center justify-between gap-space-sm max-w-md mx-auto">
         {/* Left side */}
         <div className="flex items-center gap-space-sm min-w-0">
