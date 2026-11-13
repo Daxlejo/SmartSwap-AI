@@ -96,47 +96,37 @@ export const es = {
   },
   headers: {
     routeDetail: {
-      title: 'Detalle de Ruta',
-      subtitle: 'Paso a Paso',
+      title: 'Tu ruta',
     },
     explore: {
       title: 'Explorar',
-      subtitle: 'Catálogo P2P',
     },
     publish: {
       title: 'Publicar',
-      subtitle: 'Nuevo artículo',
     },
     swaps: {
       title: 'Canjes',
-      subtitle: 'Tus intercambios',
     },
     profile: {
-      title: 'Mi Perfil',
+      title: 'Mi perfil',
     },
     configure: {
-      title: 'Configurar Canje',
-      subtitle: 'Tengo y Busco',
+      title: 'Nuevo canje',
     },
     searching: {
-      title: 'Buscando Rutas',
-      subtitle: 'Red SmartSwap',
+      title: 'Buscando',
     },
     results: {
-      title: 'Rutas Encontradas',
-      subtitle: 'Cadenas Circulares',
+      title: 'Rutas',
     },
     confirm: {
-      title: 'Confirmar Canje',
-      subtitle: 'Revisión Final',
+      title: 'Confirmar',
     },
     sent: {
-      title: 'Propuesta Enviada',
-      subtitle: 'En Custodia',
+      title: 'Propuesta enviada',
     },
     notifications: {
       title: 'Notificaciones',
-      subtitle: 'Centro de Avisos',
     },
   },
   auth: {

@@ -8,20 +8,25 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 export interface TopBarProps {
   title?: string;
-  subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
   showNotifications?: boolean;
   showProfile?: boolean;
+  /** Only the Home bar carries the theme toggle; Profile has the full setting. */
+  showThemeToggle?: boolean;
 }
 
+/**
+ * Fixed-height bar (`--topbar-h`, see index.css) so sticky elements below it can
+ * align. Titles are short and may wrap to two lines instead of being cut.
+ */
 export const TopBar = ({
   title,
-  subtitle,
   showBack = false,
   onBack,
   showNotifications = true,
-  showProfile = true,
+  showProfile = false,
+  showThemeToggle = false,
 }: TopBarProps) => {
   const navigate = useNavigate();
   const { currentUser, unreadNotificationsCount } = useApp();
@@ -36,75 +41,58 @@ export const TopBar = ({
   };
 
   return (
-    <header className="sticky top-0 w-full z-40 shrink-0 pt-safe bg-surface border-b border-surface-container-high shadow-[0_1px_12px_rgba(19,27,46,0.04)]">
+    <header className="sticky top-0 w-full z-40 shrink-0 pt-safe bg-surface border-b border-surface-container-high">
       <div className="h-16 px-margin flex items-center justify-between gap-space-sm max-w-md mx-auto">
-        {/* Left side */}
-        <div className="flex items-center gap-space-sm min-w-0">
-          {showBack ? (
+        <div className="flex items-center gap-space-xs min-w-0 flex-1">
+          {showBack && (
             <button
               type="button"
               onClick={handleBack}
               aria-label={t('nav.back')}
-              className="w-11 h-11 -ml-2 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 active:bg-surface-container-high/60 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="w-11 h-11 -ml-2 shrink-0 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon name="arrow_back" size="lg" />
             </button>
-          ) : null}
+          )}
 
           {title ? (
-            <div className="flex flex-col min-w-0">
-              <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words max-w-[200px]">
-                {title}
-              </h1>
-              {subtitle && (
-                <span className="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider line-clamp-2 break-words max-w-[200px]">
-                  {subtitle}
-                </span>
-              )}
-            </div>
+            <h1 className="min-w-0 font-headline-sm text-headline-sm leading-tight font-bold text-on-surface line-clamp-2 break-words">
+              {title}
+            </h1>
           ) : (
-            <div
-              className="flex items-center gap-space-sm cursor-pointer select-none"
+            <button
+              type="button"
               onClick={() => navigate('/home')}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') navigate('/home');
-              }}
+              aria-label={t('nav.home')}
+              className="min-h-11 flex items-center gap-space-sm rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <img
-                src={logoImg}
-                alt={t('nav.logo')}
-                className="h-8 w-8 object-contain"
-              />
-              <div className="flex flex-col">
-                <span className="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">
-                  SmartSwap
-                </span>
-                <span className="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider">
-                  {t('nav.home')}
-                </span>
-              </div>
-            </div>
+              <img src={logoImg} alt="" className="h-9 w-9 object-contain" />
+              <span className="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">
+                SmartSwap
+              </span>
+            </button>
           )}
         </div>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-space-xs shrink-0">
-          <ThemeToggle />
+        <div className="flex items-center shrink-0">
+          {showThemeToggle && <ThemeToggle />}
 
           {showNotifications && (
             <button
               type="button"
               onClick={() => navigate('/notifications')}
-              aria-label={t('nav.notifications')}
+              aria-label={
+                unreadNotificationsCount > 0
+                  ? t('nav.unreadCount', { count: unreadNotificationsCount })
+                  : t('nav.notifications')
+              }
               className="relative w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <Icon name="notifications" size="lg" />
               {unreadNotificationsCount > 0 && (
                 <span
-                  aria-label={t('nav.unreadCount', { count: unreadNotificationsCount })}
-                  className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface"
+                  aria-hidden="true"
+                  className="absolute top-2 right-2 w-3 h-3 rounded-full bg-secondary-container ring-2 ring-surface"
                 />
               )}
             </button>
@@ -115,13 +103,9 @@ export const TopBar = ({
               type="button"
               onClick={() => navigate('/profile')}
               aria-label={t('nav.myProfile')}
-              className="w-11 h-11 flex items-center justify-center rounded-full p-0.5 hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <Avatar
-                src={currentUser?.avatarUrl}
-                alt={currentUser?.name || ''}
-                size="sm"
-              />
+              <Avatar src={currentUser?.avatarUrl} alt={currentUser?.name || ''} size="sm" />
             </button>
           )}
         </div>

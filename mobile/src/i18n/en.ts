@@ -98,47 +98,37 @@ export const en: TranslationSchema = {
   },
   headers: {
     routeDetail: {
-      title: 'Route details',
-      subtitle: 'Step by step',
+      title: 'Your route',
     },
     explore: {
       title: 'Explore',
-      subtitle: 'P2P catalog',
     },
     publish: {
       title: 'Publish',
-      subtitle: 'New item',
     },
     swaps: {
       title: 'Swaps',
-      subtitle: 'Your trades',
     },
     profile: {
       title: 'My profile',
     },
     configure: {
-      title: 'Configure swap',
-      subtitle: 'I have & I want',
+      title: 'New swap',
     },
     searching: {
-      title: 'Searching routes',
-      subtitle: 'SmartSwap network',
+      title: 'Searching',
     },
     results: {
-      title: 'Routes found',
-      subtitle: 'Circular chains',
+      title: 'Routes',
     },
     confirm: {
-      title: 'Confirm swap',
-      subtitle: 'Final review',
+      title: 'Confirm',
     },
     sent: {
       title: 'Proposal sent',
-      subtitle: 'In custody',
     },
     notifications: {
       title: 'Notifications',
-      subtitle: 'Notification center',
     },
   },
   auth: {
