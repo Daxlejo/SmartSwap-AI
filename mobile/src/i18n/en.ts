@@ -110,6 +110,8 @@ export const en: TranslationSchema = {
       title: 'Swaps',
     },
     profile: {
+    languageSwitch: 'Use the app in English',
+    itemsPublished: 'Items published',
       title: 'My profile',
     },
     configure: {

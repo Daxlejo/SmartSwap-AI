@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Chip } from '@/components/ui/Chip';
@@ -19,24 +18,32 @@ import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 
-const ToggleSwitch = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
+const ToggleSwitch = ({
+  enabled,
+  onToggle,
+  label,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  label: string;
+}) => (
   <button
     type="button"
     role="switch"
     aria-checked={enabled}
+    aria-label={label}
     onClick={onToggle}
-    className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary ${
+    className={`relative inline-flex h-11 w-[4.5rem] shrink-0 items-center rounded-full p-1.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
       enabled ? 'bg-primary' : 'bg-surface-container-highest'
     }`}
   >
     <span
-      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface-container-lowest shadow transition-transform duration-200 ${
-        enabled ? 'translate-x-5' : 'translate-x-0'
+      className={`h-8 w-8 rounded-full bg-surface-container-lowest shadow transition-transform duration-200 ${
+        enabled ? 'translate-x-7' : 'translate-x-0'
       }`}
     />
   </button>
 );
-
 export const ProfileScreen = () => {
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -57,7 +64,6 @@ export const ProfileScreen = () => {
 
   const [activeTab, setActiveTab] = useState<'activos' | 'pausados' | 'historial'>('activos');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
@@ -185,8 +191,6 @@ export const ProfileScreen = () => {
   };
 
   const tradesCompleted = currentUser?.tradesCompleted ?? 0;
-  const userRating = typeof currentUser?.rating === 'number' ? currentUser.rating.toFixed(1) : '—';
-  const co2SavedKg = currentUser?.co2SavedKg ?? 0;
 
   return (
     <div className="flex flex-col px-margin py-4 space-y-6">
@@ -210,35 +214,15 @@ export const ProfileScreen = () => {
             <span>{currentUser.location}</span>
           </p>
         )}
-        <Badge variant="secondary" icon="star" iconFilled className="mb-4">
-          {t('profile.level', { level: currentUser?.level ?? 1 })}
-        </Badge>
-
-        {/* Stats row (3 columns) */}
-        <div className="w-full grid grid-cols-3 divide-x divide-surface-container-high/60 py-2">
+        {/* Only figures the app really tracks */}
+        <div className="w-full grid grid-cols-2 divide-x divide-surface-container-high py-2 mt-2">
           <div className="flex flex-col items-center justify-center text-center px-1">
-            <span className="font-headline-md text-headline-md font-bold text-on-surface">
-              {tradesCompleted}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {t('profile.tradesCompleted')}
-            </span>
+            <span className="font-headline-md text-headline-md font-bold text-on-surface">{tradesCompleted}</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('profile.tradesCompleted')}</span>
           </div>
           <div className="flex flex-col items-center justify-center text-center px-1">
-            <span className="font-headline-md text-headline-md font-bold text-on-surface">
-              {userRating} ★
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {t('profile.rating')}
-            </span>
-          </div>
-          <div className="flex flex-col items-center justify-center text-center px-1">
-            <span className="font-headline-md text-headline-md font-bold text-on-surface">
-              {co2SavedKg} kg
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-              {t('profile.co2Saved')}
-            </span>
+            <span className="font-headline-md text-headline-md font-bold text-on-surface">{myItems.length}</span>
+            <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('profile.itemsPublished')}</span>
           </div>
         </div>
       </section>
@@ -253,7 +237,7 @@ export const ProfileScreen = () => {
             type="button"
             onClick={() => setErrorBanner(null)}
             aria-label={t('profile.closeError')}
-            className="p-1"
+            className="w-11 h-11 -m-2 shrink-0 flex items-center justify-center rounded-full"
           >
             <Icon name="close" size="xs" />
           </button>
@@ -272,23 +256,16 @@ export const ProfileScreen = () => {
               onClick={handleRefreshMyItems}
               disabled={isRefreshing || isItemsLoading}
               aria-label={t('profile.refreshAria')}
-              className="font-label-sm text-label-sm text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+              className="min-h-11 px-2 font-label-md text-label-md text-primary font-bold hover:underline inline-flex items-center gap-1 disabled:opacity-50"
             >
               <Icon
                 name="refresh"
-                size="xs"
+                size="sm"
                 className={isRefreshing || isItemsLoading ? 'animate-spin' : undefined}
               />
               <span>{t('profile.refresh')}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate('/explore')}
-              className="font-label-md text-label-md text-primary font-bold hover:underline transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary rounded"
-            >
-              {t('profile.seeAll')}
-            </button>
           </div>
         </div>
 
@@ -339,40 +316,30 @@ export const ProfileScreen = () => {
                   key={item.id}
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                      {item.name}
+                    </h3>
+                    <button
+                      type="button"
+                      aria-label={t('profile.itemOptions', { name: item.name })}
+                      aria-expanded={activeMenuId === item.id}
+                      onClick={() => setActiveMenuId((prev) => (prev === item.id ? null : item.id))}
+                      className="w-11 h-11 -mr-2 -mt-2 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container transition-colors shrink-0"
+                    >
+                      <Icon name="more_vert" size="md" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
                     <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-14 h-14 rounded-xl shrink-0 bg-surface-container-high" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-1">
-                        <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
-                          {item.name}
-                        </h3>
-                        <button
-                          type="button"
-                          aria-label={t('profile.itemOptions', { name: item.name })}
-                          onClick={() =>
-                            setActiveMenuId((prev) => (prev === item.id ? null : item.id))
-                          }
-                          className="text-on-surface-variant hover:text-on-surface p-1 rounded-full hover:bg-surface-container transition-colors shrink-0 -mr-1 -mt-1"
-                        >
-                          <Icon name="more_vert" size="sm" />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Badge variant="surface" className="text-caption">
-                          {t(`catalog.categories.${item.category}`, { defaultValue: item.category })}
-                        </Badge>
-                        <Badge variant="outline" className="text-caption">
-                          {t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition })}
-                        </Badge>
-                      </div>
-
-                      {item.estimatedValue !== undefined && (
-                        <p className="font-label-md text-label-md font-bold text-primary mt-2">
-                          {t('profile.estimatedValue', { value: formatCop(item.estimatedValue) })}
-                        </p>
-                      )}
-                    </div>
+                    <p className="min-w-0 font-body-sm text-body-sm text-on-surface-variant break-words">
+                      {[
+                        t(`catalog.conditions.${item.condition}`, { defaultValue: item.condition }),
+                        item.estimatedValue !== undefined ? formatCop(item.estimatedValue) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
                   </div>
 
                   {/* Inline mini menu with real Delete */}
@@ -384,17 +351,16 @@ export const ProfileScreen = () => {
                           setActiveMenuId(null);
                           navigate('/swap/configure');
                         }}
-                        className="px-2.5 py-1 font-label-sm text-label-sm text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors font-bold"
+                        className="min-h-11 px-3 font-label-md text-label-md text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors font-bold"
                       >
                         <Icon name="sync_alt" size="xs" />
                         <span>{t('profile.findSwap')}</span>
                       </button>
-                      <span className="text-surface-container-high text-caption">•</span>
                       <button
                         type="button"
                         disabled={deletingItemId === item.id}
                         onClick={() => handleDeleteItem(item.id)}
-                        className="px-2.5 py-1 font-label-sm text-label-sm text-error hover:bg-error-container/20 rounded-lg flex items-center gap-1 transition-colors font-bold disabled:opacity-50"
+                        className="min-h-11 px-3 font-label-md text-label-md text-error hover:bg-error-container/20 rounded-lg flex items-center gap-1 transition-colors font-bold disabled:opacity-50"
                       >
                         <Icon
                           name={deletingItemId === item.id ? 'progress_activity' : 'delete'}
@@ -470,31 +436,12 @@ export const ProfileScreen = () => {
               </div>
             </div>
             <ToggleSwitch
+              label={t('profile.languageSwitch')}
               enabled={language === 'en'}
               onToggle={() => void changeLanguage(language === 'es' ? 'en' : 'es')}
             />
           </div>
 
-          {/* Row 3: Notificaciones */}
-          <div className="flex justify-between items-center py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                <Icon name="notifications" size="sm" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-body-md text-body-md font-medium text-on-surface">
-                  {t('profile.notifications')}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {notificationsEnabled ? t('profile.enabled') : t('profile.disabled')}
-                </span>
-              </div>
-            </div>
-            <ToggleSwitch
-              enabled={notificationsEnabled}
-              onToggle={() => setNotificationsEnabled((prev) => !prev)}
-            />
-          </div>
         </div>
       </section>
 

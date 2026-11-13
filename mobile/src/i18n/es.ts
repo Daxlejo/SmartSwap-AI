@@ -108,6 +108,8 @@ export const es = {
       title: 'Canjes',
     },
     profile: {
+    languageSwitch: 'Usar la app en inglés',
+    itemsPublished: 'Objetos publicados',
       title: 'Mi perfil',
     },
     configure: {
