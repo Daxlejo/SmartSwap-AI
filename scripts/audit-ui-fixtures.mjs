@@ -98,7 +98,8 @@ export const activeRoute = {
   initiatorId: laura.id,
   objectiveText: 'Bicicleta',
   matchScore: 0.86,
-  status: 'ACTIVE',
+  // The API maps SUGGESTED and ACTIVE to PROPOSED (RouteMapper.mapRouteStatus)
+  status: 'PROPOSED',
   aiExplanation: 'Tú entregas la mochila a Camilo, Camilo entrega los libros a Laura y Laura te entrega la bicicleta.',
   co2SavedKg: 0,
   expiresAt: '2026-11-14T15:00:00.000Z',
@@ -110,8 +111,8 @@ export const activeRoute = {
   ],
 };
 
-/** The same cycle as the engine returns it before anybody proposed it. */
-export const suggestedRoute = { ...activeRoute, id: 'r-suggested', code: 'SW-5310', status: 'SUGGESTED', initiatorId: me.id };
+/** The same cycle as a search returns it: an unsaved preview, also marked PROPOSED. */
+export const suggestedRoute = { ...activeRoute, id: 'preview-00ab12cd', code: 'SW-5310', status: 'PROPOSED', initiatorId: me.id };
 
 export const notifications = [
   {
@@ -150,7 +151,7 @@ export const respond = (method, path) => {
   }
   if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, [activeRoute]];
   if (p === '/routes/search' || p === '/routes/find') return [200, [suggestedRoute]];
-  if (p === '/routes/propose' || p === '/proposals') return [201, { ...suggestedRoute, status: 'ACTIVE' }];
+  if (p === '/routes/propose' || p === '/proposals') return [201, { ...suggestedRoute, id: 'r-new', status: 'PROPOSED' }];
   if (p.startsWith('/routes/') || p.startsWith('/proposals/')) {
     const id = p.split('/')[2];
     return [200, id === suggestedRoute.id || id === suggestedRoute.code ? suggestedRoute : activeRoute];

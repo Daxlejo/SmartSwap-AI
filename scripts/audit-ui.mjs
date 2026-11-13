@@ -82,7 +82,7 @@ const SCREENS = [
   { id: 'route-detail', path: '/swap/route/r-active' },
   {
     id: 'proposal-confirm',
-    path: '/swap/route/r-suggested',
+    path: '/swap/route/preview-00ab12cd',
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/confirm');
@@ -90,7 +90,7 @@ const SCREENS = [
   },
   {
     id: 'proposal-sent',
-    path: '/swap/route/r-suggested',
+    path: '/swap/route/preview-00ab12cd',
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/confirm');
