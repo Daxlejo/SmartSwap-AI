@@ -119,7 +119,7 @@ export const TopBar = ({
             >
               <Avatar
                 src={currentUser?.avatarUrl}
-                alt={currentUser?.name || 'Alex Morales'}
+                alt={currentUser?.name || ''}
                 size="sm"
               />
             </button>

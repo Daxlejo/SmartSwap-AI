@@ -27,16 +27,24 @@ import {
   notificationsService,
   type AppNotification,
 } from '@/services/notifications/notifications.service';
-import { mockUsers, mockItems, mockSwapRoute, mockProposals } from '@/data/mockData';
+
+/** Loading state of one server-backed collection; `error` means the last load failed. */
+export type LoadStatus = 'loading' | 'ready' | 'error';
+
+export interface LoadStates {
+  items: LoadStatus;
+  routes: LoadStatus;
+  notifications: LoadStatus;
+}
 
 export interface AppContextValue {
   currentUser: User | null;
+  loadStates: LoadStates;
   isAuthenticated: boolean;
   isHydrating: boolean;
   isItemsLoading: boolean;
   items: Item[];
   myItems: Item[];
-  users: User[];
   routes: SwapRoute[];
   proposals: Proposal[];
   notifications: AppNotification[];
@@ -67,98 +75,6 @@ export interface AppContextValue {
   setLocationScope: (scope: LocationScopePreference) => void;
 }
 
-const defaultUser: User = mockUsers.find((u) => u.id === 'user-alex') || mockUsers[0];
-const defaultMyItems: Item[] = mockItems.filter((item) => item.ownerId === defaultUser.id);
-
-const defaultNotifications: AppNotification[] = [
-  {
-    id: 'notif-1',
-    type: 'proposal_accepted',
-    unread: true,
-    icon: 'check_circle',
-    iconColor: 'text-[#1a7a4a]',
-    iconBg: 'bg-[#e8f5ee]',
-    title: 'Carlos aceptó tu propuesta',
-    body: 'Bicicleta Trek ↔ Balón FIFA — El intercambio puede continuar.',
-    time: 'hace 5 min',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-2',
-    type: 'new_route',
-    unread: true,
-    icon: 'route',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary-fixed/60',
-    title: 'Nueva ruta encontrada para ti',
-    body: 'Encontramos un circuito de 4 pasos: Bicicleta → Balón → Audífonos → Cámara',
-    time: 'hace 23 min',
-    badge: 'Ruta inteligente',
-    badgeVariant: 'tertiary-subtle',
-    routeId: 'SR-8492',
-  },
-  {
-    id: 'notif-3',
-    type: 'proposal_received',
-    unread: true,
-    icon: 'swap_horiz',
-    iconColor: 'text-secondary',
-    iconBg: 'bg-secondary-fixed/60',
-    title: 'Mateo quiere tu bicicleta',
-    body: 'Mateo R. ofrece su Nintendo Switch OLED a cambio de tu Trek Marlin 7.',
-    time: 'hace 1 h',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-4',
-    type: 'proposal_declined',
-    unread: false,
-    icon: 'cancel',
-    iconColor: 'text-error',
-    iconBg: 'bg-error-container/60',
-    title: 'Propuesta rechazada',
-    body: 'Sofía rechazó el intercambio por la lente Sony 50mm.',
-    time: 'hace 3 h',
-    badge: 'Canje',
-    badgeVariant: 'secondary-subtle',
-  },
-  {
-    id: 'notif-5',
-    type: 'system',
-    unread: false,
-    icon: 'verified_user',
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary-fixed/60',
-    title: 'Identidad verificada',
-    body: 'Tu cuenta ha sido verificada con documento oficial.',
-    time: 'ayer',
-    badge: 'Sistema',
-    badgeVariant: 'surface',
-  },
-  {
-    id: 'notif-6',
-    type: 'system',
-    unread: false,
-    icon: 'eco',
-    iconColor: 'text-[#1a7a4a]',
-    iconBg: 'bg-[#e8f5ee]',
-    title: '14.2 kg CO₂ ahorrados',
-    body: 'Llevas 23 canjes completos. ¡Sigue extendiendo la vida útil de los artículos!',
-    time: 'hace 3 días',
-    badge: 'Sistema',
-    badgeVariant: 'surface',
-  },
-];
-
-/**
- * Demo/offline mode: fall back to local data only without a session or without network,
- * never to mask a real API rejection (409 expired route, 403 not a participant, ...).
- */
-const canUseOfflineFallback = (error: unknown): boolean =>
-  !tokenStorage.hasToken() || !(error instanceof ApiError) || error.statusCode === 0;
-
 const isSwapRouteObject = (val: SwapRoute | ProposeRoutePayload): val is SwapRoute => {
   return (
     val !== null &&
@@ -185,14 +101,14 @@ const toProposePayload = (routeOrPayload: SwapRoute | ProposeRoutePayload): Prop
           receivesItemId: s.receivesItemId,
         }))
       : route.chainItems.map((item, idx) => {
-          const participant = route.participants[idx] || route.participants[0] || defaultUser;
+          const participant = route.participants[idx] || route.participants[0];
           const prevItem =
             idx === 0
               ? route.chainItems[route.chainItems.length - 1]
               : route.chainItems[idx - 1];
           return {
             stepOrder: idx + 1,
-            userId: participant.id || item.ownerId,
+            userId: participant?.id || item.ownerId,
             givesItemId: item.id,
             receivesItemId: prevItem?.id || route.targetItemId,
           };
@@ -207,7 +123,7 @@ const toProposePayload = (routeOrPayload: SwapRoute | ProposeRoutePayload): Prop
       route.objectiveText ||
       route.chainItems[route.chainItems.length - 1]?.name ||
       route.title,
-    matchScore: route.matchScore ?? 96,
+    matchScore: route.matchScore,
     aiExplanation: route.aiExplanation,
     co2SavedKg: route.co2SavedKg,
     steps,
@@ -218,24 +134,31 @@ const toProposePayload = (routeOrPayload: SwapRoute | ProposeRoutePayload): Prop
 export const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() =>
-    tokenStorage.hasToken() ? null : defaultUser,
-  );
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => tokenStorage.hasToken());
-  const [isHydrating, setIsHydrating] = useState<boolean>(() => tokenStorage.hasToken());
+  const hadToken = tokenStorage.hasToken();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hadToken);
+  const [isHydrating, setIsHydrating] = useState<boolean>(hadToken);
   const [isItemsLoading, setIsItemsLoading] = useState<boolean>(false);
+  const [loadStates, setLoadStates] = useState<LoadStates>({
+    items: hadToken ? 'loading' : 'ready',
+    routes: hadToken ? 'loading' : 'ready',
+    notifications: hadToken ? 'loading' : 'ready',
+  });
 
-  const [items, setItems] = useState<Item[]>(mockItems);
-  const [myItems, setMyItems] = useState<Item[]>(defaultMyItems);
-  const [users] = useState<User[]>(mockUsers);
-  const [routes, setRoutes] = useState<SwapRoute[]>([mockSwapRoute]);
-  const [proposals, setProposals] = useState<Proposal[]>(mockProposals);
-  const [notifications, setNotifications] = useState<AppNotification[]>(() =>
-    tokenStorage.hasToken() ? [] : defaultNotifications,
-  );
+  const [items, setItems] = useState<Item[]>([]);
+  const [myItems, setMyItems] = useState<Item[]>([]);
+  const [routes, setRoutes] = useState<SwapRoute[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [locationScope, setLocationScopeState] = useState<LocationScopePreference>(() =>
     preferencesStorage.getLocationScope(),
   );
+
+  const setLoadState = useCallback((key: keyof LoadStates, status: LoadStatus) => {
+    setLoadStates((prev) => (prev[key] === status ? prev : { ...prev, [key]: status }));
+  }, []);
+
+  // Bumped on every login/logout so a slow response from a previous session is discarded
+  const sessionEpochRef = useRef(0);
 
   // Latest viewer location for callbacks that must stay stable (kept in sync after every render)
   const viewerRef = useRef<{ scope: LocationScopePreference; municipalityCode?: string }>({
@@ -252,111 +175,137 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return notifications.filter((n) => n.unread).length;
   }, [notifications]);
 
+  // Proposals are a view of the user's routes, never a separate store
+  const proposals = useMemo<Proposal[]>(
+    () => (currentUser ? routes.map((r) => mapRouteToProposal(r, currentUser.id)) : []),
+    [routes, currentUser],
+  );
+
   const refreshRoutesReal = useCallback(async (): Promise<SwapRoute[]> => {
     if (!tokenStorage.hasToken()) {
-      return routes;
+      setRoutes([]);
+      setLoadState('routes', 'ready');
+      return [];
     }
-
+    const epoch = sessionEpochRef.current;
+    setLoadState('routes', 'loading');
     try {
-      const activeRoutes = await routesService.listMyRoutes();
-      if (activeRoutes.length > 0) {
-        setRoutes(activeRoutes);
-        const mappedProposals = activeRoutes.map((r) =>
-          mapRouteToProposal(r, currentUser?.id || defaultUser.id),
-        );
-        setProposals((prev) => {
-          const existingIds = new Set(mappedProposals.map((p) => p.id));
-          return [...mappedProposals, ...prev.filter((p) => !existingIds.has(p.id))];
-        });
-      }
-      return activeRoutes;
-    } catch {
-      return routes;
+      const list = await routesService.listMyRoutes();
+      if (epoch !== sessionEpochRef.current) return [];
+      setRoutes(list);
+      setLoadState('routes', 'ready');
+      return list;
+    } catch (error) {
+      if (epoch !== sessionEpochRef.current) return [];
+      console.error('Could not load routes', error);
+      setLoadState('routes', 'error');
+      return [];
     }
-  }, [currentUser?.id, routes]);
+  }, [setLoadState]);
 
   const refreshNotificationsReal = useCallback(async (): Promise<AppNotification[]> => {
     if (!tokenStorage.hasToken()) {
-      return notifications;
+      setNotifications([]);
+      setLoadState('notifications', 'ready');
+      return [];
     }
-
+    const epoch = sessionEpochRef.current;
+    setLoadState('notifications', 'loading');
     try {
       const list = await notificationsService.listNotifications();
+      if (epoch !== sessionEpochRef.current) return [];
       setNotifications(list);
+      setLoadState('notifications', 'ready');
       return list;
-    } catch {
-      return notifications;
+    } catch (error) {
+      if (epoch !== sessionEpochRef.current) return [];
+      console.error('Could not load notifications', error);
+      setLoadState('notifications', 'error');
+      return [];
+    }
+  }, [setLoadState]);
+
+  const markNotificationReadReal = useCallback(
+    async (id: string): Promise<void> => {
+      setNotifications((prev) =>
+        prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)),
+      );
+      try {
+        await notificationsService.markAsRead(id);
+      } catch (error) {
+        setNotifications((prev) =>
+          prev.map((notif) => (notif.id === id ? { ...notif, unread: true } : notif)),
+        );
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const markAllNotificationsReadReal = useCallback(async (): Promise<void> => {
+    const previouslyUnread = new Set(notifications.filter((n) => n.unread).map((n) => n.id));
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, unread: false })));
+    try {
+      await notificationsService.markAllAsRead();
+    } catch (error) {
+      setNotifications((prev) =>
+        prev.map((notif) => (previouslyUnread.has(notif.id) ? { ...notif, unread: true } : notif)),
+      );
+      throw error;
     }
   }, [notifications]);
 
-  const markNotificationReadReal = useCallback(async (id: string): Promise<void> => {
-    setNotifications((prev) =>
-      prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)),
-    );
-
-    if (tokenStorage.hasToken()) {
-      try {
-        await notificationsService.markAsRead(id);
-      } catch {
-        // Keep optimistic state update
-      }
-    }
-  }, []);
-
-  const markAllNotificationsReadReal = useCallback(async (): Promise<void> => {
-    setNotifications((prev) =>
-      prev.map((notif) => ({ ...notif, unread: false })),
-    );
-
-    if (tokenStorage.hasToken()) {
-      try {
-        await notificationsService.markAllAsRead();
-      } catch {
-        // Keep optimistic state update
-      }
-    }
-  }, []);
-
   const loadMarketplaceAndUserItems = useCallback(
     async (hasActiveToken: boolean, viewerMunicipalityCode?: string) => {
-    setIsItemsLoading(true);
-    try {
-      const municipalityCode = viewerMunicipalityCode ?? viewerRef.current.municipalityCode;
-      const [allItemsResult, myItemsResult, myRoutesResult] = await Promise.allSettled([
-        itemsService.listItems(
-          municipalityCode
-            ? { scope: viewerRef.current.scope, municipalityCode }
-            : undefined,
-        ),
-        hasActiveToken ? itemsService.listMyItems() : Promise.resolve<Item[]>([]),
-        hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
-      ]);
+      const epoch = sessionEpochRef.current;
+      setIsItemsLoading(true);
+      setLoadStates((prev) => ({
+        ...prev,
+        items: 'loading',
+        routes: hasActiveToken ? 'loading' : prev.routes,
+      }));
+      try {
+        const municipalityCode = viewerMunicipalityCode ?? viewerRef.current.municipalityCode;
+        const [allItemsResult, myItemsResult, myRoutesResult] = await Promise.allSettled([
+          itemsService.listItems(
+            municipalityCode
+              ? { scope: viewerRef.current.scope, municipalityCode }
+              : undefined,
+          ),
+          hasActiveToken ? itemsService.listMyItems() : Promise.resolve<Item[]>([]),
+          hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
+        ]);
 
-      if (allItemsResult.status === 'fulfilled') {
-        setItems(allItemsResult.value);
+        if (epoch !== sessionEpochRef.current) {
+          return; // the session changed while loading: these results belong to the old one
+        }
+        for (const result of [allItemsResult, myItemsResult, myRoutesResult]) {
+          if (result.status === 'rejected') {
+            console.error('Could not load session data', result.reason);
+          }
+        }
+        if (allItemsResult.status === 'fulfilled') {
+          setItems(allItemsResult.value);
+        }
+        if (myItemsResult.status === 'fulfilled') {
+          setMyItems(myItemsResult.value);
+        }
+        if (myRoutesResult.status === 'fulfilled') {
+          setRoutes(myRoutesResult.value);
+        }
+        setLoadStates((prev) => ({
+          ...prev,
+          items:
+            allItemsResult.status === 'fulfilled' && myItemsResult.status === 'fulfilled'
+              ? 'ready'
+              : 'error',
+          routes: myRoutesResult.status === 'fulfilled' ? 'ready' : 'error',
+        }));
+      } finally {
+        if (epoch === sessionEpochRef.current) {
+          setIsItemsLoading(false);
+        }
       }
-
-      if (hasActiveToken && myItemsResult.status === 'fulfilled') {
-        setMyItems(myItemsResult.value);
-      }
-
-      if (
-        hasActiveToken &&
-        myRoutesResult.status === 'fulfilled' &&
-        myRoutesResult.value.length > 0
-      ) {
-        setRoutes(myRoutesResult.value);
-        const mappedProposals = myRoutesResult.value.map((r) =>
-          mapRouteToProposal(r, defaultUser.id),
-        );
-        setProposals((prev) => {
-          const existingIds = new Set(mappedProposals.map((p) => p.id));
-          return [...mappedProposals, ...prev.filter((p) => !existingIds.has(p.id))];
-        });
-      }
-    } finally {
-      setIsItemsLoading(false);
-    }
     },
     [],
   );
@@ -365,16 +314,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const reloadMarketplace = useCallback(async () => {
     const { scope, municipalityCode } = viewerRef.current;
     setIsItemsLoading(true);
+    setLoadState('items', 'loading');
     try {
       setItems(
         await itemsService.listItems(municipalityCode ? { scope, municipalityCode } : undefined),
       );
+      setLoadState('items', 'ready');
     } catch {
-      // Keep the items already on screen
+      setLoadState('items', 'error');
     } finally {
       setIsItemsLoading(false);
     }
-  }, []);
+  }, [setLoadState]);
 
   const setLocationScope = useCallback(
     (scope: LocationScopePreference) => {
@@ -388,51 +339,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [reloadMarketplace],
   );
 
+  const clearSessionData = useCallback(() => {
+    setCurrentUser(null);
+    setMyItems([]);
+    setRoutes([]);
+    setNotifications([]);
+    setLoadStates({ items: 'ready', routes: 'ready', notifications: 'ready' });
+  }, []);
+
   useEffect(() => {
     setOnUnauthorizedHandler(() => {
+      sessionEpochRef.current += 1;
       setIsAuthenticated(false);
-      setCurrentUser(null);
-      setMyItems([]);
-      setNotifications([]);
+      setItems([]);
+      clearSessionData();
     });
 
     return () => {
       setOnUnauthorizedHandler(null);
     };
-  }, []);
+  }, [clearSessionData]);
 
   useEffect(() => {
     let isMounted = true;
 
     const hydrateSession = async () => {
-      const hasSavedToken = tokenStorage.hasToken();
-
-      if (!hasSavedToken) {
+      if (!tokenStorage.hasToken()) {
         setIsHydrating(false);
         return;
       }
 
       setIsHydrating(true);
+      const epoch = sessionEpochRef.current;
+      const isStale = () => !isMounted || epoch !== sessionEpochRef.current;
       try {
         const user = await authService.getMe();
-        if (!isMounted) return;
+        if (isStale()) return;
         setCurrentUser(user);
         setIsAuthenticated(true);
 
-        await Promise.allSettled([
+        await Promise.all([
           loadMarketplaceAndUserItems(true, user.municipalityCode),
-          notificationsService.listNotifications().then((list) => {
-            if (isMounted) {
-              setNotifications(list);
-            }
-          }),
+          notificationsService
+            .listNotifications()
+            .then((list) => {
+              if (!isStale()) {
+                setNotifications(list);
+                setLoadState('notifications', 'ready');
+              }
+            })
+            .catch(() => {
+              if (!isStale()) setLoadState('notifications', 'error');
+            }),
         ]);
-      } catch {
-        if (!isMounted) return;
-        tokenStorage.clearToken();
-        setIsAuthenticated(false);
-        setCurrentUser(defaultUser);
-        setNotifications(defaultNotifications);
+      } catch (error) {
+        if (isStale()) return;
+        // Only a rejected session ends it; a network or server failure keeps the token so the
+        // user can retry instead of being logged out by a cold server.
+        const sessionRejected =
+          error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
+        if (sessionRejected) {
+          tokenStorage.clearToken();
+          setIsAuthenticated(false);
+          clearSessionData();
+        } else {
+          console.error('Could not restore the session', error);
+          setLoadStates({ items: 'error', routes: 'error', notifications: 'error' });
+        }
       } finally {
         if (isMounted) {
           setIsHydrating(false);
@@ -440,14 +413,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    hydrateSession();
+    void hydrateSession();
 
     return () => {
       isMounted = false;
     };
-  }, [loadMarketplaceAndUserItems]);
+  }, [loadMarketplaceAndUserItems, clearSessionData, setLoadState]);
 
-  // Visibility-aware polling effect (every 15,000 ms ONLY when authenticated, document.visibilityState === 'visible', and import.meta.env.MODE !== 'test')
+  // Visibility-aware polling (every 15 s only when authenticated and the page is visible)
   useEffect(() => {
     if (!isAuthenticated || import.meta.env.MODE === 'test') {
       return;
@@ -460,31 +433,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      try {
-        const [notifsResult, routesResult] = await Promise.allSettled([
-          notificationsService.listNotifications(),
-          routesService.listMyRoutes(),
-        ]);
+      // Background refresh: a failed tick keeps the last real data and the next tick retries.
+      const epoch = sessionEpochRef.current;
+      const [notifsResult, routesResult] = await Promise.allSettled([
+        notificationsService.listNotifications(),
+        routesService.listMyRoutes(),
+      ]);
+      if (epoch !== sessionEpochRef.current) return;
 
-        if (notifsResult.status === 'fulfilled') {
-          setNotifications(notifsResult.value);
-        }
-
-        if (
-          routesResult.status === 'fulfilled' &&
-          routesResult.value.length > 0
-        ) {
-          setRoutes(routesResult.value);
-          const mappedProposals = routesResult.value.map((r) =>
-            mapRouteToProposal(r, currentUser?.id || defaultUser.id),
-          );
-          setProposals((prev) => {
-            const existingIds = new Set(mappedProposals.map((p) => p.id));
-            return [...mappedProposals, ...prev.filter((p) => !existingIds.has(p.id))];
-          });
-        }
-      } catch {
-        // Silently ignore background polling errors
+      if (notifsResult.status === 'fulfilled') {
+        setNotifications(notifsResult.value);
+        setLoadState('notifications', 'ready');
+      }
+      if (routesResult.status === 'fulfilled') {
+        setRoutes(routesResult.value);
+        setLoadState('routes', 'ready');
       }
     };
 
@@ -524,74 +487,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       }
     };
-  }, [isAuthenticated, currentUser?.id]);
+  }, [isAuthenticated, setLoadState]);
 
   const refreshItems = useCallback(async () => {
     const hasActiveToken = tokenStorage.hasToken();
-    await loadMarketplaceAndUserItems(hasActiveToken);
-  }, [loadMarketplaceAndUserItems]);
-
-  // Loads the routes of the user who just signed in so nothing from a previous session lingers
-  const loadSessionRoutes = useCallback(async (userId: string): Promise<void> => {
-    try {
-      const userRoutes = await routesService.listMyRoutes();
-      setRoutes(userRoutes.length > 0 ? userRoutes : [mockSwapRoute]);
-      setProposals(userRoutes.map((route) => mapRouteToProposal(route, userId)));
-    } catch {
-      setRoutes([mockSwapRoute]);
-      setProposals([]);
+    if (hasActiveToken && !currentUser) {
+      // Hydration failed earlier: restore the user first, or the retry would load unscoped data
+      const epoch = sessionEpochRef.current;
+      try {
+        const user = await authService.getMe();
+        if (epoch !== sessionEpochRef.current) return;
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        await Promise.all([
+          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          refreshNotificationsReal(),
+        ]);
+      } catch (error) {
+        if (epoch !== sessionEpochRef.current) return;
+        console.error('Could not restore the session', error);
+        setLoadStates({ items: 'error', routes: 'error', notifications: 'error' });
+      }
+      return;
     }
-  }, []);
+    await loadMarketplaceAndUserItems(hasActiveToken);
+  }, [currentUser, loadMarketplaceAndUserItems, refreshNotificationsReal]);
+
+  const startSession = useCallback(
+    async (user: User): Promise<void> => {
+      sessionEpochRef.current += 1;
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      await Promise.all([
+        loadMarketplaceAndUserItems(true, user.municipalityCode),
+        refreshNotificationsReal(),
+      ]);
+    },
+    [loadMarketplaceAndUserItems, refreshNotificationsReal],
+  );
 
   const loginWithEmail = useCallback(
     async (email: string, password: string): Promise<User> => {
       const session = await authService.login(email, password);
-      setCurrentUser(session.user);
-      setIsAuthenticated(true);
-      await Promise.all([
-        loadMarketplaceAndUserItems(true, session.user.municipalityCode),
-        loadSessionRoutes(session.user.id),
-      ]);
-      try {
-        const notifs = await notificationsService.listNotifications();
-        setNotifications(notifs);
-      } catch {
-        // Silent fallback
-      }
+      await startSession(session.user);
       return session.user;
     },
-    [loadMarketplaceAndUserItems, loadSessionRoutes],
+    [startSession],
   );
 
   const registerWithEmail = useCallback(
     async (payload: RegisterPayload): Promise<User> => {
       const session = await authService.register(payload);
-      setCurrentUser(session.user);
-      setIsAuthenticated(true);
-      await Promise.all([
-        loadMarketplaceAndUserItems(true, session.user.municipalityCode),
-        loadSessionRoutes(session.user.id),
-      ]);
-      try {
-        const notifs = await notificationsService.listNotifications();
-        setNotifications(notifs);
-      } catch {
-        // Silent fallback
-      }
+      await startSession(session.user);
       return session.user;
     },
-    [loadMarketplaceAndUserItems, loadSessionRoutes],
+    [startSession],
   );
 
   const logout = useCallback(() => {
     authService.logout();
+    sessionEpochRef.current += 1;
     setIsAuthenticated(false);
-    setCurrentUser(null);
-    setMyItems([]);
-    setNotifications([]);
-    setRoutes([mockSwapRoute]);
-    setProposals(mockProposals);
-  }, []);
+    setItems([]);
+    clearSessionData();
+  }, [clearSessionData]);
 
   const createItemReal = useCallback(async (payload: CreateItemPayload): Promise<Item> => {
     const created = await itemsService.createItem(payload);
@@ -634,169 +593,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [],
   );
 
+  const upsertRoute = useCallback((route: SwapRoute, alsoMatchId?: string) => {
+    setRoutes((prev) => {
+      const exists = prev.some((r) => r.id === route.id || r.id === alsoMatchId);
+      return exists
+        ? prev.map((r) => (r.id === route.id || r.id === alsoMatchId ? route : r))
+        : [route, ...prev];
+    });
+  }, []);
+
   const proposeRouteReal = useCallback(
     async (routeOrPayload: SwapRoute | ProposeRoutePayload): Promise<SwapRoute> => {
-      const payload = toProposePayload(routeOrPayload);
-      let proposedRoute: SwapRoute;
-
-      try {
-        proposedRoute = await routesService.proposeRoute(payload);
-      } catch (error) {
-        if (!canUseOfflineFallback(error)) throw error;
-        // Offline / unit test fallback
-        const baseRoute = isSwapRouteObject(routeOrPayload) ? routeOrPayload : mockSwapRoute;
-        proposedRoute = {
-          ...baseRoute,
-          id: baseRoute.id || `route-proposed-${Date.now()}`,
-          code: baseRoute.code || 'SR-8492',
-          status: 'ACTIVE',
-          initiatorId: currentUser?.id || defaultUser.id,
-          createdAt: new Date().toISOString(),
-        };
-      }
-
-      setRoutes((prev) => [
-        proposedRoute,
-        ...prev.filter((r) => r.id !== proposedRoute.id),
-      ]);
-
-      const newProposal = mapRouteToProposal(proposedRoute, currentUser?.id || defaultUser.id);
-      setProposals((prev) => [
-        newProposal,
-        ...prev.filter((p) => p.id !== newProposal.id),
-      ]);
-
+      const proposedRoute = await routesService.proposeRoute(toProposePayload(routeOrPayload));
+      upsertRoute(proposedRoute);
       return proposedRoute;
     },
-    [currentUser?.id],
+    [upsertRoute],
   );
 
   const respondToProposalReal = useCallback(
-    async (
-      routeId: string,
-      decision: RouteDecision,
-      comment?: string,
-    ): Promise<SwapRoute> => {
-      let updatedRoute: SwapRoute;
-
-      try {
-        updatedRoute = await routesService.respondToRoute(routeId, decision, comment);
-      } catch (error) {
-        if (!canUseOfflineFallback(error)) throw error;
-        // Offline / mock fallback
-        const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
-        const stepAcceptance = decision === 'ACCEPTED' ? 'ACCEPTED' : 'DECLINED';
-        const nextStatus = decision === 'ACCEPTED' ? 'CONFIRMED' : 'CANCELLED';
-
-        updatedRoute = {
-          ...existing,
-          id: routeId,
-          status: nextStatus,
-          steps: existing.steps?.map((s) =>
-            s.userId === (currentUser?.id || defaultUser.id)
-              ? { ...s, acceptance: stepAcceptance, respondedAt: new Date().toISOString() }
-              : s,
-          ),
-        };
-      }
-
-      setRoutes((prev) => {
-        const exists = prev.some((r) => r.id === updatedRoute.id || r.id === routeId);
-        if (!exists) {
-          return [updatedRoute, ...prev];
-        }
-        return prev.map((r) =>
-          r.id === updatedRoute.id || r.id === routeId ? updatedRoute : r,
-        );
-      });
-
-      const mappedStatus = decision === 'ACCEPTED' ? 'accepted' : 'declined';
-      setProposals((prev) =>
-        prev.map((p) => (p.id === routeId || p.id === updatedRoute.id ? { ...p, status: mappedStatus } : p)),
-      );
-
+    async (routeId: string, decision: RouteDecision, comment?: string): Promise<SwapRoute> => {
+      const updatedRoute = await routesService.respondToRoute(routeId, decision, comment);
+      upsertRoute(updatedRoute, routeId);
       return updatedRoute;
     },
-    [currentUser?.id, routes],
+    [upsertRoute],
   );
 
   const completeSwapReal = useCallback(
     async (routeId: string): Promise<SwapRoute> => {
-      let completedRoute: SwapRoute;
-
-      try {
-        completedRoute = await routesService.completeRoute(routeId);
-      } catch (error) {
-        if (!canUseOfflineFallback(error)) throw error;
-        const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
-        completedRoute = {
-          ...existing,
-          id: routeId,
-          status: 'COMPLETED',
-          steps: existing.steps?.map((s) => ({
-            ...s,
-            acceptance: 'ACCEPTED',
-            deliveryConfirmed: true,
-          })),
-        };
-      }
-
-      setRoutes((prev) => {
-        const exists = prev.some((r) => r.id === completedRoute.id || r.id === routeId);
-        if (!exists) {
-          return [completedRoute, ...prev];
-        }
-        return prev.map((r) =>
-          r.id === completedRoute.id || r.id === routeId ? completedRoute : r,
-        );
-      });
-
-      setProposals((prev) =>
-        prev.map((p) =>
-          p.id === routeId || p.id === completedRoute.id ? { ...p, status: 'completed' } : p,
-        ),
-      );
-
+      const completedRoute = await routesService.completeRoute(routeId);
+      upsertRoute(completedRoute, routeId);
       return completedRoute;
     },
-    [routes],
+    [upsertRoute],
   );
 
   const cancelRouteReal = useCallback(
     async (routeId: string): Promise<SwapRoute> => {
-      let cancelledRoute: SwapRoute;
-
-      try {
-        cancelledRoute = await routesService.cancelRoute(routeId);
-      } catch (error) {
-        if (!canUseOfflineFallback(error)) throw error;
-        const existing = routes.find((r) => r.id === routeId || r.code === routeId) || mockSwapRoute;
-        cancelledRoute = { ...existing, id: routeId, status: 'CANCELLED' };
-      }
-
-      setRoutes((prev) =>
-        prev.map((r) => (r.id === cancelledRoute.id || r.id === routeId ? cancelledRoute : r)),
-      );
-      setProposals((prev) =>
-        prev.map((p) =>
-          p.id === routeId || p.id === cancelledRoute.id ? { ...p, status: 'declined' } : p,
-        ),
-      );
-
+      const cancelledRoute = await routesService.cancelRoute(routeId);
+      upsertRoute(cancelledRoute, routeId);
       return cancelledRoute;
     },
-    [routes],
+    [upsertRoute],
   );
 
   const value = useMemo<AppContextValue>(
     () => ({
       currentUser,
+      loadStates,
       isAuthenticated,
       isHydrating,
       isItemsLoading,
       items,
       myItems,
-      users,
       routes,
       proposals,
       notifications,
@@ -823,12 +673,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }),
     [
       currentUser,
+      loadStates,
       isAuthenticated,
       isHydrating,
       isItemsLoading,
       items,
       myItems,
-      users,
       routes,
       proposals,
       notifications,
@@ -858,18 +708,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
+/** Value for components rendered outside the provider: empty data, services still reachable. */
 const fallbackContextValue: AppContextValue = {
-  currentUser: defaultUser,
+  currentUser: null,
+  loadStates: { items: 'ready', routes: 'ready', notifications: 'ready' },
   isAuthenticated: false,
   isHydrating: false,
   isItemsLoading: false,
-  items: mockItems,
-  myItems: defaultMyItems,
-  users: mockUsers,
-  routes: [mockSwapRoute],
-  proposals: mockProposals,
-  notifications: defaultNotifications,
-  unreadNotificationsCount: defaultNotifications.filter((n) => n.unread).length,
+  items: [],
+  myItems: [],
+  routes: [],
+  proposals: [],
+  notifications: [],
+  unreadNotificationsCount: 0,
   loginWithEmail: async (email, password) => {
     const session = await authService.login(email, password);
     return session.user;

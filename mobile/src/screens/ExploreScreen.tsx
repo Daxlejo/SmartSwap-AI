@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { mockUsers } from '@/data/mockData';
 import type { Item, User } from '@/types';
 import { ObjectCard } from '@/components/ObjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -65,6 +65,7 @@ export const ExploreScreen = () => {
     items,
     currentUser,
     isItemsLoading,
+    loadStates,
     refreshItems,
     deleteItemReal,
     locationScope,
@@ -86,7 +87,7 @@ export const ExploreScreen = () => {
   const sortLabel = t(`explore.sortOptions.${selectedSort}`);
 
   useEffect(() => {
-    refreshItems().catch(() => {});
+    void refreshItems();
   }, [refreshItems]);
 
   const handleManualRefresh = async () => {
@@ -126,9 +127,6 @@ export const ExploreScreen = () => {
 
   const usersById = useMemo(() => {
     const map = new Map<string, User>();
-    for (const user of mockUsers) {
-      map.set(user.id, user);
-    }
     if (currentUser) {
       map.set(currentUser.id, currentUser);
     }
@@ -145,7 +143,7 @@ export const ExploreScreen = () => {
         rating: item.owner.rating,
         location: item.owner.location,
         verified: item.owner.verified ?? false,
-        co2SavedKg: item.owner.co2SavedKg ?? 14.2,
+        co2SavedKg: item.owner.co2SavedKg ?? 0,
       };
     }
     return usersById.get(item.ownerId);
@@ -403,17 +401,18 @@ export const ExploreScreen = () => {
               </div>
             ))}
           </div>
+        ) : loadStates.items === 'error' && items.length === 0 ? (
+          <ErrorState onRetry={() => void refreshItems()} />
         ) : filteredItems.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[45vh]">
             <EmptyState
-              iconName="search_off"
+              illustration="search"
               title={
-                !hasActiveFilters && widenTarget ? t('location.empty.title') : t('explore.emptyTitle')
-              }
-              description={
-                !hasActiveFilters && widenTarget
-                  ? t('location.empty.description')
-                  : t('explore.emptyDescription')
+                hasActiveFilters
+                  ? t('states.explore')
+                  : widenTarget
+                    ? t('location.empty.title')
+                    : t('states.explore')
               }
               action={
                 !hasActiveFilters && widenTarget ? (
@@ -436,7 +435,11 @@ export const ExploreScreen = () => {
                   >
                     {t('explore.resetFilters')}
                   </Button>
-                ) : undefined
+                ) : (
+                  <Button variant="primary" size="md" onClick={() => navigate('/publish')}>
+                    {t('states.exploreCta')}
+                  </Button>
+                )
               }
             />
           </div>
@@ -558,9 +561,11 @@ export const ExploreScreen = () => {
                       {selectedItemOwner.rating.toFixed(1)}
                     </span>
                   </div>
-                  <span className="font-label-sm text-[10px] text-primary font-semibold mt-1">
-                    {t('explore.co2Saved', { kg: selectedItemOwner.co2SavedKg })}
-                  </span>
+                  {selectedItemOwner.co2SavedKg > 0 && (
+                    <span className="font-label-sm text-[10px] text-primary font-semibold mt-1">
+                      {t('explore.co2Saved', { kg: selectedItemOwner.co2SavedKg })}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

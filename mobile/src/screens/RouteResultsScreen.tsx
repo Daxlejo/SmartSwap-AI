@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { formatMatchScore } from '@/services/routes/routes.service';
 import { RouteCard } from '@/components/RouteCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { formatCop } from '@/utils/currency';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { getNoRoutesReason, isOfferableItem } from '@/utils/swapSearch';
 
 interface ResultsLocationState {
   routes?: SwapRoute[];
+  /** Set by Searching when its engine call finished, even with zero routes. */
+  searchCompleted?: boolean;
   offeredItemId?: string;
   wantItemId?: string;
   objectiveText?: string;
@@ -24,29 +29,41 @@ export const RouteResultsScreen: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const location = useLocation();
-  const { searchRoutesReal } = useApp();
+  const { searchRoutesReal, myItems, isItemsLoading, loadStates } = useApp();
   const [searchParams] = useSearchParams();
   const locationState = location.state as ResultsLocationState | null;
 
-  const haveId = searchParams.get('have') || locationState?.offeredItemId || 'item-bike';
-  const wantId = searchParams.get('want') || locationState?.wantItemId || 'item-camera';
-  const objectiveText =
-    searchParams.get('q') || locationState?.objectiveText || wantId || 'Cámara Fujifilm X-T30 II';
+  const haveId = searchParams.get('have') || locationState?.offeredItemId || '';
+  const wantId = searchParams.get('want') || locationState?.wantItemId || '';
+  const objectiveText = searchParams.get('q') || locationState?.objectiveText || wantId;
+  const hasSearchParams = haveId !== '' && objectiveText !== '';
   const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || 4;
   const valueTolerancePct =
     Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
 
   const [routes, setRoutes] = useState<SwapRoute[]>(() => locationState?.routes || []);
-  const [isLoading, setIsLoading] = useState<boolean>(
-    () => !locationState?.routes || locationState.routes.length === 0,
-  );
+  const hasSearchAnswer =
+    locationState?.searchCompleted === true ||
+    (locationState?.routes !== undefined && locationState.routes.length > 0);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !hasSearchAnswer);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [hopFilter, setHopFilter] = useState<'all' | 2 | 3 | 4>('all');
 
   useEffect(() => {
+    if (!hasSearchParams) {
+      return;
+    }
+    // The Searching screen already ran this search; only repeat it on retry, direct entry
+    // or when that search failed or had not answered yet.
+    if (reloadKey === 0 && hasSearchAnswer) {
+      return;
+    }
     let isMounted = true;
 
     const loadRoutes = async () => {
-      if (!locationState?.routes || locationState.routes.length === 0) {
+      setLoadFailed(false);
+      if (!hasSearchAnswer) {
         setIsLoading(true);
       }
       try {
@@ -60,8 +77,11 @@ export const RouteResultsScreen: React.FC = () => {
         if (isMounted) {
           setRoutes(result);
         }
-      } catch (error) {
-        console.error('Failed to load routes', error);
+      } catch (error: unknown) {
+        console.error('Route search failed on the Results screen', error);
+        if (isMounted) {
+          setLoadFailed(true);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -75,18 +95,29 @@ export const RouteResultsScreen: React.FC = () => {
       isMounted = false;
     };
   }, [
+    hasSearchParams,
+    reloadKey,
     haveId,
     wantId,
     objectiveText,
     maxSteps,
     valueTolerancePct,
     locationState?.desiredCategory,
-    locationState?.routes,
+    hasSearchAnswer,
     searchRoutesReal,
   ]);
 
+  const noRoutesReason = getNoRoutesReason({
+    loaded: !isItemsLoading && loadStates.items === 'ready',
+    publishedCount: myItems.filter(isOfferableItem).length,
+  });
+
   const filteredRoutes =
     hopFilter === 'all' ? routes : routes.filter((r) => r.stepsCount === hopFilter);
+
+  if (!hasSearchParams) {
+    return <Navigate to="/swap/configure" replace />;
+  }
 
   if (isLoading) {
     return (
@@ -177,21 +208,44 @@ export const RouteResultsScreen: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto px-margin py-4">
-        {filteredRoutes.length === 0 ? (
+        {loadFailed && routes.length === 0 ? (
+          <ErrorState onRetry={() => setReloadKey((key) => key + 1)} />
+        ) : filteredRoutes.length === 0 && hopFilter !== 'all' ? (
           <EmptyState
-            iconName="search"
-            title={t('routeResults.emptyTitle')}
-            description={t('routeResults.emptyDescription')}
+            iconName="filter_alt_off"
+            title={t('routeResults.emptyFilterTitle')}
             action={
-              hopFilter !== 'all' ? (
-                <Button variant="primary" onClick={() => setHopFilter('all')}>
-                  {t('routeResults.showAll')}
-                </Button>
-              ) : (
-                <Button variant="primary" onClick={() => navigate('/home')}>
-                  {t('routeResults.backHome')}
-                </Button>
-              )
+              <Button variant="primary" onClick={() => setHopFilter('all')}>
+                {t('routeResults.showAll')}
+              </Button>
+            }
+          />
+        ) : filteredRoutes.length === 0 && noRoutesReason === 'noItems' ? (
+          <EmptyState
+            illustration="routes"
+            title={t('routeResults.noItemsTitle')}
+            description={t('routeResults.noItemsDescription')}
+            action={
+              <Button variant="primary" onClick={() => navigate('/publish')}>
+                {t('routeResults.publishItem')}
+              </Button>
+            }
+          />
+        ) : filteredRoutes.length === 0 ? (
+          <EmptyState
+            iconName="search_off"
+            title={t(
+              noRoutesReason === 'noCycles'
+                ? 'routeResults.noCyclesTitle'
+                : 'routeResults.noRoutesTitle',
+            )}
+            description={
+              noRoutesReason === 'noCycles' ? t('routeResults.noCyclesDescription') : undefined
+            }
+            action={
+              <Button variant="primary" onClick={() => navigate('/swap/configure')}>
+                {t('routeResults.changeSearch')}
+              </Button>
             }
           />
         ) : (
@@ -209,12 +263,14 @@ export const RouteResultsScreen: React.FC = () => {
                   {/* AI Fairness Explanation & Step Values Card */}
                   <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 text-primary">
-                        <Icon name="auto_awesome" size="xs" filled />
-                        <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
-                          {t('routeResults.aiVerified', { percent: matchPct })}
-                        </span>
-                      </div>
+                      {matchPct !== null && (
+                        <div className="flex items-center gap-1.5 text-primary">
+                          <Icon name="auto_awesome" size="xs" filled />
+                          <span className="font-label-sm text-label-sm font-bold uppercase tracking-wider">
+                            {t('routeResults.aiVerified', { percent: matchPct })}
+                          </span>
+                        </div>
+                      )}
                       <span className="font-label-sm text-[11px] font-bold text-[#1a7a4a] flex items-center gap-1">
                         <Icon name="eco" size="xs" filled />
                         -{route.co2SavedKg} kg CO₂
@@ -237,9 +293,11 @@ export const RouteResultsScreen: React.FC = () => {
                           <span className="font-label-sm text-[10px] text-on-surface-variant truncate max-w-[85px]">
                             {item.name.split(' ')[0]}:
                           </span>
-                          <span className="font-label-sm text-[10px] text-primary font-bold">
-                            ${item.estimatedValue ?? 450}
-                          </span>
+                          {item.estimatedValue !== undefined && (
+                            <span className="font-label-sm text-[10px] text-primary font-bold">
+                              {formatCop(item.estimatedValue)}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>

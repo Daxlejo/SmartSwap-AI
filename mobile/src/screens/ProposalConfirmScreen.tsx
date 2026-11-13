@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { mockSwapRoute } from '@/data/mockData';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -12,23 +11,21 @@ import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 
-export const ProposalConfirmScreen: React.FC = () => {
-  const location = useLocation();
+interface ProposalConfirmContentProps {
+  route: SwapRoute;
+}
+
+const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { proposeRouteReal } = useApp();
-  const route = (location.state?.route as SwapRoute | undefined) ?? mockSwapRoute;
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // First item in chain (offered by current user: item-bike / Bicicleta Trek)
-  const offeredItem = route.chainItems[0] || mockSwapRoute.chainItems[0];
-  // Last item in chain (desired by current user: item-camera / Cámara Fujifilm)
-  const targetItem =
-    route.chainItems[route.chainItems.length - 1] ||
-    mockSwapRoute.chainItems[mockSwapRoute.chainItems.length - 1];
+  const offeredItem = route.chainItems[0];
+  const targetItem = route.chainItems[route.chainItems.length - 1];
   // Second participant in the chain (recipient of the user's item)
   const recipientUser = route.participants[1] || route.participants[0];
   const recipientDisplayName = recipientUser?.name ?? '';
@@ -256,4 +253,14 @@ export const ProposalConfirmScreen: React.FC = () => {
       </div>
     </div>
   );
+};
+
+/** The route to confirm travels in the navigation state; without it there is nothing to show. */
+export const ProposalConfirmScreen: React.FC = () => {
+  const location = useLocation();
+  const route = location.state?.route as SwapRoute | undefined;
+  if (!route || route.chainItems.length < 2) {
+    return <Navigate to="/swap/configure" replace />;
+  }
+  return <ProposalConfirmContent route={route} />;
 };

@@ -54,7 +54,7 @@ export const DemoAccountSwitcher = () => {
       </div>
       <p className="font-body-sm text-body-sm text-on-surface-variant">{t('demo.description')}</p>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {DEMO_ACCOUNTS.map((account) => {
           const isActive = account.email === activeEmail;
           const isSwitching = switchingTo === account.email;

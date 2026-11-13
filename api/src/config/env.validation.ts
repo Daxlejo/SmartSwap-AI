@@ -24,15 +24,15 @@ export const envSchema = z.object({
   OPENAI_API_KEY: z
     .string()
     .min(1, 'OPENAI_API_KEY is required')
-    .default('sk-mock-openai-api-key-for-development'),
+    .default('sk-placeholder-openai-key-for-development'),
   SUPABASE_URL: z
     .string()
     .url('SUPABASE_URL must be a valid URL')
-    .default('https://smartswap-mock.supabase.co'),
+    .default('https://placeholder.supabase.co'),
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY is required')
-    .default('mock-supabase-service-role-key-for-local-development'),
+    .default('placeholder-supabase-service-role-key-for-local-development'),
   CORS_ORIGIN: z.string().default('*'),
 });
 

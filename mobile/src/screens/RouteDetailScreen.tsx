@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { SwapRoute, Item } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { routesService, formatMatchScore } from '@/services/routes/routes.service';
-import { mockSwapRoute } from '@/data/mockData';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { RouteStep } from '@/components/RouteStep';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
@@ -20,39 +20,52 @@ export const RouteDetailScreen: React.FC = () => {
   const { routeId: routeIdParam } = useParams<{ routeId: string }>();
   const { routes } = useApp();
 
-  const initialRoute =
+  const knownRoute =
     (location.state?.route as SwapRoute | undefined) ??
-    routes.find((r) => r.id === routeIdParam || r.code === routeIdParam) ??
-    mockSwapRoute;
+    routes.find((r) => r.id === routeIdParam || r.code === routeIdParam);
 
-  const [route, setRoute] = useState<SwapRoute>(initialRoute);
+  const [fetchedRoute, setFetchedRoute] = useState<SwapRoute | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const route = fetchedRoute ?? knownRoute ?? null;
 
   useEffect(() => {
-    let isMounted = true;
-    const stateRoute = location.state?.route as SwapRoute | undefined;
-    if (stateRoute) {
-      setRoute(stateRoute);
+    if (location.state?.route || !routeIdParam) {
       return;
     }
-
-    if (routeIdParam) {
-      routesService
-        .getRouteById(routeIdParam)
-        .then((fetched) => {
-          if (isMounted && fetched) {
-            setRoute(fetched);
-          }
-        })
-        .catch(() => {
-          // Keep initial fallback route
-        });
-    }
+    let isMounted = true;
+    setLoadFailed(false);
+    setFetchedRoute(null);
+    routesService
+      .getRouteById(routeIdParam)
+      .then((fetched) => {
+        if (isMounted) setFetchedRoute(fetched);
+      })
+      .catch(() => {
+        if (isMounted) setLoadFailed(true);
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [routeIdParam, location.state]);
+  }, [routeIdParam, location.state, reloadKey]);
+
+  if (!route && !routeIdParam) {
+    return <Navigate to="/swaps" replace />;
+  }
+
+  if (!route) {
+    return (
+      <div className="px-margin py-6">
+        {loadFailed ? (
+          <ErrorState onRetry={() => setReloadKey((key) => key + 1)} />
+        ) : (
+          <div className="h-48 rounded-2xl bg-surface-container-low animate-pulse" aria-busy="true" />
+        )}
+      </div>
+    );
+  }
 
   const handlePropose = () => {
     navigate('/swap/proposal/confirm', { state: { route } });
@@ -80,10 +93,12 @@ export const RouteDetailScreen: React.FC = () => {
             <Icon name="eco" size="xs" />
             <span>-{route.co2SavedKg}kg CO₂</span>
           </Badge>
-          <Badge variant="primary-subtle" className="flex items-center gap-1">
-            <Icon name="auto_awesome" size="xs" />
-            <span>{t('routeDetail.match', { percent: matchPct })}</span>
-          </Badge>
+          {matchPct !== null && (
+            <Badge variant="primary-subtle" className="flex items-center gap-1">
+              <Icon name="auto_awesome" size="xs" />
+              <span>{t('routeDetail.match', { percent: matchPct })}</span>
+            </Badge>
+          )}
         </div>
         <h2 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-1">
           {t('routeDetail.title')}

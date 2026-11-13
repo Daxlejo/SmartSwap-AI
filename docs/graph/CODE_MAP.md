@@ -70,7 +70,7 @@
 
 ## 4. Mobile Architecture (`mobile/src/`)
 - **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `geo/` (departments, municipalities, GPS resolve), `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale/search area). Prices: `utils/currency.ts` (COP). Location UI: `components/LocationPicker.tsx`, `LocationScopeSelector.tsx`.
-- **State (`context/`)**: `AppContext.tsx` (swaps, active routes, mock fallback), `ThemeContext.tsx` (default `light`).
+- **State (`context/`)**: `AppContext.tsx` (session, items, routes, notifications and their load/error states), `ThemeContext.tsx` (default `light`).
 - **Screens (`screens/`)**: `SplashScreen`, `LoginScreen`, `RegisterScreen`, `HomeScreen`, `ExploreScreen`, `PublishScreen`, `SearchingScreen`, `RouteResultsScreen`, `RouteDetailScreen`, `ConfigureSwapScreen`, `ProposalConfirmScreen`, `TradesScreen`, `NotificationsScreen`, `ProfileScreen`.
 - **i18n & Theme**: `i18n/es.ts` (source of truth, `TranslationSchema`) + `i18n/en.ts`; default `es`/`light`, persisted as `smartswap_locale` / `smartswap_theme`; use `hooks/useTranslation.ts`. Catalog values stay Spanish, labels via `catalog.*`. Brand: Primary `#00685f`, Accent `#fd761a`.
 

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { mockUsers } from '@/data/mockData';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -54,8 +53,7 @@ export const ProfileScreen = () => {
     logout,
   } = useApp();
 
-  const currentUser =
-    appUser || mockUsers.find((user) => user.id === 'user-alex') || mockUsers[0];
+  const currentUser = appUser;
 
   const [activeTab, setActiveTab] = useState<'activos' | 'pausados' | 'historial'>('activos');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -186,9 +184,9 @@ export const ProfileScreen = () => {
     navigate('/login', { replace: true });
   };
 
-  const tradesCompleted = currentUser?.tradesCompleted ?? 23;
-  const userRating = (currentUser?.rating ?? 4.9).toFixed(1);
-  const co2SavedKg = currentUser?.co2SavedKg ?? 14.2;
+  const tradesCompleted = currentUser?.tradesCompleted ?? 0;
+  const userRating = typeof currentUser?.rating === 'number' ? currentUser.rating.toFixed(1) : '—';
+  const co2SavedKg = currentUser?.co2SavedKg ?? 0;
 
   return (
     <div className="flex flex-col px-margin py-4 space-y-6">
@@ -196,15 +194,15 @@ export const ProfileScreen = () => {
       <section className="flex flex-col items-center text-center pt-2">
         <Avatar
           src={currentUser?.avatarUrl}
-          alt={currentUser?.name ?? 'Alex Morales'}
+          alt={currentUser?.name ?? ''}
           size="xl"
           className="mb-3"
         />
         <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-          {currentUser?.name ?? 'Alex Morales'}
+          {currentUser?.name ?? ''}
         </h1>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 mb-1">
-          {currentUser?.email ?? 'alex.morales@smartswap.io'}
+          {currentUser?.email ?? ''}
         </p>
         {currentUser?.location && (
           <p className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mb-2.5">

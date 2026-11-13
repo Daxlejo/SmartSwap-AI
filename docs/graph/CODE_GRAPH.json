@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-29T05:43:37.036Z",
+  "generatedAt": "2026-11-13T01:52:41.686Z",
   "stats": {
-    "totalFiles": 138,
-    "apiFiles": 65,
-    "mobileFiles": 73,
+    "totalFiles": 140,
+    "apiFiles": 66,
+    "mobileFiles": 74,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -462,6 +462,9 @@
       "api/src/prisma/prisma.module.ts",
       "api/src/prisma/prisma.service.ts"
     ],
+    "api/seed": [
+      "api/src/seed/seed-data.ts"
+    ],
     "mobile/App.tsx": [
       "mobile/src/App.tsx"
     ],
@@ -482,7 +485,9 @@
       "mobile/src/components/ui/BottomSheet.tsx",
       "mobile/src/components/ui/Button.tsx",
       "mobile/src/components/ui/Chip.tsx",
+      "mobile/src/components/ui/EmptyIllustration.tsx",
       "mobile/src/components/ui/EmptyState.tsx",
+      "mobile/src/components/ui/ErrorState.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
       "mobile/src/components/ui/ItemImage.tsx",
@@ -497,9 +502,6 @@
       "mobile/src/context/AppContext.tsx",
       "mobile/src/context/ThemeContext.tsx"
     ],
-    "mobile/data": [
-      "mobile/src/data/mockData.ts"
-    ],
     "mobile/hooks": [
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
@@ -513,9 +515,6 @@
     "mobile/layouts": [
       "mobile/src/layouts/AppLayout.tsx",
       "mobile/src/layouts/AuthLayout.tsx"
-    ],
-    "mobile/lib": [
-      "mobile/src/lib/routeFinder.ts"
     ],
     "mobile/main.tsx": [
       "mobile/src/main.tsx"
@@ -552,8 +551,10 @@
       "mobile/src/services/notifications/notifications.service.ts",
       "mobile/src/services/routes/routes.service.ts",
       "mobile/src/services/storage/preferencesStorage.ts",
-      "mobile/src/services/storage/tokenStorage.ts",
-      "mobile/src/services/swapService.ts"
+      "mobile/src/services/storage/tokenStorage.ts"
+    ],
+    "mobile/test": [
+      "mobile/src/test/configureSwap.test.tsx"
     ],
     "mobile/types": [
       "mobile/src/types/index.ts"
@@ -563,7 +564,8 @@
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
-      "mobile/src/utils/relativeTime.ts"
+      "mobile/src/utils/relativeTime.ts",
+      "mobile/src/utils/swapSearch.ts"
     ]
   },
   "files": {
@@ -1852,6 +1854,20 @@
         "@prisma/client"
       ]
     },
+    "api/src/seed/seed-data.ts": {
+      "module": "api/seed",
+      "exports": [
+        "DEMO_ITEMS",
+        "DEMO_USERS",
+        "PROPOSAL_STEPS",
+        "SeedItemSpec",
+        "SeedUserSpec",
+        "uuid"
+      ],
+      "imports": [
+        "@prisma/client"
+      ]
+    },
     "mobile/src/App.tsx": {
       "module": "mobile/App.tsx",
       "exports": [
@@ -1871,6 +1887,7 @@
       ],
       "imports": [
         "./ui/Icon",
+        "@/context/AppContext",
         "@/hooks/useTranslation",
         "clsx",
         "react-router-dom"
@@ -2091,6 +2108,16 @@
         "react"
       ]
     },
+    "mobile/src/components/ui/EmptyIllustration.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "EmptyIllustration",
+        "EmptyIllustrationName"
+      ],
+      "imports": [
+        "react"
+      ]
+    },
     "mobile/src/components/ui/EmptyState.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -2098,7 +2125,21 @@
         "EmptyStateProps"
       ],
       "imports": [
+        "./EmptyIllustration",
         "./Icon",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/ErrorState.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ErrorState",
+        "ErrorStateProps"
+      ],
+      "imports": [
+        "./Button",
+        "./Icon",
+        "@/hooks/useTranslation",
         "react"
       ]
     },
@@ -2186,10 +2227,11 @@
         "AppContext",
         "AppContextValue",
         "AppProvider",
+        "LoadStates",
+        "LoadStatus",
         "useApp"
       ],
       "imports": [
-        "@/data/mockData",
         "@/services/auth/auth.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
@@ -2212,39 +2254,6 @@
       "imports": [
         "@/services/storage/preferencesStorage",
         "react"
-      ]
-    },
-    "mobile/src/data/mockData.ts": {
-      "module": "mobile/data",
-      "exports": [
-        "mockItems",
-        "mockProposals",
-        "mockSwapRoute",
-        "mockUsers"
-      ],
-      "imports": [
-        "@/assets/avatar-alex.svg",
-        "@/assets/avatar-carlos.svg",
-        "@/assets/avatar-david.svg",
-        "@/assets/avatar-diego.svg",
-        "@/assets/avatar-elena.svg",
-        "@/assets/avatar-laura.svg",
-        "@/assets/avatar-mateo.svg",
-        "@/assets/avatar-sofia.svg",
-        "@/assets/item-ball.svg",
-        "@/assets/item-bike.svg",
-        "@/assets/item-camera.svg",
-        "@/assets/item-guitar.svg",
-        "@/assets/item-headphones.svg",
-        "@/assets/item-ipad.svg",
-        "@/assets/item-keyboard.svg",
-        "@/assets/item-laptop.svg",
-        "@/assets/item-lens.svg",
-        "@/assets/item-monitor.svg",
-        "@/assets/item-smartwatch.svg",
-        "@/assets/item-switch.svg",
-        "@/assets/item-vintage-bike.svg",
-        "@/types"
       ]
     },
     "mobile/src/hooks/useServerStatus.ts": {
@@ -2336,16 +2345,6 @@
         "react-router-dom"
       ]
     },
-    "mobile/src/lib/routeFinder.ts": {
-      "module": "mobile/lib",
-      "exports": [
-        "RouteFinderOptions",
-        "findRoutes"
-      ],
-      "imports": [
-        "../types"
-      ]
-    },
     "mobile/src/main.tsx": {
       "module": "mobile/main.tsx",
       "exports": [],
@@ -2397,13 +2396,15 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
+        "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
-        "@/services/swapService",
         "@/types",
         "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2433,10 +2434,10 @@
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
@@ -2457,14 +2458,13 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
+        "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
-        "@/services/swapService",
-        "@/types",
         "@/utils/relativeTime",
         "react",
         "react-router-dom"
@@ -2498,8 +2498,10 @@
       ],
       "imports": [
         "@/components/ui/Badge",
+        "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/hooks/useTranslation",
@@ -2529,7 +2531,6 @@
         "@/components/ui/ItemImage",
         "@/components/ui/ThemeToggle",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
@@ -2551,7 +2552,6 @@
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
@@ -2570,7 +2570,6 @@
         "@/components/ui/Button",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/types",
         "react",
@@ -2624,10 +2623,10 @@
         "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
@@ -2646,11 +2645,14 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
+        "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2694,12 +2696,13 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
-        "@/data/mockData",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/types",
         "@/utils/relativeTime",
         "react",
         "react-router-dom"
@@ -2838,21 +2841,17 @@
         "StepAcceptanceStatus",
         "SwapRouteDto",
         "SwapRouteStepDto",
-        "buildOfflineFallbackRoutes",
         "formatMatchScore",
         "mapApiRouteToUiRoute",
         "mapRouteToProposal",
         "routesService"
       ],
       "imports": [
-        "@/data/mockData",
-        "@/lib/routeFinder",
         "@/services/auth/auth.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/services/storage/preferencesStorage",
-        "@/types",
-        "@/utils/currency"
+        "@/types"
       ]
     },
     "mobile/src/services/storage/preferencesStorage.ts": {
@@ -2882,28 +2881,16 @@
       ],
       "imports": []
     },
-    "mobile/src/services/swapService.ts": {
-      "module": "mobile/services",
-      "exports": [
-        "createItem",
-        "deleteItem",
-        "findRoutes",
-        "getCurrentUser",
-        "getItemById",
-        "getItems",
-        "getMyItems",
-        "getProposals",
-        "getRecommendedRoutes",
-        "getUserById"
-      ],
+    "mobile/src/test/configureSwap.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
       "imports": [
-        "@/data/mockData",
-        "@/lib/routeFinder",
-        "@/services/auth/auth.service",
-        "@/services/http/apiClient",
-        "@/services/items/items.service",
-        "@/services/storage/tokenStorage",
-        "@/types"
+        "@/i18n",
+        "@/types",
+        "@/utils/swapSearch",
+        "react-dom/server",
+        "react-router-dom",
+        "vitest"
       ]
     },
     "mobile/src/types/index.ts": {
@@ -2965,6 +2952,24 @@
       "imports": [
         "@/services/storage/preferencesStorage"
       ]
+    },
+    "mobile/src/utils/swapSearch.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "InventorySnapshot",
+        "MIN_OBJECTIVE_LENGTH",
+        "NoRoutesReason",
+        "SwapSearchBlocker",
+        "SwapSearchInput",
+        "SwapSearchNavigation",
+        "SwapSearchState",
+        "VALUE_TOLERANCE_PCT",
+        "buildSwapSearchNavigation",
+        "getNoRoutesReason",
+        "getSwapSearchBlocker",
+        "isOfferableItem"
+      ],
+      "imports": []
     }
   }
 }
