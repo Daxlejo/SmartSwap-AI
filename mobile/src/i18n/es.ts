@@ -150,7 +150,7 @@ export const es = {
     register: 'Crear cuenta',
     fullName: 'Nombre completo',
     fullNamePlaceholder: 'Ej. Ana María López',
-    email: 'Correo Electrónico',
+    email: 'Correo electrónico',
     emailPlaceholder: 'tu.correo@ejemplo.com',
     password: 'Contraseña',
     passwordPlaceholderRegister: 'Mínimo 8 caracteres',
