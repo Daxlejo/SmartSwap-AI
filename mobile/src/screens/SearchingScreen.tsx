@@ -415,7 +415,7 @@ export const SearchingScreen: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[44px]">
-            <p className="font-body-md text-body-md text-on-surface-variant font-medium animate-pulse">
+            <p className="font-body-md text-body-md text-on-surface-variant font-medium">
               {t(`searching.messages.${MESSAGE_KEYS[messageIndex]}`)}
             </p>
           </div>
