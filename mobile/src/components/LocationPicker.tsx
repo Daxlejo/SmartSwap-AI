@@ -7,6 +7,7 @@ import {
   type Municipality,
 } from '@/services/geo/geo.service';
 import { GeolocationError, getApproximatePosition } from '@/services/geo/geolocation';
+import { canOpenSettings, openSettings, type SettingsTarget } from '@/services/device/appSettings';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
 import { Select } from './ui/Select';
@@ -20,7 +21,13 @@ export interface LocationPickerProps {
   error?: string;
 }
 
-type DetectError = 'denied' | 'timeout' | 'unavailable' | 'outside';
+type DetectError = 'denied' | 'disabled' | 'timeout' | 'unavailable' | 'outside';
+
+/** Errors the person can fix in Android's settings, and which screen fixes each one. */
+const SETTINGS_FOR: Partial<Record<DetectError, SettingsTarget>> = {
+  denied: 'app',
+  disabled: 'location',
+};
 
 /**
  * Lets the user set their municipality in two ways: detect it with the phone's approximate
@@ -142,9 +149,22 @@ export const LocationPicker = ({
       </Button>
 
       {detectError && (
-        <p role="alert" className="font-body-sm text-body-sm text-error">
-          {t(`location.errors.${detectError}`)}
-        </p>
+        <div role="alert" className="flex flex-col gap-2">
+          <p className="font-body-sm text-body-sm text-error">{t(`location.errors.${detectError}`)}</p>
+          {SETTINGS_FOR[detectError] && canOpenSettings() && (
+            <Button
+              variant="outline"
+              size="md"
+              leftIcon="settings"
+              onClick={() => {
+                const target = SETTINGS_FOR[detectError];
+                if (target) openSettings(target).catch(() => setDetectError('unavailable'));
+              }}
+            >
+              {detectError === 'denied' ? t('location.openAppSettings') : t('location.openLocationSettings')}
+            </Button>
+          )}
+        </div>
       )}
 
       <div className="flex items-center gap-3 text-on-surface-variant">
