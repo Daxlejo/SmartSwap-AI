@@ -4,10 +4,9 @@ import { cosineSimilarity } from '../../ai/services/ai-embedding.service';
 export const SEMANTIC_SIMILARITY_THRESHOLD = 0.42;
 export const DEFAULT_VALUE_TOLERANCE_PCT = 45;
 /**
- * Placeholder CO₂ figure: `co2SavedKg = steps × 2.4 kg`. It is a flat constant per
- * exchanged item, not derived from the item's category, weight or materials, so the
- * mobile app does not show it anywhere (Fase 2, 12 nov 2026). It stays in the data
- * model until a real per-category emission factor exists.
+ * Placeholder CO₂ figure: a flat 2.4 kg per exchanged item, not derived from the
+ * item's category, weight or materials. Do not show it to users until a real
+ * per-category emission factor exists.
  */
 export const CO2_KG_PER_STEP = 2.4;
 
@@ -472,7 +471,7 @@ export class RouteScoringStrategy {
   }
 
   /**
-   * Computes ecological impact `co2SavedKg`: `Number((steps.length * 2.4).toFixed(1))`.
+   * Computes ecological impact `co2SavedKg`: `Number((steps.length * CO2_KG_PER_STEP).toFixed(1))`.
    */
   computeCo2SavedKg(stepsCount: number): number {
     const safeSteps = Math.max(0, Math.floor(stepsCount));
