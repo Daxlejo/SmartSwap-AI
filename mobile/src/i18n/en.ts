@@ -317,15 +317,9 @@ export const en: TranslationSchema = {
     chainDelivery: 'Chain delivery • View details',
   },
   proposalSent: {
-    title: 'Proposal sent!',
-    description: 'Your swap proposal is on its way to the {{count}} circuit participants.',
-    summaryAria: 'Summary of the {{count}}-step route',
-    summaryTitle: 'Circuit summary',
-    steps: '{{count}} steps',
-    you: 'You',
-    estimatedImpact: 'Estimated impact',
-    co2Saved: '{{kg}} kg CO₂ saved',
-    viewSwaps: 'View my swaps',
+    title: 'Proposal sent',
+    description: 'We let the {{count}} people in the route know. We will tell you when they answer.',
+    viewSwaps: 'See my swaps',
     backHome: 'Back to home',
   },
   splash: {
