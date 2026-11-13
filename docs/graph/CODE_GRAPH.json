@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-13T03:30:21.748Z",
+  "generatedAt": "2026-11-13T03:40:28.213Z",
   "stats": {
-    "totalFiles": 140,
+    "totalFiles": 141,
     "apiFiles": 66,
-    "mobileFiles": 74,
+    "mobileFiles": 75,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -565,6 +565,7 @@
       "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts",
+      "mobile/src/utils/routeView.ts",
       "mobile/src/utils/swapSearch.ts"
     ]
   },
@@ -2616,6 +2617,7 @@
         "@/services/routes/routes.service",
         "@/types",
         "@/utils/currency",
+        "@/utils/routeView",
         "react",
         "react-router-dom"
       ]
@@ -2685,6 +2687,7 @@
         "@/services/http/apiClient",
         "@/types",
         "@/utils/relativeTime",
+        "@/utils/routeView",
         "react",
         "react-router-dom"
       ]
@@ -2932,6 +2935,18 @@
       ],
       "imports": [
         "@/services/storage/preferencesStorage"
+      ]
+    },
+    "mobile/src/utils/routeView.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "ReceivedProposal",
+        "canProposeRoute",
+        "isSignedInUser",
+        "toReceivedProposals"
+      ],
+      "imports": [
+        "@/types"
       ]
     },
     "mobile/src/utils/swapSearch.ts": {
