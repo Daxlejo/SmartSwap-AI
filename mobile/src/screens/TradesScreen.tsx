@@ -265,13 +265,13 @@ export const TradesScreen: React.FC = () => {
           role="tab"
           aria-selected={activeTab === 'recibidas'}
           onClick={() => setActiveTab('recibidas')}
-          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 min-w-0 ${
             activeTab === 'recibidas'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>{t('trades.tabs.received')}</span>
+          <span className="break-words">{t('trades.tabs.received')}</span>
           <span
             className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'recibidas'
@@ -288,13 +288,13 @@ export const TradesScreen: React.FC = () => {
           role="tab"
           aria-selected={activeTab === 'enviadas'}
           onClick={() => setActiveTab('enviadas')}
-          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 min-w-0 ${
             activeTab === 'enviadas'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>{t('trades.tabs.sent')}</span>
+          <span className="break-words">{t('trades.tabs.sent')}</span>
           <span
             className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'enviadas'
@@ -311,13 +311,13 @@ export const TradesScreen: React.FC = () => {
           role="tab"
           aria-selected={activeTab === 'en_curso'}
           onClick={() => setActiveTab('en_curso')}
-          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 min-h-11 py-2 px-1.5 rounded-xl text-center font-label-md text-label-md font-bold transition-all flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 min-w-0 ${
             activeTab === 'en_curso'
               ? 'bg-surface text-primary shadow-xs'
               : 'text-on-surface-variant hover:text-on-surface'
           }`}
         >
-          <span>{t('trades.tabs.inProgress')}</span>
+          <span className="break-words">{t('trades.tabs.inProgress')}</span>
           <span
             className={`min-w-[1.5rem] px-1.5 rounded-full text-caption font-bold ${
               activeTab === 'en_curso'
