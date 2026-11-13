@@ -159,9 +159,9 @@
   :root {
     /* TopBar row height (TopBar.tsx uses this variable) */
     --topbar-h: 4rem;
-    /* BottomNav row: h-20 in BottomNav.tsx */
+    /* BottomNav row: min-h-20 in BottomNav.tsx */
     --bottom-nav-h: 5rem;
-    /* The floating Publish button rises 1rem above the BottomNav (-top-4 in BottomNav.tsx) */
+    /* The Publish button rises 1rem above the BottomNav (-mt-4 in BottomNav.tsx) */
     --bottom-nav-overhang: 1rem;
   }
 
