@@ -20,6 +20,20 @@ export const en: TranslationSchema = {
     verifiedUser: 'Verified user',
     inputAction: 'Field action',
   },
+  photoSource: {
+    title: 'Add photos',
+    camera: 'Take a photo',
+    cameraHint: 'Opens the phone camera',
+    gallery: 'Choose from gallery',
+    galleryHint_one: 'You can choose {{count}} photo',
+    galleryHint_other: 'You can choose up to {{count}} photos',
+    openSettings: 'Open Settings',
+    errors: {
+      denied: 'SmartSwap needs permission to use the camera. Allow it in Settings, under Permissions, or choose a photo from the gallery.',
+      noCamera: 'This phone has no camera. Choose a photo from the gallery.',
+      failed: 'We could not open the photo. Please try again.',
+    },
+  },
   demo: {
     title: 'Demo accounts',
     description: 'Sign in with one tap as any circuit participant to show a live swap.',
@@ -593,9 +607,10 @@ export const en: TranslationSchema = {
       subtitle: 'Take a photo with your camera or pick one from your gallery (automatic HD compression).',
       optimizing: 'Optimizing image...',
       tapToAdd: 'Tap to add photos',
-      limits: 'Camera or gallery • Max 1024px JPEG (up to 4 photos)',
+      limits: 'Camera or gallery, up to 4 photos',
       alt: 'Item photo {{index}}',
       cover: 'Cover',
+      selected: 'Selected photos ({{count}}/4)',
     },
     info: {
       title: 'Tell us about your item',

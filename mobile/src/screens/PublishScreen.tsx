@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LocationPicker } from '@/components/LocationPicker';
+import { PhotoSourceSheet } from '@/components/PhotoSourceSheet';
 import { formatCop, formatCopDigits, sanitizeCopDigits } from '@/utils/currency';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
@@ -199,7 +200,7 @@ export const PublishScreen: React.FC = () => {
   const navigate = useNavigate();
   const { t, language: locale } = useTranslation();
   const { currentUser, createItemReal } = useApp();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPhotoSheetOpen, setIsPhotoSheetOpen] = useState(false);
 
 
   // Wizard step state (1 to 5)
@@ -359,10 +360,13 @@ export const PublishScreen: React.FC = () => {
     }
   };
 
-  // Real Photo selection & HTML5 Canvas compression (1024px max, JPEG 0.82)
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const openPhotoSheet = () => {
+    if (photos.length < 4 && !isCompressingPhoto) setIsPhotoSheetOpen(true);
+  };
+
+  // Photos from the camera or the gallery, compressed on a canvas (1024px max, JPEG 0.82)
+  const handleFiles = async (files: File[]) => {
+    if (files.length === 0) return;
 
     setIsCompressingPhoto(true);
     setErrors((prev) => ({ ...prev, photos: undefined }));
@@ -390,9 +394,6 @@ export const PublishScreen: React.FC = () => {
       }));
     } finally {
       setIsCompressingPhoto(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -761,16 +762,13 @@ export const PublishScreen: React.FC = () => {
   // STEPS 1 - 4 WIZARD VIEW
   return (
     <div className="flex flex-col flex-1 px-margin pt-4">
-      {/* Hidden file input for camera / gallery selection */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        capture="environment"
-        multiple
-        onChange={handleFileChange}
-        className="hidden"
-        aria-label={t('publish.selectPhoto')}
+      {/* Camera or gallery; its hidden file input stays mounted for the browser */}
+      <PhotoSourceSheet
+        isOpen={isPhotoSheetOpen}
+        onClose={() => setIsPhotoSheetOpen(false)}
+        remaining={Math.max(1, 4 - photos.length)}
+        onFiles={(files) => void handleFiles(files)}
+        inputLabel={t('publish.selectPhoto')}
       />
 
       {/* Top Step Navigation Header */}
@@ -867,11 +865,11 @@ export const PublishScreen: React.FC = () => {
           <div
             role="button"
             tabIndex={0}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={openPhotoSheet}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                fileInputRef.current?.click();
+                openPhotoSheet();
               }
             }}
             className="w-full h-48 rounded-2xl border-dashed border-2 border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer flex flex-col items-center justify-center gap-3 p-4 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -896,7 +894,7 @@ export const PublishScreen: React.FC = () => {
           {/* 4 Thumbnail Slots */}
           <div className="space-y-2">
             <span className="font-label-md text-label-md text-on-surface font-semibold">
-              Fotos seleccionadas ({photos.length}/4)
+              {t('publish.photos.selected', { count: photos.length })}
             </span>
 
             <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
@@ -938,7 +936,7 @@ export const PublishScreen: React.FC = () => {
                   <button
                     key={index}
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={openPhotoSheet}
                     aria-label={`Agregar foto slot ${index + 1}`}
                     className="w-20 h-20 rounded-xl border-dashed border-2 border-surface-container-high/80 bg-surface-container-low hover:border-primary/50 hover:bg-surface-container transition-all flex flex-col items-center justify-center text-outline group shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >

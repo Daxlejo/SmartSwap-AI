@@ -18,6 +18,20 @@ export const es = {
     verifiedUser: 'Usuario verificado',
     inputAction: 'Acción del campo',
   },
+  photoSource: {
+    title: 'Agregar fotos',
+    camera: 'Tomar foto',
+    cameraHint: 'Abre la cámara del celular',
+    gallery: 'Elegir de la galería',
+    galleryHint_one: 'Puedes elegir {{count}} foto',
+    galleryHint_other: 'Puedes elegir hasta {{count}} fotos',
+    openSettings: 'Abrir Ajustes',
+    errors: {
+      denied: 'SmartSwap necesita permiso para usar la cámara. Dalo en Ajustes, en Permisos, o elige una foto de la galería.',
+      noCamera: 'Este celular no tiene cámara. Elige una foto de la galería.',
+      failed: 'No pudimos abrir la foto. Inténtalo de nuevo.',
+    },
+  },
   demo: {
     title: 'Cuentas demo',
     description: 'Entra con un toque como cualquier participante del circuito para mostrar un trueque en vivo.',
@@ -588,12 +602,13 @@ export const es = {
     previousStep: 'Paso anterior',
     photos: {
       title: 'Agrega fotos de tu artículo',
-      subtitle: 'Toma una foto con tu cámara o elige de tu galería (compresión automática HD).',
+      subtitle: 'Toma una foto o elígela de tu galería.',
       optimizing: 'Optimizando imagen...',
       tapToAdd: 'Toca para agregar fotos',
-      limits: 'Cámara o Galería • Máx. 1024px JPEG (hasta 4 fotos)',
+      limits: 'Cámara o galería, hasta 4 fotos',
       alt: 'Foto del artículo {{index}}',
       cover: 'Portada',
+      selected: 'Fotos seleccionadas ({{count}}/4)',
     },
     info: {
       title: 'Cuéntanos sobre tu artículo',
