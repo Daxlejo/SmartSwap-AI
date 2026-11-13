@@ -8,6 +8,7 @@ import { RouteStep } from '@/components/RouteStep';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { canProposeRoute, isSignedInUser } from '@/utils/routeView';
 import { formatCop } from '@/utils/currency';
 import { ItemImage } from '@/components/ui/ItemImage';
 
@@ -74,8 +75,7 @@ export const RouteDetailScreen: React.FC = () => {
 
   const aiExplanationText =
     route.aiExplanation || t('routeDetail.fallbackExplanation', { count: route.stepsCount });
-  // Only a route the engine suggested can be proposed; a proposed one is answered from Trades
-  const canPropose = !route.status || route.status.toUpperCase() === 'SUGGESTED';
+  const canPropose = canProposeRoute(route);
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 gap-5">
@@ -96,7 +96,7 @@ export const RouteDetailScreen: React.FC = () => {
               fromUser={fromUser}
               toUser={toUser}
               itemGiven={item}
-              isYou={fromUser?.id === currentUser?.id}
+              isYou={isSignedInUser(fromUser?.id, currentUser?.id)}
               acceptance={route.steps?.[index]?.acceptance}
               onItemClick={(i) => setSelectedItem(i)}
             />

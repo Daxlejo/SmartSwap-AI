@@ -13,21 +13,9 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
+import { toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
-
-interface ReceivedProposal {
-  id: string;
-  senderName: string;
-  senderAvatar?: string;
-  offeredItemName: string;
-  offeredItemImg?: string;
-  offeredItemCategory?: string;
-  targetItemName: string;
-  targetItemImg?: string;
-  targetItemCategory?: string;
-  status: 'pending' | 'accepted' | 'declined';
-}
 
 interface InProgressRouteCardProps {
   route: SwapRoute;
@@ -198,45 +186,10 @@ export const TradesScreen: React.FC = () => {
 
   // Recibidas: routes started by other users
   useEffect(() => {
-    const apiProposals: ReceivedProposal[] = routes
-      .filter((r) => r.initiatorId !== currentUser?.id)
-      .map((r) => {
-        // The person who proposed the route, not whoever happens to make the first step
-        const initiator = r.participants.find((p) => p.id === r.initiatorId) ?? r.participants[0];
-        const ownStep = r.steps?.find((s) => s.userId === currentUser?.id);
-        // What this user gives and receives in the cycle
-        const offered = ownStep?.givesItem ?? r.chainItems[0];
-        const target = ownStep?.receivesItem ?? r.chainItems[r.chainItems.length - 1];
-        const upperStatus = (r.status || 'ACTIVE').toUpperCase();
-        const userStep = r.steps?.find((s) => s.userId === currentUser?.id);
-
-        let status: 'pending' | 'accepted' | 'declined' = 'pending';
-        if (
-          upperStatus === 'CONFIRMED' ||
-          upperStatus === 'COMPLETED' ||
-          userStep?.acceptance === 'ACCEPTED'
-        ) {
-          status = 'accepted';
-        } else if (upperStatus === 'CANCELLED' || userStep?.acceptance === 'DECLINED') {
-          status = 'declined';
-        }
-
-        return {
-          id: r.id,
-          senderName: initiator?.name || '—',
-          senderAvatar: initiator?.avatarUrl,
-          offeredItemName: offered?.name ?? '',
-          offeredItemImg: offered?.imageUrl,
-          offeredItemCategory: offered?.category,
-          targetItemName: target?.name ?? '',
-          targetItemImg: target?.imageUrl,
-          targetItemCategory: target?.category,
-          status,
-        };
-      });
+    const apiProposals = toReceivedProposals(routes, currentUser?.id);
 
     setReceivedProposals(apiProposals);
-  }, [routes, currentUser?.id, t]);
+  }, [routes, currentUser?.id]);
 
   const describeError = (error: unknown): string =>
     error instanceof ApiError && error.message ? error.message : t('trades.actionFailed');
