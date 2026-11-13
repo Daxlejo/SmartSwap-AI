@@ -77,7 +77,8 @@ const SCREENS = [
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/confirm');
-      await page.locator('main input[type=checkbox]').check();
+      // The native checkbox is visually hidden; tap its label like a person would
+      await page.locator('main label:has(input[type=checkbox])').click();
       await page.locator('main button').filter({ hasText: /confirm|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/sent');
     },
