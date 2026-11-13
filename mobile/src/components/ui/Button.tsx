@@ -13,13 +13,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
-    'bg-primary text-on-primary hover:bg-primary-container shadow-md active:scale-[0.98]',
+    'bg-primary text-on-primary hover:bg-primary/90 shadow-md active:scale-[0.98]',
   secondary:
-    'bg-secondary-container text-on-secondary hover:opacity-90 shadow-md active:scale-[0.98]',
+    'bg-secondary-container text-on-secondary-container hover:opacity-90 shadow-md active:scale-[0.98]',
   tonal:
     'bg-surface-container-high hover:bg-surface-container-highest text-on-surface active:scale-[0.98]',
   outline:
-    'border border-outline-variant bg-transparent hover:bg-surface-container-low text-on-surface active:scale-[0.98]',
+    'border border-outline bg-transparent hover:bg-surface-container-low text-on-surface active:scale-[0.98]',
   ghost:
     'bg-transparent hover:bg-surface-container text-on-surface active:scale-95',
 };
