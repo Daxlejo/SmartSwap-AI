@@ -46,6 +46,9 @@ export const SearchingScreen: React.FC = () => {
   const [matchPercent, setMatchPercent] = useState(0);
   const [discoveredRoutes, setDiscoveredRoutes] = useState<SwapRoute[]>([]);
   const discoveredRoutesRef = useRef<SwapRoute[]>([]);
+  // Outcome of the engine call; only a finished search may say "search done".
+  const [searchStatus, setSearchStatus] = useState<'pending' | 'done' | 'failed'>('pending');
+  const searchStatusRef = useRef<'pending' | 'done' | 'failed'>('pending');
   const hasNavigated = useRef(false);
 
   const handleNavigate = useCallback(() => {
@@ -62,6 +65,8 @@ export const SearchingScreen: React.FC = () => {
     navigate(`/swap/results?${query}`, {
       state: {
         routes: discoveredRoutesRef.current,
+        // Lets Results reuse an empty answer instead of calling the engine and the AI again.
+        searchCompleted: searchStatusRef.current === 'done',
         offeredItemId: haveId,
         wantItemId: wantId,
         objectiveText,
@@ -95,13 +100,18 @@ export const SearchingScreen: React.FC = () => {
       valueTolerancePct,
     })
       .then((routes) => {
-        if (isMounted && routes.length > 0) {
-          discoveredRoutesRef.current = routes;
-          setDiscoveredRoutes(routes);
-        }
+        if (!isMounted) return;
+        discoveredRoutesRef.current = routes;
+        setDiscoveredRoutes(routes);
+        searchStatusRef.current = 'done';
+        setSearchStatus('done');
       })
-      .catch(() => {
-        // Results screen repeats the search and shows the failure with a retry
+      .catch((error: unknown) => {
+        // Results repeats the search and shows the failure with a retry.
+        console.error('Route search failed on the Searching screen', error);
+        if (!isMounted) return;
+        searchStatusRef.current = 'failed';
+        setSearchStatus('failed');
       });
 
     // Kick off progress bar animation (2500ms)
@@ -125,7 +135,7 @@ export const SearchingScreen: React.FC = () => {
       setMessageIndex(4);
     }, 2500);
 
-    // Auto-navigate after user has time to view the completed circuit (4500ms)
+    // Auto-navigate once the user has seen the final search state (4500ms)
     const autoNavTimer = setTimeout(() => {
       handleNavigate();
     }, 4500);
@@ -181,7 +191,9 @@ export const SearchingScreen: React.FC = () => {
 
   const isPhase3 = phase === 3;
   const routeFound = isPhase3 && topRoute !== undefined;
-  // Chain summary shown once a real route comes back: item photo and first name per step, no prices.
+  const searchFinishedEmpty = isPhase3 && searchStatus === 'done' && topRoute === undefined;
+  // Chain summary once a real route comes back: item photo, then "You" and each
+  // participant's first name (up to 4 steps); never prices.
   const chainSummary =
     topRoute && topRoute.chainItems.length >= 2
       ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
@@ -333,13 +345,17 @@ export const SearchingScreen: React.FC = () => {
             }`}
           >
             <Icon
-              name={routeFound ? 'check' : isPhase3 ? 'travel_explore' : 'sync'}
+              name={routeFound ? 'check' : searchFinishedEmpty ? 'travel_explore' : 'sync'}
               size="md"
-              className={isPhase3 ? 'text-[26px] font-bold' : 'animate-spin-slow'}
+              className={routeFound || searchFinishedEmpty ? 'text-[26px] font-bold' : 'animate-spin-slow'}
             />
           </div>
           <span className="font-label-sm text-[10px] font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
-            {routeFound ? t('searching.connected') : isPhase3 ? t('searching.searchDone') : 'SmartSwap'}
+            {routeFound
+              ? t('searching.connected')
+              : searchFinishedEmpty
+                ? t('searching.searchDone')
+                : 'SmartSwap'}
           </span>
         </div>
       </div>
@@ -393,7 +409,7 @@ export const SearchingScreen: React.FC = () => {
 
             {!topRoute && (
               <p className="font-body-md text-body-md text-on-surface-variant font-medium max-w-[300px]">
-                {t('searching.searchDoneHint')}
+                {searchFinishedEmpty ? t('searching.searchDoneHint') : t('searching.openingResults')}
               </p>
             )}
           </div>

@@ -437,6 +437,7 @@ export const en: TranslationSchema = {
     noCyclesTitle: 'No cycles for this item',
     noCyclesDescription: 'Right now nobody in the network closes a cycle with what you offer and what you want. Try another objective or offer a different item.',
     changeSearch: 'Change the search',
+    noRoutesTitle: 'No routes found for now',
     aiVerified: 'AI-verified fairness • {{percent}}% match',
   },
   searching: {
@@ -455,6 +456,7 @@ export const en: TranslationSchema = {
     connected: 'Connected!',
     searchDone: 'Search done',
     searchDoneHint: 'We finished searching. Open the results to see what we found.',
+    openingResults: 'Opening the results...',
     routeFound: 'Circular route found! #{{code}}',
     viewChain: 'See the full route chain ({{count}} steps) →',
     viewResults: 'See results →',

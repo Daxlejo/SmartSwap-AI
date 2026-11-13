@@ -435,6 +435,7 @@ export const es = {
     noCyclesTitle: 'No hay ciclos para este artículo',
     noCyclesDescription: 'Por ahora nadie en la red cierra un ciclo con lo que ofreces y lo que buscas. Prueba con otro objetivo u ofrece otro artículo.',
     changeSearch: 'Cambiar la búsqueda',
+    noRoutesTitle: 'No encontramos rutas por ahora',
     aiVerified: 'Equidad Verificada por IA • {{percent}}% Coincidencia',
   },
   searching: {
@@ -453,6 +454,7 @@ export const es = {
     connected: '¡Conectado!',
     searchDone: 'Búsqueda lista',
     searchDoneHint: 'Terminamos de buscar. Abre los resultados para ver qué encontramos.',
+    openingResults: 'Abriendo los resultados...',
     routeFound: '¡Ruta Circular Encontrada! #{{code}}',
     viewChain: 'Ver cadena completa de la ruta ({{count}} pasos) →',
     viewResults: 'Ver resultados →',

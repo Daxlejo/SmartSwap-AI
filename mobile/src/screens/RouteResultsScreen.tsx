@@ -11,10 +11,12 @@ import { formatCop } from '@/utils/currency';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getNoRoutesReason } from '@/utils/swapSearch';
+import { getNoRoutesReason, isOfferableItem } from '@/utils/swapSearch';
 
 interface ResultsLocationState {
   routes?: SwapRoute[];
+  /** Set by Searching when its engine call finished, even with zero routes. */
+  searchCompleted?: boolean;
   offeredItemId?: string;
   wantItemId?: string;
   objectiveText?: string;
@@ -40,9 +42,10 @@ export const RouteResultsScreen: React.FC = () => {
     Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
 
   const [routes, setRoutes] = useState<SwapRoute[]>(() => locationState?.routes || []);
-  const [isLoading, setIsLoading] = useState<boolean>(
-    () => !locationState?.routes || locationState.routes.length === 0,
-  );
+  const hasSearchAnswer =
+    locationState?.searchCompleted === true ||
+    (locationState?.routes !== undefined && locationState.routes.length > 0);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !hasSearchAnswer);
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [hopFilter, setHopFilter] = useState<'all' | 2 | 3 | 4>('all');
@@ -51,15 +54,16 @@ export const RouteResultsScreen: React.FC = () => {
     if (!hasSearchParams) {
       return;
     }
-    // The Searching screen already ran this search; only repeat it on retry or direct entry.
-    if (reloadKey === 0 && locationState?.routes && locationState.routes.length > 0) {
+    // The Searching screen already ran this search; only repeat it on retry, direct entry
+    // or when that search failed or had not answered yet.
+    if (reloadKey === 0 && hasSearchAnswer) {
       return;
     }
     let isMounted = true;
 
     const loadRoutes = async () => {
       setLoadFailed(false);
-      if (!locationState?.routes || locationState.routes.length === 0) {
+      if (!hasSearchAnswer) {
         setIsLoading(true);
       }
       try {
@@ -73,7 +77,8 @@ export const RouteResultsScreen: React.FC = () => {
         if (isMounted) {
           setRoutes(result);
         }
-      } catch {
+      } catch (error: unknown) {
+        console.error('Route search failed on the Results screen', error);
         if (isMounted) {
           setLoadFailed(true);
         }
@@ -98,13 +103,14 @@ export const RouteResultsScreen: React.FC = () => {
     maxSteps,
     valueTolerancePct,
     locationState?.desiredCategory,
-    locationState?.routes,
+    hasSearchAnswer,
     searchRoutesReal,
   ]);
 
-  // Only blame the inventory once it has actually loaded; an empty list mid-load proves nothing.
-  const inventoryLoaded = !isItemsLoading && loadStates.items === 'ready';
-  const noRoutesReason = inventoryLoaded ? getNoRoutesReason(myItems.length) : 'noCycles';
+  const noRoutesReason = getNoRoutesReason({
+    loaded: !isItemsLoading && loadStates.items === 'ready',
+    publishedCount: myItems.filter(isOfferableItem).length,
+  });
 
   const filteredRoutes =
     hopFilter === 'all' ? routes : routes.filter((r) => r.stepsCount === hopFilter);
@@ -228,8 +234,14 @@ export const RouteResultsScreen: React.FC = () => {
         ) : filteredRoutes.length === 0 ? (
           <EmptyState
             iconName="search_off"
-            title={t('routeResults.noCyclesTitle')}
-            description={t('routeResults.noCyclesDescription')}
+            title={t(
+              noRoutesReason === 'noCycles'
+                ? 'routeResults.noCyclesTitle'
+                : 'routeResults.noRoutesTitle',
+            )}
+            description={
+              noRoutesReason === 'noCycles' ? t('routeResults.noCyclesDescription') : undefined
+            }
             action={
               <Button variant="primary" onClick={() => navigate('/swap/configure')}>
                 {t('routeResults.changeSearch')}
