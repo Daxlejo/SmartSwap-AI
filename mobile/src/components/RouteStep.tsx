@@ -1,98 +1,81 @@
 import React from 'react';
 import type { Item, User } from '@/types';
+import type { StepAcceptanceStatus } from '@/services/routes/routes.service';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ItemImage } from '@/components/ui/ItemImage';
+import { formatCop } from '@/utils/currency';
 
 export interface RouteStepProps {
   fromUser: User;
   toUser: User;
   itemGiven: Item;
-  isFirst?: boolean;
-  isLast?: boolean;
+  /** The signed-in user is the one who gives in this step. */
+  isYou?: boolean;
+  acceptance?: StepAcceptanceStatus;
   onItemClick?: (item: Item) => void;
 }
 
+/** One hand-over of the cycle: who gives what to whom, and whether they accepted. */
 export const RouteStep: React.FC<RouteStepProps> = ({
   fromUser,
   toUser,
   itemGiven,
-  isFirst = false,
-  isLast = false,
+  isYou = false,
+  acceptance,
   onItemClick,
 }) => {
   const { t } = useTranslation();
+  const giver = isYou ? t('routeDetail.you') : fromUser.name;
+
   return (
-    <div className="relative flex gap-3.5">
-      {/* Vertical Timeline Connector */}
-      {!isLast && (
-        <div className="absolute top-11 bottom-0 left-5 border-l-2 border-surface-container-high/60 -ml-[1px]" />
-      )}
-
-      {/* Sender Avatar */}
-      <div className="relative z-10 flex flex-col items-center mt-1 shrink-0">
-        <Avatar
-          src={fromUser.avatarUrl}
-          alt={fromUser.name}
-          size="md"
-          verified={fromUser.verified}
-          className="ring-2 ring-surface shadow-xs"
-        />
-      </div>
-
-      {/* Step Card Content */}
-      <div className="flex-1 pb-5 min-w-0">
-        <div className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-3.5 space-y-2.5">
-          {/* From User -> To User Header */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <span className="font-headline-sm text-headline-sm font-bold text-on-surface line-clamp-2 break-words">
-                {fromUser.name}
-              </span>
-              {isFirst && (
-                <Badge variant="primary" className="px-2 py-0.2">
-                  {t('cards.you')}
-                </Badge>
-              )}
-              <Icon
-                name="arrow_forward"
-                size="sm"
-                className="text-primary shrink-0 mx-0.5"
-              />
-              <span className="font-body-md text-body-md text-on-surface-variant font-medium line-clamp-2 break-words">
-                {toUser.name}
-              </span>
-            </div>
-          </div>
-
-          {/* Item Given Box */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onItemClick && onItemClick(itemGiven)}
-            onKeyDown={(e) => {
-              if ((e.key === 'Enter' || e.key === ' ') && onItemClick) {
-                e.preventDefault();
-                onItemClick(itemGiven);
-              }
-            }}
-            className="flex items-center gap-3 bg-surface-container-low p-2.5 rounded-xl border border-surface-container-high/60 cursor-pointer hover:bg-surface-container active:scale-[0.98] transition-all"
-          >
-            <ItemImage src={itemGiven.imageUrl} alt={itemGiven.name} category={itemGiven.category} className="w-12 h-12 rounded-xl bg-surface-container-lowest shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 break-words">
-                {itemGiven.name}
-              </p>
-              <p className="font-label-sm text-label-sm text-primary font-bold mt-0.5">
-                {t('cards.chainDelivery')}
-              </p>
-            </div>
-            <Icon name="chevron_right" size="md" className="text-on-surface-variant shrink-0" />
-          </div>
+    <li className="pb-3">
+      <div className="flex flex-col gap-2 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-3.5 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <Avatar src={fromUser.avatarUrl} alt="" size="sm" className="shrink-0" />
+          <p className="min-w-0 font-body-md text-body-md text-on-surface break-words">
+            {t('routeDetail.handOver', { giver, receiver: toUser.name })}
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => onItemClick?.(itemGiven)}
+          className="w-full min-h-12 flex items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2.5 text-left hover:bg-surface-container active:scale-[0.98] transition-all"
+        >
+          <span className="flex flex-col flex-1 min-w-0">
+            <span className="font-label-lg text-label-lg text-on-surface line-clamp-2 break-words">
+              {itemGiven.name}
+            </span>
+            {itemGiven.estimatedValue !== undefined && (
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                {formatCop(itemGiven.estimatedValue)}
+              </span>
+            )}
+          </span>
+          <Icon name="chevron_right" size="md" className="text-on-surface-variant shrink-0" />
+        </button>
+
+        {acceptance && (
+          <Badge
+            variant={
+              acceptance === 'ACCEPTED'
+                ? 'success'
+                : acceptance === 'DECLINED'
+                  ? 'error'
+                  : 'secondary-subtle'
+            }
+            className="self-start"
+          >
+            {acceptance === 'ACCEPTED'
+              ? t('routeDetail.acceptance.accepted')
+              : acceptance === 'DECLINED'
+                ? t('routeDetail.acceptance.declined')
+                : t('routeDetail.acceptance.pending')}
+          </Badge>
+        )}
       </div>
-    </div>
+    </li>
   );
 };
