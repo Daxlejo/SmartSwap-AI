@@ -116,7 +116,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
       <div className="flex flex-col items-center text-center mb-space-lg">
         <div className="relative mb-space-md">
           <div className="w-20 h-20 rounded-2xl bg-surface-container-lowest shadow-md flex items-center justify-center p-space-sm relative overflow-hidden border border-surface-container-high/60">
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-secondary-container/10" />
             <img
               src={logoImg}
               alt={t('auth.logoAlt')}

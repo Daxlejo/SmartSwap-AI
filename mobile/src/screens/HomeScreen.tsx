@@ -130,24 +130,23 @@ export const HomeScreen = () => {
       {/* Quick Action Bento Grid */}
       <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
         {/* Card 1: Primary Action -> ConfigureSwap */}
-        <div className="col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary-container to-tertiary p-space-md text-on-primary shadow-md">
-          <div className="absolute -right-4 -bottom-4 w-32 h-32 rounded-full bg-white/10 blur-xl pointer-events-none" />
+        <div className="col-span-2 relative overflow-hidden rounded-2xl bg-hero p-space-md text-on-hero shadow-md">
           <div className="relative z-10 flex flex-col space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md">
-                <Icon name="auto_awesome" size="xs" className="text-primary-fixed" />
-                <span className="font-label-sm text-label-sm font-bold text-primary-fixed">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-on-hero/15">
+                <Icon name="auto_awesome" size="xs" className="text-on-hero-variant" />
+                <span className="font-label-sm text-label-sm font-bold text-on-hero-variant">
                   {t('home.engine.badge')}
                 </span>
               </div>
-              <Icon name="swap_calls" size="lg" className="text-primary-fixed" />
+              <Icon name="swap_calls" size="lg" className="text-on-hero-variant" />
             </div>
 
             <div className="space-y-1">
-              <h2 className="font-headline-sm text-headline-sm text-white font-bold">
+              <h2 className="font-headline-sm text-headline-sm text-on-hero font-bold">
                 {t('home.engine.title')}
               </h2>
-              <p className="font-body-sm text-body-sm text-white/90 leading-relaxed">
+              <p className="font-body-sm text-body-sm text-on-hero-variant leading-relaxed">
                 {t('home.engine.description')}
               </p>
             </div>
@@ -162,7 +161,7 @@ export const HomeScreen = () => {
               >
                 {t('home.engine.cta')}
               </Button>
-              <span className="font-label-sm text-label-sm text-white/90 font-medium">
+              <span className="font-label-sm text-label-sm text-on-hero-variant font-medium">
                 {t('home.engine.hops')}
               </span>
             </div>
