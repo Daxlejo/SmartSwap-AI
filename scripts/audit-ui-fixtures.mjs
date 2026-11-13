@@ -134,9 +134,19 @@ export const notifications = [
   },
 ];
 
-/** Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown. */
-export const respond = (method, path) => {
+/**
+ * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
+ * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
+ */
+export const respond = (method, path, scenario = 'default') => {
   const p = path.replace(/\?.*$/, '');
+  if (scenario === 'empty') {
+    if (p === '/items/me' || p === '/items/mine') return [200, []];
+    if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, []];
+    if (p === '/notifications') return [200, []];
+    if (p === '/notifications/unread-count') return [200, { unreadCount: 0 }];
+    if (p === '/users/me/stats') return [200, { tradesCompleted: 0, activeItems: 0, activeRoutes: 0 }];
+  }
   if (p === '/health') return [200, { status: 'ok' }];
   if (p === '/auth/me' || p === '/users/me') return [200, me];
   if (p === '/auth/login' || p === '/auth/register') return [201, { accessToken: 'audit-token', user: me }];

@@ -4,7 +4,10 @@
  *
  * Starts the mobile app with Vite, answers every API call from
  * `audit-ui-fixtures.mjs` (no database, no Render, no passwords) and visits
- * each screen at 360×800 in the light and the dark theme. Per screen it counts:
+ * each screen at 360×800 in the light and the dark theme, at the normal text
+ * size and with the text scaled to 130 % (`text-size-adjust`: a text-only zoom,
+ * like the one Android's WebView applies when the system font size is large).
+ * Per screen it counts:
  *
  *   texto<14   visible text rendered under 14 px (Material icon ligatures excluded)
  *   tactil<44  tappable elements smaller than 44×44 px
@@ -13,6 +16,11 @@
  *   scroll     1 when, after scrolling with the wheel, the end of the content is
  *              still below the viewport or under a bottom bar (BottomNav, action bar)
  *   barras     sticky/fixed bars with a see-through background (content shows behind)
+ *   tapado     after scrolling to the end, pieces of content (text, images, controls)
+ *              still covered by a fixed bottom bar (BottomNav, action bar)
+ *   desborde   horizontal overflow: the page wider than the viewport, text that
+ *              sticks out of a box that holds it (outside horizontal scrollers),
+ *              texts drawn over each other and placeholders that do not fit
  *   errores    uncaught page errors, API calls with no fixture, and landing on a
  *              different path than the screen expects (a redirect or fallback)
  *
@@ -24,6 +32,7 @@
  *   AUDIT_BROWSER_CHANNEL  Playwright channel, default msedge (e.g. chrome)
  *   AUDIT_OUT              output folder, default <os tmp>/smartswap-audit
  *   AUDIT_THEMES           comma list, default light,dark
+ *   AUDIT_FONT_SCALES      comma list of text sizes in percent, default 100,130
  *   AUDIT_ONLY             comma list of screen ids to run
  *
  * Writes report.md, report.json and two screenshots per screen and theme (top
@@ -46,6 +55,10 @@ const PORT = 5199;
 const CHANNEL = process.env.AUDIT_BROWSER_CHANNEL ?? 'msedge';
 const OUT = process.env.AUDIT_OUT ?? join(tmpdir(), 'smartswap-audit');
 const THEMES = (process.env.AUDIT_THEMES ?? 'light,dark').split(',').map((t) => t.trim());
+const FONT_SCALES = (process.env.AUDIT_FONT_SCALES ?? '100,130').split(',').map((s) => Number(s.trim()));
+if (FONT_SCALES.some((s) => !Number.isFinite(s) || s < 50 || s > 300)) {
+  throw new Error(`AUDIT_FONT_SCALES must be percentages between 50 and 300, got "${process.env.AUDIT_FONT_SCALES}"`);
+}
 const ONLY = process.env.AUDIT_ONLY ? process.env.AUDIT_ONLY.split(',').map((s) => s.trim()) : null;
 const VIEWPORT = { width: 360, height: 800 };
 const API_PREFIX = '/api/v1';
@@ -56,11 +69,12 @@ const TINY_PNG = Buffer.from(
   'base64',
 );
 
-const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'barras', 'errores'];
+const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'barras', 'tapado', 'desborde', 'errores'];
 
 /**
  * Screens in visiting order. `auth: false` runs without a session.
  * `go` drives the page to the screen; the default is a plain navigation.
+ * `scenario: 'empty'` answers as a brand-new user (no items, no swaps).
  */
 const SCREENS = [
   { id: 'login', path: '/login', auth: false },
@@ -83,6 +97,9 @@ const SCREENS = [
   { id: 'profile', path: '/profile' },
   { id: 'notifications', path: '/notifications' },
   { id: 'configure', path: '/swap/configure' },
+  { id: 'configure-empty', path: '/swap/configure', scenario: 'empty' },
+  { id: 'home-empty', path: '/home', scenario: 'empty' },
+  { id: 'trades-empty', path: '/swaps', scenario: 'empty' },
   { id: 'searching', path: '/swap/searching?have=i-me-1&q=Bicicleta', settleMs: 600 },
   { id: 'results', path: '/swap/results?have=i-me-1&q=Bicicleta' },
   { id: 'route-detail', path: '/swap/route/r-active' },
@@ -175,7 +192,72 @@ function measureInPage() {
     if (cs.backgroundColor === 'transparent' || alpha < 1) bars.push(`${describe(el)} (alpha ${alpha})`);
   }
 
+  // 5. Horizontal overflow
+  const overflow = [];
+  if (document.documentElement.scrollWidth > innerWidth + 1) {
+    overflow.push(`page ${document.documentElement.scrollWidth}px wide in a ${innerWidth}px viewport`);
+  }
+  const isIcon = (el) => /Material Symbols/i.test(getComputedStyle(el).fontFamily);
+  function* ancestorsOf(el) {
+    for (let n = el; n && n !== document.body; n = n.parentElement) yield n;
+  }
+  const texts = [];
+  const textWalker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = textWalker.nextNode(); node; node = textWalker.nextNode()) {
+    if (!node.textContent.trim()) continue;
+    const el = node.parentElement;
+    if (!el || ['STYLE', 'SCRIPT', 'TITLE'].includes(el.tagName) || !isVisible(el)) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const r = range.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    const layer = [...ancestorsOf(el)].find((n) => ['fixed', 'sticky'].includes(getComputedStyle(n).position));
+    texts.push({ el, r, icon: isIcon(el), layer: layer ?? null });
+    // Icon glyphs are a few px wider than their box by design; ellipsis is counted apart
+    if (isIcon(el) || getComputedStyle(el).textOverflow === 'ellipsis') continue;
+    // The text must fit every box that holds it, up to a horizontal scroller (its
+    // content may extend past it) or a positioned layer (badges and floating buttons
+    // sit outside their parent on purpose)
+    for (let box = el; box && box !== document.body; box = box.parentElement) {
+      const cs = getComputedStyle(box);
+      if (['auto', 'scroll'].includes(cs.overflowX)) break;
+      if (cs.display === 'inline' || cs.display === 'contents') continue;
+      const b = box.getBoundingClientRect();
+      if (r.left < b.left - 1 || r.right > b.right + 1) {
+        const by = Math.round(Math.max(b.left - r.left, r.right - b.right));
+        overflow.push(`${describe(el)} sticks out of ${box.tagName.toLowerCase()} by ${by}px`);
+        break;
+      }
+      if (cs.position === 'absolute' || cs.position === 'fixed') break;
+    }
+  }
+  // Texts drawn over each other in the same layer ("ExplorarPublicar"). Content
+  // that scrolls under a fixed or sticky bar is expected and not counted here.
+  const onScreen = texts.filter((t) => !t.icon && t.r.bottom > 0 && t.r.top < innerHeight);
+  for (let i = 0; i < onScreen.length; i += 1) {
+    for (let j = i + 1; j < onScreen.length; j += 1) {
+      const a = onScreen[i];
+      const b = onScreen[j];
+      if (a.layer !== b.layer) continue;
+      if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+      const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+      const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+      if (w > 2 && h > 2) overflow.push(`${describe(a.el)} collides with ${describe(b.el)}`);
+    }
+  }
+  // Placeholders wider than their field
+  const ctx = document.createElement('canvas').getContext('2d');
+  for (const field of document.querySelectorAll('input[placeholder]')) {
+    if (!isVisible(field) || field.value) continue;
+    const cs = getComputedStyle(field);
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const room = field.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const needed = ctx.measureText(field.placeholder).width;
+    if (needed > room + 1) overflow.push(`placeholder "${field.placeholder}" needs ${Math.round(needed)}px, has ${Math.round(room)}px`);
+  }
+
   return {
+    desborde: overflow,
     'texto<14': [...smallText].map(describe),
     'tactil<44': smallTargets,
     elipsis: ellipsis,
@@ -207,6 +289,7 @@ function scrollEndInPage() {
   const root = document.querySelector('main') ?? document.body;
   let bottom = 0;
   let last = '';
+  const covered = [];
   for (const el of root.querySelectorAll('*')) {
     if (isFixedLike(el)) continue;
     const isLeaf =
@@ -217,12 +300,16 @@ function scrollEndInPage() {
     if (cs.visibility === 'hidden' || cs.display === 'none') continue;
     const r = el.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
+    if (r.bottom > limit + 1 && r.top < innerHeight) {
+      const label = (el.innerText || el.getAttribute('aria-label') || el.tagName).trim().replace(/\s+/g, ' ').slice(0, 40);
+      covered.push(`${el.tagName.toLowerCase()}: ${label} (${Math.round(r.top)}–${Math.round(r.bottom)}px, bar from ${Math.round(limit)}px)`);
+    }
     if (r.bottom > bottom) {
       bottom = r.bottom;
       last = (el.innerText || el.tagName).trim().slice(0, 40);
     }
   }
-  return { ok: bottom <= limit + 1, bottom: Math.round(bottom), limit: Math.round(limit), last };
+  return { ok: bottom <= limit + 1, bottom: Math.round(bottom), limit: Math.round(limit), last, covered };
 }
 /* eslint-enable no-undef */
 
@@ -282,7 +369,7 @@ const stopVite = (child) => {
 };
 
 /** A browser context that answers the API from fixtures and records any call it cannot answer. */
-const newContext = async (browser, theme, withSession) => {
+const newContext = async (browser, theme, withSession, fontScale, scenario) => {
   const context = await browser.newContext({
     viewport: VIEWPORT,
     deviceScaleFactor: 2,
@@ -293,20 +380,28 @@ const newContext = async (browser, theme, withSession) => {
   });
   const unanswered = [];
   await context.addInitScript(
-    ([t, session]) => {
+    ([t, session, scale]) => {
+      // Text-only zoom, like Android's system font size (WebView textZoom)
+      if (scale !== 100) {
+        // Init scripts run before <html> exists; the app renders after DOMContentLoaded anyway
+        document.addEventListener('DOMContentLoaded', () => {
+          document.documentElement.style.setProperty('-webkit-text-size-adjust', `${scale}%`);
+          document.documentElement.style.setProperty('text-size-adjust', `${scale}%`);
+        });
+      }
       localStorage.setItem('smartswap_theme', t);
       localStorage.setItem('smartswap_locale', 'es');
       if (session) localStorage.setItem('smartswap_jwt_token', 'audit-token');
       else localStorage.removeItem('smartswap_jwt_token');
     },
-    [theme, withSession],
+    [theme, withSession, fontScale],
   );
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.startsWith(API_PREFIX) && url.host !== `localhost:${PORT}`) {
       const method = route.request().method();
       const path = url.pathname.slice(API_PREFIX.length);
-      const answer = respond(method, path + url.search);
+      const answer = respond(method, path + url.search, scenario);
       if (!answer) {
         unanswered.push(`${method} ${path}`);
         return route.fulfill({ status: 404, json: { message: 'audit: no fixture' } });
@@ -320,7 +415,7 @@ const newContext = async (browser, theme, withSession) => {
   return { context, unanswered };
 };
 
-const auditScreen = async ({ context, unanswered }, base, screen, theme) => {
+const auditScreen = async ({ context, unanswered }, base, screen, theme, fontScale) => {
   const page = await context.newPage();
   const errors = [];
   unanswered.length = 0;
@@ -329,7 +424,8 @@ const auditScreen = async ({ context, unanswered }, base, screen, theme) => {
     await page.goto(`${base}${screen.path}`, { waitUntil: 'networkidle' });
     if (screen.go) await screen.go(page);
     await page.waitForTimeout(screen.settleMs ?? 1200);
-    await page.screenshot({ path: join(OUT, `${screen.id}-${theme}.png`) });
+    const shot = `${screen.id}-${theme}${fontScale === 100 ? '' : `-${fontScale}`}`;
+    await page.screenshot({ path: join(OUT, `${shot}.png`) });
 
     // A redirect or fallback would otherwise be measured as if it were this screen
     const expected = screen.expectPath ?? new URL(screen.path, base).pathname;
@@ -355,22 +451,24 @@ const auditScreen = async ({ context, unanswered }, base, screen, theme) => {
     }
     await page.waitForTimeout(400);
     const end = await page.evaluate(scrollEndInPage);
-    await page.screenshot({ path: join(OUT, `${screen.id}-${theme}-end.png`) });
+    await page.screenshot({ path: join(OUT, `${shot}-end.png`) });
 
     return {
       screen: screen.id,
       theme,
+      fontScale,
       url: landed,
       details: {
         ...found,
         contraste: axe.violations,
         scroll: end.ok ? [] : [`content ends at ${end.bottom}px, visible up to ${end.limit}px (last: "${end.last}")`],
+        tapado: end.covered,
         errores: [...errors, ...unanswered.map((call) => `no fixture: ${call}`)],
       },
       axeIncomplete: axe.incomplete,
     };
   } catch (error) {
-    return { screen: screen.id, theme, url: screen.path, failed: String(error.message ?? error), details: {}, axeIncomplete: [] };
+    return { screen: screen.id, theme, fontScale, url: screen.path, failed: String(error.message ?? error), details: {}, axeIncomplete: [] };
   } finally {
     await page.close();
   }
@@ -401,22 +499,26 @@ const main = async () => {
     }
 
     browser = await chromium.launch({ channel: CHANNEL, headless: true });
-    for (const theme of THEMES) {
-      const contexts = {
-        anon: await newContext(browser, theme, false),
-        session: await newContext(browser, theme, true),
-      };
-      for (const screen of SCREENS) {
-        if (ONLY && !ONLY.includes(screen.id)) continue;
-        const ctx = screen.auth === false ? contexts.anon : contexts.session;
-        const row = await auditScreen(ctx, base, screen, theme);
-        rows.push(row);
-        const counts = METRICS.map((m) => `${m}=${row.details[m]?.length ?? '?'}`).join(' ');
-        const review = row.axeIncomplete.length ? ` revisar=${row.axeIncomplete.length}` : '';
-        console.log(`${row.failed ? 'ERROR' : 'ok   '} ${theme.padEnd(5)} ${screen.id.padEnd(17)} ${row.failed ?? counts}${review}`);
+    for (const fontScale of FONT_SCALES) {
+      for (const theme of THEMES) {
+        // One browser context per session kind and fixture scenario
+        const contexts = new Map();
+        const contextFor = async (screen) => {
+          const scenario = screen.scenario ?? 'default';
+          const key = `${screen.auth === false ? 'anon' : 'session'}:${scenario}`;
+          if (!contexts.has(key)) contexts.set(key, await newContext(browser, theme, screen.auth !== false, fontScale, scenario));
+          return contexts.get(key);
+        };
+        for (const screen of SCREENS) {
+          if (ONLY && !ONLY.includes(screen.id)) continue;
+          const row = await auditScreen(await contextFor(screen), base, screen, theme, fontScale);
+          rows.push(row);
+          const counts = METRICS.map((m) => `${m}=${row.details[m]?.length ?? '?'}`).join(' ');
+          const review = row.axeIncomplete.length ? ` revisar=${row.axeIncomplete.length}` : '';
+          console.log(`${row.failed ? 'ERROR' : 'ok   '} ${theme.padEnd(5)} ${String(fontScale).padStart(3)}% ${screen.id.padEnd(17)} ${row.failed ?? counts}${review}`);
+        }
+        for (const { context } of contexts.values()) await context.close();
       }
-      await contexts.anon.context.close();
-      await contexts.session.context.close();
     }
   } finally {
     await browser?.close();
@@ -427,17 +529,19 @@ const main = async () => {
   const lines = [
     `# audit:ui — ${VIEWPORT.width}×${VIEWPORT.height}`,
     '',
-    `| Pantalla | Tema | ${METRICS.join(' | ')} | revisar |`,
-    `|---|---|${METRICS.map(() => '---:').join('|')}|---:|`,
+    `| Pantalla | Tema | Texto | ${METRICS.join(' | ')} | revisar |`,
+    `|---|---|---:|${METRICS.map(() => '---:').join('|')}|---:|`,
     ...rows.map(
       (r) =>
-        `| ${r.screen}${r.failed ? ' (ERROR)' : ''} | ${r.theme} | ${METRICS.map((m) => count(r, m)).join(' | ')} | ${r.axeIncomplete.length} |`,
+        `| ${r.screen}${r.failed ? ' (ERROR)' : ''} | ${r.theme} | ${r.fontScale} % | ${METRICS.map((m) => count(r, m)).join(' | ')} | ${r.axeIncomplete.length} |`,
     ),
   ];
-  for (const theme of THEMES) {
-    const own = rows.filter((r) => r.theme === theme);
-    const totals = METRICS.map((m) => `**${own.reduce((s, r) => s + count(r, m), 0)}**`).join(' | ');
-    lines.push(`| **Total** | **${theme}** | ${totals} | ${own.reduce((s, r) => s + r.axeIncomplete.length, 0)} |`);
+  for (const fontScale of FONT_SCALES) {
+    for (const theme of THEMES) {
+      const own = rows.filter((r) => r.theme === theme && r.fontScale === fontScale);
+      const totals = METRICS.map((m) => `**${own.reduce((s, r) => s + count(r, m), 0)}**`).join(' | ');
+      lines.push(`| **Total** | **${theme}** | **${fontScale} %** | ${totals} | ${own.reduce((s, r) => s + r.axeIncomplete.length, 0)} |`);
+    }
   }
   const report = lines.join('\n');
   writeFileSync(join(OUT, 'report.md'), `${report}\n`);
