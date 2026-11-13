@@ -50,9 +50,12 @@ export const toReceivedProposals = (routes: SwapRoute[], userId: string | undefi
       };
     });
 
-/** Only a route the engine suggested can be proposed; a proposed one is answered from Trades. */
-export const canProposeRoute = (route: Pick<SwapRoute, 'status'>): boolean =>
-  !route.status || route.status.toUpperCase() === 'SUGGESTED';
+/**
+ * Only a route fresh from a search can be proposed. The API marks both search
+ * previews and saved proposals as PROPOSED, so the status cannot tell them apart;
+ * an unsaved preview is the one whose id starts with `preview-` (RouteMapper.fromDiscoveredCycle).
+ */
+export const canProposeRoute = (route: Pick<SwapRoute, 'id'>): boolean => route.id.startsWith('preview-');
 
 /** True only when there is a signed-in user and they are the giver; never for two missing ids. */
 export const isSignedInUser = (personId: string | undefined, userId: string | undefined): boolean =>

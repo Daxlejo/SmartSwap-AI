@@ -326,6 +326,7 @@ export const en: TranslationSchema = {
     subtitle: 'P2P circular swap network',
   },
   routeDetail: {
+    openTrades: 'Answer in Swaps',
     fallbackExplanation: 'Each person hands their item to the next one and receives what they wanted. {{count}} hand-overs, and nobody pays.',
     people: '{{count}} people in this route',
     stepsAria: 'Route hand-overs',

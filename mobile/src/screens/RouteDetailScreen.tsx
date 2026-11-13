@@ -104,9 +104,14 @@ export const RouteDetailScreen: React.FC = () => {
         })}
       </ol>
 
-      {canPropose && (
+      {canPropose ? (
         <Button variant="primary" size="lg" fullWidth onClick={handlePropose}>
           {t('routeDetail.propose')}
+        </Button>
+      ) : (
+        // A saved route is answered or completed from Trades, not proposed again
+        <Button variant="outline" size="lg" fullWidth rightIcon="arrow_forward" onClick={() => navigate('/swaps')}>
+          {t('routeDetail.openTrades')}
         </Button>
       )}
 

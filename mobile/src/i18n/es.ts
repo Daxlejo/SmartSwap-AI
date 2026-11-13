@@ -324,6 +324,7 @@ export const es = {
     subtitle: 'Red de Canje Circular P2P',
   },
   routeDetail: {
+    openTrades: 'Responder en Canjes',
     fallbackExplanation: 'Cada persona entrega su objeto a la siguiente y recibe lo que buscaba. Son {{count}} entregas y nadie paga.',
     people: '{{count}} personas en esta ruta',
     stepsAria: 'Entregas de la ruta',

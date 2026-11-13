@@ -104,16 +104,13 @@ describe('toReceivedProposals', () => {
 });
 
 describe('canProposeRoute', () => {
-  it.each([undefined, 'SUGGESTED', 'suggested'])('allows proposing a route with status %s', (status) => {
-    expect(canProposeRoute({ status })).toBe(true);
+  it('allows proposing a search preview, which the API sends as PROPOSED', () => {
+    expect(canProposeRoute({ id: 'preview-00ab12cd' })).toBe(true);
   });
 
-  it.each(['PROPOSED', 'ACTIVE', 'CONFIRMED', 'COMPLETED', 'CANCELLED'])(
-    'does not allow proposing a route that is %s',
-    (status) => {
-      expect(canProposeRoute({ status })).toBe(false);
-    },
-  );
+  it('does not allow proposing a saved route again', () => {
+    expect(canProposeRoute({ id: '3f1c2b9e-0d4a-4c1e-9b7a-5e2f8d6c1a00' })).toBe(false);
+  });
 });
 
 describe('isSignedInUser', () => {
