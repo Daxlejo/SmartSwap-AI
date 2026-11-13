@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-10T19:29:40.607Z",
+  "generatedAt": "2026-11-13T01:48:09.037Z",
   "stats": {
-    "totalFiles": 138,
+    "totalFiles": 140,
     "apiFiles": 66,
-    "mobileFiles": 72,
+    "mobileFiles": 74,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -553,6 +553,9 @@
       "mobile/src/services/storage/preferencesStorage.ts",
       "mobile/src/services/storage/tokenStorage.ts"
     ],
+    "mobile/test": [
+      "mobile/src/test/configureSwap.test.tsx"
+    ],
     "mobile/types": [
       "mobile/src/types/index.ts"
     ],
@@ -561,7 +564,8 @@
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
       "mobile/src/utils/imageCompressor.ts",
-      "mobile/src/utils/relativeTime.ts"
+      "mobile/src/utils/relativeTime.ts",
+      "mobile/src/utils/swapSearch.ts"
     ]
   },
   "files": {
@@ -2400,6 +2404,7 @@
         "@/hooks/useTranslation",
         "@/types",
         "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2647,6 +2652,7 @@
         "@/services/routes/routes.service",
         "@/types",
         "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2664,7 +2670,6 @@
         "@/hooks/useTranslation",
         "@/services/routes/routes.service",
         "@/types",
-        "@/utils/currency",
         "react",
         "react-router-dom"
       ]
@@ -2876,6 +2881,20 @@
       ],
       "imports": []
     },
+    "mobile/src/test/configureSwap.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/i18n",
+        "@/services/ai/ai.service",
+        "@/services/routes/routes.service",
+        "@/types",
+        "@/utils/swapSearch",
+        "react-dom/server",
+        "react-router-dom",
+        "vitest"
+      ]
+    },
     "mobile/src/types/index.ts": {
       "module": "mobile/types",
       "exports": [
@@ -2935,6 +2954,17 @@
       "imports": [
         "@/services/storage/preferencesStorage"
       ]
+    },
+    "mobile/src/utils/swapSearch.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "MIN_OBJECTIVE_LENGTH",
+        "NoRoutesReason",
+        "SwapSearchBlocker",
+        "getNoRoutesReason",
+        "getSwapSearchBlocker"
+      ],
+      "imports": []
     }
   }
 }
