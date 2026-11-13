@@ -5,15 +5,14 @@ import { useApp } from '@/context/AppContext';
 import { formatMatchScore } from '@/services/routes/routes.service';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
-import { formatCop } from '@/utils/currency';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values', 'found'] as const;
 
-// Neutral placeholder nodes while the search runs; real people and items replace them once a route is found.
-const PLACEHOLDER_NODES = 4;
+// Anonymous pulses travelling the orbit while the engine searches.
+const ORBIT_DOTS = 4;
 
 interface SearchingLocationState {
   offeredItemId?: string;
@@ -181,8 +180,9 @@ export const SearchingScreen: React.FC = () => {
   }, [phase, targetMatchScore]);
 
   const isPhase3 = phase === 3;
-  const { currentUser } = useApp();
-  const activeFlowSteps =
+  const routeFound = isPhase3 && topRoute !== undefined;
+  // Chain summary shown once a real route comes back: item photo and first name per step, no prices.
+  const chainSummary =
     topRoute && topRoute.chainItems.length >= 2
       ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
           user:
@@ -190,20 +190,11 @@ export const SearchingScreen: React.FC = () => {
               ? t('searching.you')
               : topRoute.participants[idx]?.name?.split(' ')[0] ||
                 t('searching.step', { count: idx + 1 }),
-          initials: idx === 0 ? currentUser?.initials : topRoute.participants[idx]?.initials,
-          value: item.estimatedValue,
           itemImg: item.imageUrl,
           itemName: item.name,
           category: item.category,
         }))
-      : Array.from({ length: PLACEHOLDER_NODES }, (_, idx) => ({
-          user: idx === 0 ? t('searching.you') : t('searching.step', { count: idx + 1 }),
-          initials: idx === 0 ? currentUser?.initials : undefined,
-          value: undefined as number | undefined,
-          itemImg: undefined as string | undefined,
-          itemName: '',
-          category: '',
-        }));
+      : [];
 
   if (!hasSearchParams) {
     return <Navigate to="/swap/configure" replace />;
@@ -258,6 +249,28 @@ export const SearchingScreen: React.FC = () => {
         .animate-pulse-success {
           animation: pulseSuccess 1.8s ease-in-out infinite;
         }
+        @keyframes ripple {
+          0% { opacity: 0.7; transform: scale(0.55); }
+          100% { opacity: 0; transform: scale(1.25); }
+        }
+        .searching-ripple {
+          animation: ripple 2.4s ease-out infinite;
+        }
+        .searching-ripple-delayed {
+          animation-delay: 1.2s;
+        }
+        .searching-orbit {
+          animation: spinSlow 6s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .searching-ripple,
+          .searching-orbit,
+          .animate-dash-flow,
+          .animate-spin-slow,
+          .animate-pulse-success {
+            animation: none;
+          }
+        }
       `}</style>
 
       {/* Header section: Entrance Title */}
@@ -276,173 +289,58 @@ export const SearchingScreen: React.FC = () => {
         </p>
       </div>
 
-      {/* Hero Circular Diagram: 280px container with 112px radius through 4 nodes */}
-      <div className="relative w-[280px] h-[280px] my-auto flex items-center justify-center shrink-0">
-        {/* Connecting SVG Circular Arcs */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox="0 0 280 280"
-          aria-hidden="true"
-        >
-          {/* Track background */}
-          <circle
-            cx="140"
-            cy="140"
-            r="112"
-            fill="none"
-            stroke="#00685f"
-            strokeOpacity="0.18"
-            strokeWidth="2.5"
-          />
+      {/* Neutral search animation: an orbit with anonymous pulses, no people, names or prices */}
+      <div
+        className="relative w-[240px] h-[240px] my-auto flex items-center justify-center shrink-0"
+        aria-hidden="true"
+      >
+        <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple" />
+        <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple searching-ripple-delayed" />
 
-          {/* Animated Flow Track */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 240 240">
+          <circle cx="120" cy="120" r="96" fill="none" stroke="#00685f" strokeOpacity="0.18" strokeWidth="2.5" />
           <circle
-            cx="140"
-            cy="140"
-            r="112"
+            cx="120"
+            cy="120"
+            r="96"
             fill="none"
-            stroke="#00685f"
-            strokeOpacity="0.6"
-            strokeWidth={isPhase3 ? '3.5' : '2.5'}
-            strokeDasharray={isPhase3 ? 'none' : '8 6'}
+            stroke={routeFound ? '#1a7a4a' : '#00685f'}
+            strokeOpacity={routeFound ? 0.85 : 0.6}
+            strokeWidth={isPhase3 ? 3.5 : 2.5}
+            strokeDasharray={isPhase3 ? undefined : '8 6'}
             className={isPhase3 ? 'transition-all duration-700' : 'animate-dash-flow'}
           />
-
-          {/* Phase 3 glowing completed circuit */}
-          {isPhase3 && (
-            <circle
-              cx="140"
-              cy="140"
-              r="112"
-              fill="none"
-              stroke="#1a7a4a"
-              strokeOpacity="0.85"
-              strokeWidth="3.5"
-              className="transition-all duration-700"
-            />
-          )}
         </svg>
 
-        {/* Center Node: SmartSwap logo / sync icon -> pulses with success in Phase 3 */}
+        {!isPhase3 && (
+          <div className="absolute inset-0 searching-orbit">
+            {Array.from({ length: ORBIT_DOTS }, (_, idx) => (
+              <span
+                key={idx}
+                className="absolute left-1/2 top-1/2 w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full bg-secondary-container shadow-xs"
+                style={{ transform: `rotate(${(360 / ORBIT_DOTS) * idx}deg) translateY(-96px)` }}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="relative z-20 flex flex-col items-center justify-center">
           <div
-            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-all duration-500 ${
-              isPhase3
+            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md transition-all duration-500 ${
+              routeFound
                 ? 'bg-[#1a7a4a] text-on-primary animate-pulse-success'
                 : 'bg-primary text-on-primary ring-4 ring-primary/20'
             }`}
           >
             <Icon
-              name={isPhase3 ? 'check' : 'sync'}
+              name={routeFound ? 'check' : isPhase3 ? 'travel_explore' : 'sync'}
               size="md"
-              className={isPhase3 ? 'text-[24px] font-bold' : 'animate-spin-slow'}
+              className={isPhase3 ? 'text-[26px] font-bold' : 'animate-spin-slow'}
             />
           </div>
           <span className="font-label-sm text-[10px] font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
-            {isPhase3 ? t('searching.connected') : 'SmartSwap'}
+            {routeFound ? t('searching.connected') : isPhase3 ? t('searching.searchDone') : 'SmartSwap'}
           </span>
-        </div>
-
-        {/* Node 0 (Top): the current user, with primary ring */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
-          <div
-            className="flex flex-col items-center"
-            style={{
-              animation: 'popIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 600ms both',
-            }}
-          >
-            <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-primary ring-2 ring-primary ring-offset-2 ring-offset-surface shadow-md flex items-center justify-center">
-                <span className="font-headline-sm text-headline-sm font-bold text-primary">{activeFlowSteps[0]?.initials ?? '•'}</span>
-              </div>
-              {activeFlowSteps[0]?.value !== undefined && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-primary font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                  {formatCop(activeFlowSteps[0].value ?? 0)}
-                </span>
-              )}
-            </div>
-            <span className="font-label-sm text-[11px] text-on-surface font-bold mt-2 truncate max-w-[76px] text-center">
-              {t('searching.you')}
-            </span>
-          </div>
-        </div>
-
-        {/* Node 1 (Right): secondary node */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-20">
-          <div
-            className="flex flex-col items-center"
-            style={{
-              animation: 'popIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 900ms both',
-            }}
-          >
-            <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
-                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {activeFlowSteps[1]?.initials ?? '•'}
-                </span>
-              </div>
-              {activeFlowSteps[1]?.value !== undefined && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                  {formatCop(activeFlowSteps[1].value ?? 0)}
-                </span>
-              )}
-            </div>
-            <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[1]?.user}
-            </span>
-          </div>
-        </div>
-
-        {/* Node 2 (Bottom): secondary node */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
-          <div
-            className="flex flex-col items-center"
-            style={{
-              animation: 'popIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 1200ms both',
-            }}
-          >
-            <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
-                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {activeFlowSteps[2]?.initials ?? '•'}
-                </span>
-              </div>
-              {activeFlowSteps[2]?.value !== undefined && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                  {formatCop(activeFlowSteps[2].value ?? 0)}
-                </span>
-              )}
-            </div>
-            <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[2]?.user}
-            </span>
-          </div>
-        </div>
-
-        {/* Node 3 (Left): secondary node */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col items-center z-20">
-          <div
-            className="flex flex-col items-center"
-            style={{
-              animation: 'popIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 1500ms both',
-            }}
-          >
-            <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-surface-container-lowest border-2 border-surface-container-high shadow-md flex items-center justify-center">
-                <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
-                  {activeFlowSteps[3]?.initials ?? '•'}
-                </span>
-              </div>
-              {activeFlowSteps[3]?.value !== undefined && (
-                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-surface-container-high px-1.5 py-0.2 rounded-full font-label-sm text-[10px] text-on-surface-variant font-bold shadow-xs whitespace-nowrap border border-surface-container-highest">
-                  {formatCop(activeFlowSteps[3].value ?? 0)}
-                </span>
-              )}
-            </div>
-            <span className="font-label-sm text-[11px] text-on-surface-variant font-semibold mt-2 truncate max-w-[76px] text-center">
-              {activeFlowSteps[3]?.user}
-            </span>
-          </div>
         </div>
       </div>
 
@@ -469,8 +367,9 @@ export const SearchingScreen: React.FC = () => {
             )}
 
             {/* Chain summary: item photo (or category fallback) and first name of each participant */}
+            {chainSummary.length > 0 && (
             <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
-              {activeFlowSteps.map((step, idx) => (
+              {chainSummary.map((step, idx) => (
                 <React.Fragment key={`${step.user}-${idx}`}>
                   <div className="flex flex-col items-center min-w-0">
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
@@ -480,7 +379,7 @@ export const SearchingScreen: React.FC = () => {
                       {step.user}
                     </span>
                   </div>
-                  {idx < activeFlowSteps.length - 1 && (
+                  {idx < chainSummary.length - 1 && (
                     <Icon
                       name="arrow_forward"
                       size="xs"
@@ -490,6 +389,13 @@ export const SearchingScreen: React.FC = () => {
                 </React.Fragment>
               ))}
             </div>
+            )}
+
+            {!topRoute && (
+              <p className="font-body-md text-body-md text-on-surface-variant font-medium max-w-[300px]">
+                {t('searching.searchDoneHint')}
+              </p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[44px]">

@@ -447,6 +447,8 @@ export const es = {
     title: 'Analizando Rutas de Canje...',
     subtitle: 'Conectando usuarios para cerrar el circuito sin dinero',
     connected: '¡Conectado!',
+    searchDone: 'Búsqueda lista',
+    searchDoneHint: 'Terminamos de buscar. Abre los resultados para ver qué encontramos.',
     routeFound: '¡Ruta Circular Encontrada! #{{code}}',
     viewChain: 'Ver cadena completa de la ruta ({{count}} pasos) →',
     viewResults: 'Ver resultados →',

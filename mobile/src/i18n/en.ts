@@ -449,6 +449,8 @@ export const en: TranslationSchema = {
     title: 'Analyzing swap routes...',
     subtitle: 'Connecting people to close the circuit without money',
     connected: 'Connected!',
+    searchDone: 'Search done',
+    searchDoneHint: 'We finished searching. Open the results to see what we found.',
     routeFound: 'Circular route found! #{{code}}',
     viewChain: 'See the full route chain ({{count}} steps) →',
     viewResults: 'See results →',
