@@ -13,6 +13,11 @@
  *   scroll     1 when, after scrolling with the wheel, the end of the content is
  *              still below the viewport or under a bottom bar (BottomNav, action bar)
  *   barras     sticky/fixed bars with a see-through background (content shows behind)
+ *   errores    uncaught page errors, API calls with no fixture, and landing on a
+ *              different path than the screen expects (a redirect or fallback)
+ *
+ * axe also reports "incomplete" contrast nodes it cannot decide (text over images
+ * or translucent layers). They are listed in the `revisar` column, not counted.
  *
  * Environment:
  *   AUDIT_BASE_URL         use an already running app instead of starting Vite
@@ -21,12 +26,13 @@
  *   AUDIT_THEMES           comma list, default light,dark
  *   AUDIT_ONLY             comma list of screen ids to run
  *
- * Writes report.md, report.json and one screenshot per screen and theme.
- * Exit code 0 only when every metric is 0.
+ * Writes report.md, report.json and two screenshots per screen and theme (top
+ * and after scrolling to the end). Exit code 0 only when at least one screen ran,
+ * no screen failed to load and every counted metric is 0.
  */
 import { chromium } from 'playwright-core';
 import { spawn, execSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, openSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -50,7 +56,7 @@ const TINY_PNG = Buffer.from(
   'base64',
 );
 
-const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'barras'];
+const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'barras', 'errores'];
 
 /**
  * Screens in visiting order. `auth: false` runs without a session.
@@ -82,6 +88,7 @@ const SCREENS = [
   { id: 'route-detail', path: '/swap/route/r-active' },
   {
     id: 'proposal-confirm',
+    expectPath: '/swap/proposal/confirm',
     path: '/swap/route/preview-00ab12cd',
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
@@ -90,6 +97,7 @@ const SCREENS = [
   },
   {
     id: 'proposal-sent',
+    expectPath: '/swap/proposal/sent',
     path: '/swap/route/preview-00ab12cd',
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
@@ -154,7 +162,7 @@ function measureInPage() {
     if (cutX || cutY) ellipsis.push(describe(el));
   }
 
-  // 5. Bars that let the content show through
+  // 4. Bars that let the content show through (contrast is measured by axe, outside)
   const bars = [];
   for (const el of document.body.querySelectorAll('*')) {
     const cs = getComputedStyle(el);
@@ -222,28 +230,36 @@ function scrollEndInPage() {
 // Runner
 // ---------------------------------------------------------------------------
 
-const waitForServer = async (url, timeoutMs) => {
+const isUp = async (url) => {
+  try {
+    return (await fetch(url)).ok;
+  } catch {
+    return false;
+  }
+};
+
+/** Waits for Vite, failing at once if the process exits (e.g. the port is taken). */
+const waitForServer = async (url, child, timeoutMs) => {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return;
-    } catch {
-      // not up yet
+    if (child && child.exitCode !== null) {
+      throw new Error(`Vite exited with code ${child.exitCode}; see ${join(OUT, 'vite.log')}`);
     }
+    if (await isUp(url)) return;
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error(`The mobile app did not start at ${url}`);
+  throw new Error(`The mobile app did not start at ${url} (see ${join(OUT, 'vite.log')})`);
 };
 
 const startVite = () => {
-  const child = spawn('npm', ['--workspace=mobile', 'run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
+  const log = openSync(join(OUT, 'vite.log'), 'w');
+  return spawn('npm', ['--workspace=mobile', 'run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
     cwd: ROOT,
     shell: true,
+    detached: process.platform !== 'win32',
     env: { ...process.env, VITE_API_URL: `http://audit.local${API_PREFIX}`, VITE_DEMO_PASSWORD: '' },
-    stdio: 'ignore',
+    stdio: ['ignore', log, log],
   });
-  return child;
 };
 
 const stopVite = (child) => {
@@ -251,14 +267,21 @@ const stopVite = (child) => {
   if (process.platform === 'win32') {
     try {
       execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' });
-    } catch {
-      // already gone
+    } catch (error) {
+      // 128: the process tree is already gone
+      if (error.status !== 128) console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
     }
   } else {
-    child.kill('SIGTERM');
+    // The shell wrapper leads its own group: kill the group so Vite goes too
+    try {
+      process.kill(-child.pid, 'SIGTERM');
+    } catch (error) {
+      console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
+    }
   }
 };
 
+/** A browser context that answers the API from fixtures and records any call it cannot answer. */
 const newContext = async (browser, theme, withSession) => {
   const context = await browser.newContext({
     viewport: VIEWPORT,
@@ -268,6 +291,7 @@ const newContext = async (browser, theme, withSession) => {
     locale: 'es-CO',
     colorScheme: theme,
   });
+  const unanswered = [];
   await context.addInitScript(
     ([t, session]) => {
       localStorage.setItem('smartswap_theme', t);
@@ -280,26 +304,37 @@ const newContext = async (browser, theme, withSession) => {
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.startsWith(API_PREFIX) && url.host !== `localhost:${PORT}`) {
-      const answer = respond(route.request().method(), url.pathname.slice(API_PREFIX.length) + url.search);
-      if (!answer) return route.fulfill({ status: 404, json: { message: 'audit: no fixture' } });
+      const method = route.request().method();
+      const path = url.pathname.slice(API_PREFIX.length);
+      const answer = respond(method, path + url.search);
+      if (!answer) {
+        unanswered.push(`${method} ${path}`);
+        return route.fulfill({ status: 404, json: { message: 'audit: no fixture' } });
+      }
       const [status, body] = answer;
       return route.fulfill({ status, json: body });
     }
     if (url.hostname === 'localhost' || url.protocol === 'data:' || url.protocol === 'blob:') return route.continue();
     return route.abort();
   });
-  return context;
+  return { context, unanswered };
 };
 
-const auditScreen = async (context, base, screen, theme) => {
+const auditScreen = async ({ context, unanswered }, base, screen, theme) => {
   const page = await context.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
+  unanswered.length = 0;
+  page.on('pageerror', (e) => errors.push(`page error: ${e.message}`));
   try {
     await page.goto(`${base}${screen.path}`, { waitUntil: 'networkidle' });
     if (screen.go) await screen.go(page);
     await page.waitForTimeout(screen.settleMs ?? 1200);
     await page.screenshot({ path: join(OUT, `${screen.id}-${theme}.png`) });
+
+    // A redirect or fallback would otherwise be measured as if it were this screen
+    const expected = screen.expectPath ?? new URL(screen.path, base).pathname;
+    const landed = new URL(page.url()).pathname;
+    if (landed !== expected) errors.push(`landed on ${landed}, expected ${expected}`);
 
     const found = await page.evaluate(measureInPage);
     await page.addScriptTag({ path: AXE_PATH });
@@ -308,11 +343,11 @@ const auditScreen = async (context, base, screen, theme) => {
       const r = await axe.run(document, { runOnly: { type: 'rule', values: ['color-contrast'] } });
       return {
         violations: r.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(' ')} — ${n.any[0]?.message ?? ''}`)),
-        incomplete: r.incomplete.reduce((sum, v) => sum + v.nodes.length, 0),
+        incomplete: r.incomplete.flatMap((v) => v.nodes.map((n) => `${n.target.join(' ')} — ${n.any[0]?.message ?? ''}`)),
       };
     });
 
-    // Scroll like a finger would: wheel events follow the same scroll chaining as touch
+    // Approximates a finger drag with wheel events: same overscroll chaining, not a full touch emulation
     await page.mouse.move(VIEWPORT.width / 2, VIEWPORT.height / 2);
     for (let i = 0; i < 20; i += 1) {
       await page.mouse.wheel(0, 800);
@@ -325,35 +360,47 @@ const auditScreen = async (context, base, screen, theme) => {
     return {
       screen: screen.id,
       theme,
-      url: page.url().replace(base, ''),
+      url: landed,
       details: {
         ...found,
         contraste: axe.violations,
         scroll: end.ok ? [] : [`content ends at ${end.bottom}px, visible up to ${end.limit}px (last: "${end.last}")`],
+        errores: [...errors, ...unanswered.map((call) => `no fixture: ${call}`)],
       },
       axeIncomplete: axe.incomplete,
-      errors,
     };
   } catch (error) {
-    return { screen: screen.id, theme, url: screen.path, failed: String(error.message ?? error), details: {}, errors };
+    return { screen: screen.id, theme, url: screen.path, failed: String(error.message ?? error), details: {}, axeIncomplete: [] };
   } finally {
     await page.close();
   }
 };
 
+/** The Vite child, so a Ctrl+C can stop it too. */
+let activeVite = null;
+
 const main = async () => {
   mkdirSync(OUT, { recursive: true });
-  let vite = null;
-  let base = process.env.AUDIT_BASE_URL?.replace(/\/+$/, '');
-  if (!base) {
-    base = `http://localhost:${PORT}`;
-    vite = startVite();
-    await waitForServer(base, 90000);
+  const unknown = ONLY ? ONLY.filter((id) => !SCREENS.some((screen) => screen.id === id)) : [];
+  if (unknown.length > 0) {
+    throw new Error(`Unknown screen id(s) in AUDIT_ONLY: ${unknown.join(', ')}. Known: ${SCREENS.map((s) => s.id).join(', ')}`);
   }
 
-  const browser = await chromium.launch({ channel: CHANNEL, headless: true });
+  let vite = null;
+  let browser = null;
   const rows = [];
   try {
+    let base = process.env.AUDIT_BASE_URL?.replace(/\/+$/, '');
+    if (!base) {
+      base = `http://localhost:${PORT}`;
+      // Something already on the port would be audited instead of the current code
+      if (await isUp(base)) throw new Error(`Port ${PORT} is already in use; stop that server and run again.`);
+      vite = startVite();
+      activeVite = vite;
+      await waitForServer(base, vite, 90000);
+    }
+
+    browser = await chromium.launch({ channel: CHANNEL, headless: true });
     for (const theme of THEMES) {
       const contexts = {
         anon: await newContext(browser, theme, false),
@@ -365,13 +412,14 @@ const main = async () => {
         const row = await auditScreen(ctx, base, screen, theme);
         rows.push(row);
         const counts = METRICS.map((m) => `${m}=${row.details[m]?.length ?? '?'}`).join(' ');
-        console.log(`${row.failed ? 'ERROR' : 'ok   '} ${theme.padEnd(5)} ${screen.id.padEnd(17)} ${row.failed ?? counts}`);
+        const review = row.axeIncomplete.length ? ` revisar=${row.axeIncomplete.length}` : '';
+        console.log(`${row.failed ? 'ERROR' : 'ok   '} ${theme.padEnd(5)} ${screen.id.padEnd(17)} ${row.failed ?? counts}${review}`);
       }
-      await contexts.anon.close();
-      await contexts.session.close();
+      await contexts.anon.context.close();
+      await contexts.session.context.close();
     }
   } finally {
-    await browser.close();
+    await browser?.close();
     stopVite(vite);
   }
 
@@ -379,24 +427,36 @@ const main = async () => {
   const lines = [
     `# audit:ui — ${VIEWPORT.width}×${VIEWPORT.height}`,
     '',
-    `| Pantalla | Tema | ${METRICS.join(' | ')} |`,
-    `|---|---|${METRICS.map(() => '---:').join('|')}|`,
-    ...rows.map((r) => `| ${r.screen}${r.failed ? ' (ERROR)' : ''} | ${r.theme} | ${METRICS.map((m) => count(r, m)).join(' | ')} |`),
+    `| Pantalla | Tema | ${METRICS.join(' | ')} | revisar |`,
+    `|---|---|${METRICS.map(() => '---:').join('|')}|---:|`,
+    ...rows.map(
+      (r) =>
+        `| ${r.screen}${r.failed ? ' (ERROR)' : ''} | ${r.theme} | ${METRICS.map((m) => count(r, m)).join(' | ')} | ${r.axeIncomplete.length} |`,
+    ),
   ];
   for (const theme of THEMES) {
     const own = rows.filter((r) => r.theme === theme);
-    lines.push(`| **Total** | **${theme}** | ${METRICS.map((m) => `**${own.reduce((s, r) => s + count(r, m), 0)}**`).join(' | ')} |`);
+    const totals = METRICS.map((m) => `**${own.reduce((s, r) => s + count(r, m), 0)}**`).join(' | ');
+    lines.push(`| **Total** | **${theme}** | ${totals} | ${own.reduce((s, r) => s + r.axeIncomplete.length, 0)} |`);
   }
   const report = lines.join('\n');
   writeFileSync(join(OUT, 'report.md'), `${report}\n`);
   writeFileSync(join(OUT, 'report.json'), JSON.stringify(rows, null, 2));
   console.log(`\n${report}\n\nDetails and screenshots: ${OUT}`);
 
+  if (rows.length === 0) throw new Error('No screen was audited.');
   const failed = rows.some((r) => r.failed || METRICS.some((m) => count(r, m) > 0));
-  process.exit(failed ? 1 : 0);
+  process.exitCode = failed ? 1 : 0;
 };
 
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    stopVite(activeVite);
+    process.exit(130);
+  });
+}
+
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+  console.error(error.message ?? error);
+  process.exitCode = 1;
 });

@@ -160,6 +160,19 @@ export const respond = (method, path) => {
   if (p === '/notifications/unread-count') return [200, { unreadCount: 1 }];
   if (p.startsWith('/notifications/')) return [200, { updatedCount: 1 }];
   if (p === '/users/me/stats') return [200, { tradesCompleted: 3, activeItems: 2, activeRoutes: 1 }];
-  if (p.startsWith('/ai/')) return [200, { explanation: activeRoute.aiExplanation }];
+  if (p === '/items/analyze-photo' || p === '/ai/analyze-photo') {
+    return [200, {
+      name: 'Lámpara de escritorio articulada',
+      category: 'Hogar',
+      condition: 'GOOD',
+      description: 'Lámpara metálica con brazo articulado, funciona bien.',
+      estimatedValue: 90000,
+      suggestedValueRange: { min: 70000, max: 110000 },
+      suggestedWants: ['Libros'],
+      aiTags: ['lámpara', 'escritorio'],
+    }];
+  }
+  if (p === '/ai/estimate-value') return [200, { estimatedValue: 90000, suggestedValueRange: { min: 70000, max: 110000 } }];
+  if (p === '/ai/explain-route') return [200, { explanation: activeRoute.aiExplanation, fairnessScore: 90 }];
   return null;
 };
