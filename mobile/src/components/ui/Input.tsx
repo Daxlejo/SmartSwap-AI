@@ -56,8 +56,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             disabled={disabled}
             className={clsx(
-              'w-full h-[52px] bg-surface-container-low text-on-surface rounded-2xl font-body-md text-body-md',
-              'placeholder:text-on-surface-variant/70 transition-all duration-150',
+              'w-full h-[52px] bg-surface-container-lowest text-on-surface rounded-2xl border border-outline/60 font-body-md text-body-md',
+              'placeholder:text-on-surface-variant transition-all duration-150',
               'focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/30',
               leftIcon ? 'pl-11' : 'pl-4',
               rightIcon ? 'pr-11' : 'pr-4',
@@ -74,7 +74,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                   type="button"
                   onClick={onRightIconClick}
                   aria-label={t('nav.inputAction')}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="w-11 h-11 -mr-2 rounded-full flex items-center justify-center text-outline hover:text-on-surface transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Icon name={rightIcon} size="md" />
                 </button>

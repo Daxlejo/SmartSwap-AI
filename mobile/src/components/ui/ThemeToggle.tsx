@@ -29,7 +29,7 @@ export const ThemeToggle = ({
         aria-label={label}
         title={label}
         className={clsx(
-          'relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center rounded-full p-1',
+          'relative inline-flex h-11 w-[4.5rem] shrink-0 cursor-pointer items-center rounded-full p-1.5',
           'transition-colors duration-300 ease-in-out',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
           isDark ? 'bg-primary-container' : 'bg-surface-container-highest',
@@ -38,10 +38,10 @@ export const ThemeToggle = ({
       >
         <span
           className={clsx(
-            'pointer-events-none flex h-6 w-6 transform items-center justify-center rounded-full shadow-sm',
+            'pointer-events-none flex h-8 w-8 transform items-center justify-center rounded-full shadow-sm',
             'transition-transform duration-300 ease-in-out',
             isDark
-              ? 'translate-x-6 bg-primary text-on-primary'
+              ? 'translate-x-7 bg-primary text-on-primary'
               : 'translate-x-0 bg-surface-container-lowest text-on-surface',
           )}
         >

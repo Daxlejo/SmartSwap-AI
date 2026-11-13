@@ -25,9 +25,9 @@ const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
-  sm: 'h-9 px-3 font-label-sm text-label-sm font-semibold rounded-xl',
-  md: 'min-h-[44px] px-4 py-2 font-label-md text-label-md font-semibold rounded-xl',
-  lg: 'min-h-[52px] px-6 py-3 font-label-lg text-label-lg font-bold rounded-full',
+  sm: 'min-h-11 px-3.5 font-label-md text-label-md font-semibold rounded-xl',
+  md: 'min-h-11 px-4 py-2 font-label-lg text-label-lg font-semibold rounded-xl',
+  lg: 'min-h-12 px-6 py-3 font-label-lg text-label-lg font-bold rounded-full',
   icon: 'w-11 h-11 rounded-full flex items-center justify-center p-0',
 };
 

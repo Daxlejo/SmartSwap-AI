@@ -41,7 +41,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             disabled={disabled}
             aria-invalid={error ? true : undefined}
             className={clsx(
-              'w-full h-[52px] appearance-none bg-surface-container-low text-on-surface rounded-2xl',
+              'w-full h-[52px] appearance-none bg-surface-container-lowest text-on-surface rounded-2xl border border-outline/60',
               'font-body-md text-body-md pr-11 transition-all duration-150',
               'focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/30',
               leftIcon ? 'pl-11' : 'pl-4',
