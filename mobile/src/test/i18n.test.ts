@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import i18n from '@/i18n';
 import { es } from '@/i18n/es';
@@ -52,5 +54,26 @@ describe('i18n', () => {
       });
     });
     expect(emptyKeys).toEqual([]);
+  });
+
+  it('defines every literal key the code asks for', () => {
+    // t('some.key') calls with a plain string literal
+    const KEY_CALL = new RegExp(String.raw`\bt\('([a-zA-Z0-9_.]+)'`, 'g');
+    const sourceFiles = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) return name === 'test' || name === 'i18n' ? [] : sourceFiles(path);
+        return /\.tsx?$/.test(name) ? [path] : [];
+      });
+    const keys = new Set(
+      sourceFiles(join(__dirname, '..')).flatMap((file) =>
+        [...readFileSync(file, 'utf8').matchAll(KEY_CALL)].map((match) => match[1]),
+      ),
+    );
+    const defined = new Set(flattenKeys(es as Tree));
+    const missing = [...keys].filter(
+      (key) => !defined.has(key) && !defined.has(`${key}_one`) && !defined.has(`${key}_other`),
+    );
+    expect(missing).toEqual([]);
   });
 });

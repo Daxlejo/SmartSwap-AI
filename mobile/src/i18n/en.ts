@@ -110,8 +110,6 @@ export const en: TranslationSchema = {
       title: 'Swaps',
     },
     profile: {
-    languageSwitch: 'Use the app in English',
-    itemsPublished: 'Items published',
       title: 'My profile',
     },
     configure: {
@@ -200,17 +198,15 @@ export const en: TranslationSchema = {
     },
   },
   profile: {
+    languageSwitch: 'Use the app in English',
+    itemsPublished: 'Items published',
     deleteError: 'The item could not be deleted.',
     updateError: 'Your profile could not be updated.',
-    level: 'Level {{level}}',
     tradesCompleted: 'Swaps completed',
-    rating: 'Rating',
-    co2Saved: 'CO₂ saved',
     closeError: 'Dismiss error',
     myItems: 'My items ({{count}})',
     refreshAria: 'Refresh my items',
     refresh: 'Refresh',
-    seeAll: 'See all',
     tabs: {
       active: 'Active',
       paused: 'Paused',

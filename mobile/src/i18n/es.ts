@@ -108,8 +108,6 @@ export const es = {
       title: 'Canjes',
     },
     profile: {
-    languageSwitch: 'Usar la app en inglés',
-    itemsPublished: 'Objetos publicados',
       title: 'Mi perfil',
     },
     configure: {
@@ -198,17 +196,15 @@ export const es = {
     },
   },
   profile: {
+    languageSwitch: 'Usar la app en inglés',
+    itemsPublished: 'Objetos publicados',
     deleteError: 'No se pudo eliminar el artículo.',
     updateError: 'No se pudo actualizar tu perfil.',
-    level: 'Nivel {{level}}',
     tradesCompleted: 'Canjes completados',
-    rating: 'Calificación',
-    co2Saved: 'CO₂ ahorrado',
     closeError: 'Cerrar error',
     myItems: 'Mis artículos ({{count}})',
     refreshAria: 'Actualizar mis artículos',
     refresh: 'Actualizar',
-    seeAll: 'Ver todos',
     tabs: {
       active: 'Activos',
       paused: 'Pausados',
