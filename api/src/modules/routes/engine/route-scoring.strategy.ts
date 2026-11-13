@@ -3,6 +3,12 @@ import { cosineSimilarity } from '../../ai/services/ai-embedding.service';
 
 export const SEMANTIC_SIMILARITY_THRESHOLD = 0.42;
 export const DEFAULT_VALUE_TOLERANCE_PCT = 45;
+/**
+ * Placeholder CO₂ figure: `co2SavedKg = steps × 2.4 kg`. It is a flat constant per
+ * exchanged item, not derived from the item's category, weight or materials, so the
+ * mobile app does not show it anywhere (Fase 2, 12 nov 2026). It stays in the data
+ * model until a real per-category emission factor exists.
+ */
 export const CO2_KG_PER_STEP = 2.4;
 
 export interface GraphWantNode {
