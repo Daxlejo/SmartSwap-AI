@@ -165,14 +165,6 @@ export const SplashScreen: React.FC = () => {
         </p>
       </div>
 
-      {/* Bottom: Version tag */}
-      <div
-        className={`font-label-sm text-label-sm text-white/50 tracking-wider font-semibold uppercase pb-safe ${
-          reducedMotion ? '' : phase >= 4 ? 'animate-subtitle-fade' : 'opacity-0'
-        }`}
-      >
-        v2.4
-      </div>
     </div>
   );
 };
