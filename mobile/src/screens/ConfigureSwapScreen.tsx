@@ -212,16 +212,16 @@ export const ConfigureSwapScreen = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('configure.searchPlaceholder')}
-                  className="w-full h-12 pl-12 pr-11 py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full h-12 pl-12 ${searchQuery ? 'pr-12' : 'pr-4'} py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all`}
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     aria-label={t('configure.clearSearch')}
-                    className="absolute right-3.5 w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface active:scale-90 transition-all"
+                    className="absolute right-0.5 w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface active:scale-90 transition-all"
                   >
-                    <Icon name="close" size="xs" />
+                    <Icon name="close" size="sm" />
                   </button>
                 )}
               </div>
