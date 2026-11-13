@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import '@/i18n';
 import type { Item } from '@/types';
-import { getSwapSearchBlocker } from '@/utils/swapSearch';
+import { getNoRoutesReason, getSwapSearchBlocker } from '@/utils/swapSearch';
 import { aiService } from '@/services/ai/ai.service';
 import { routesService } from '@/services/routes/routes.service';
 
@@ -115,5 +115,15 @@ describe('ConfigureSwapScreen search gate', () => {
     expect(html).toContain('Escribe o elige qué quieres recibir para buscar rutas.');
     expect(html).not.toContain('Publicar un artículo');
     expectNoEngineOrAiCall();
+  });
+});
+
+describe('getNoRoutesReason', () => {
+  it('blames the missing inventory when nothing is published', () => {
+    expect(getNoRoutesReason(0)).toBe('noItems');
+  });
+
+  it('reports that no cycle closes for the item otherwise', () => {
+    expect(getNoRoutesReason(3)).toBe('noCycles');
   });
 });
