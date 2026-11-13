@@ -105,7 +105,6 @@ export class AiExplainerService {
   ): RouteExplanationResult {
     const stepCount = dto.steps.length;
     const firstStep = dto.steps[0];
-    const co2Estimated = (stepCount * 8.4).toFixed(1);
 
     const participantsSummary = dto.steps
       .map(
@@ -119,7 +118,7 @@ export class AiExplainerService {
         stepCount === 1 && firstStep
           ? `This direct swap fulfills the goal "${dto.objectiveText}" by connecting ${firstStep.userName}, trading ${firstStep.givesItemName} for ${firstStep.receivesItemName} with a ${fairnessScore}% value fairness index.`
           : `This ${stepCount}-link circular route connects ${participantsSummary} to reach "${dto.objectiveText}" while keeping ${fairnessScore}% market value parity without using money.`;
-      const englishSentence2 = `By reusing these items in the SmartSwap community, the cycle avoids roughly ${co2Estimated} kg of CO₂ emissions and extends the useful life of the equipment.`;
+      const englishSentence2 = 'Every item finds a new owner, so nothing is bought and nothing goes to waste.';
 
       return {
         explanation: `${englishSentence1} ${englishSentence2}`,
@@ -133,7 +132,7 @@ export class AiExplainerService {
         ? `Este intercambio directo permite cumplir el objetivo "${dto.objectiveText}" conectando a ${firstStep.userName} mediante el trueque de ${firstStep.givesItemName} por ${firstStep.receivesItemName} con un índice de equidad de valor del ${fairnessScore}%.`
         : `Esta ruta circular de ${stepCount} eslabones conecta a ${participantsSummary} para alcanzar "${dto.objectiveText}" manteniendo una paridad de valor comercial del ${fairnessScore}% sin uso de dinero.`;
 
-    const sentence2 = `Al reutilizar estos artículos en la comunidad SmartSwap, el ciclo evita aproximadamente ${co2Estimated} kg de emisiones de CO₂ y extiende la vida útil del equipamiento.`;
+    const sentence2 = 'Cada artículo encuentra un nuevo dueño, sin comprar nada y sin desechar nada.';
 
     return {
       explanation: `${sentence1} ${sentence2}`,
