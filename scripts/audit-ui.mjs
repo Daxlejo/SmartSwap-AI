@@ -77,6 +77,7 @@ const SCREENS = [
     go: async (page) => {
       await page.locator('main button').filter({ hasText: /propon|propos|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/confirm');
+      await page.locator('main input[type=checkbox]').check();
       await page.locator('main button').filter({ hasText: /confirm|enviar|send/i }).last().click();
       await page.waitForURL('**/swap/proposal/sent');
     },
