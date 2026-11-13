@@ -44,6 +44,12 @@ const ONLY = process.env.AUDIT_ONLY ? process.env.AUDIT_ONLY.split(',').map((s) 
 const VIEWPORT = { width: 360, height: 800 };
 const API_PREFIX = '/api/v1';
 
+/** A 1×1 PNG used as the item photo in the Publish flow. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'barras'];
 
 /**
@@ -56,6 +62,17 @@ const SCREENS = [
   { id: 'home', path: '/home' },
   { id: 'explore', path: '/explore' },
   { id: 'publish', path: '/publish' },
+  {
+    // Step 2 is the long form: upload a photo the way the file picker would, then continue
+    id: 'publish-info',
+    path: '/publish',
+    go: async (page) => {
+      await page.setInputFiles('input[type=file]', { name: 'foto.png', mimeType: 'image/png', buffer: TINY_PNG });
+      await page.waitForTimeout(800);
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('#description');
+    },
+  },
   { id: 'trades', path: '/swaps' },
   { id: 'profile', path: '/profile' },
   { id: 'notifications', path: '/notifications' },
