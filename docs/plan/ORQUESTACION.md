@@ -27,11 +27,12 @@
 |---|---|---|---|
 | 0. Línea base, integración y APK de humo | lun 2 – mié 11 | `chore/fase-0-integracion` | Aprobada |
 | 1. Datos reales y estados vacíos | mié 11 – jue 12 | `feat/real-data` | Aprobada |
-| 2. Tipografía, táctil y contraste | jue 12 – vie 13 | `feat/ui-type-scale` | **ACTIVA** |
-| 3. Anillo de intercambio | sáb 14 – dom 15 | `feat/swap-ring` | Bloqueada |
-| 4. Pulido de flujos y comportamiento nativo Android | lun 16 (mañana) | `feat/ui-polish` | Bloqueada |
-| 5. APK release firmado | lun 16 (tarde) | `chore/release-apk` | Bloqueada |
-| 6. Arquitectura 4+1 y guion de demo | jue 12 – dom 15, **en paralelo** | `docs/architecture` | **ACTIVA** |
+| 2. Tipografía, táctil y contraste | jue 12 | `feat/ui-type-scale` | Aprobada |
+| 3. Anillo de intercambio | vie 13 | `feat/swap-ring` | **ACTIVA** |
+| 4. Pulido de flujos y comportamiento nativo Android | sáb 14 | `feat/ui-polish` | Bloqueada |
+| 5. APK release firmado | dom 15 | `chore/release-apk` | Bloqueada |
+| Colchón | lun 16 | — | — |
+| 6. Arquitectura 4+1 y guion de demo | jue 12, **en paralelo** | `docs/architecture` | Aprobada |
 | 7. Congelación, tag v1.0.0 y ensayo | mar 17 | `main` | Bloqueada |
 
 ## Plugins y subagentes por fase
@@ -76,7 +77,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Criterios de salida:** `rg -n -i "mock" api/src mobile/src` solo devuelve tests y fixtures; el seed corre dos veces sin duplicar datos; capturas de un usuario nuevo con estados vacíos y de un usuario demo con una ruta real; cambio de cuenta probado; suites en verde; revisión de PR sin hallazgos abiertos.
 
-## Fase 2: Tipografía, área táctil y contraste - ACTIVA
+## Fase 2: Tipografía, área táctil y contraste - Aprobada
 - Tokens en Tailwind: `caption` 14 px, `body` 16 px, `body-lg` 18 px y títulos de 20, 24 y 28 px, con interlineado de 1,5 en el cuerpo. Se prohíben `text-xs` y los tamaños arbitrarios menores de 14 px; si se puede, con una regla de lint.
 - Áreas táctiles: `min-h-11 min-w-11` en todo lo que se pueda tocar y 48 px en las acciones principales.
 - Nombres y títulos de objetos: `line-clamp-2` en lugar de `truncate`.
@@ -105,7 +106,7 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Cierre ampliado:** suites, graphify, `/pr-review-toolkit:review-pr` (corregir o justificar cada hallazgo), APK debug con `VITE_API_URL` de Render y PR hacia `main` sin fusionar. Reporte de puerta con la tabla de `audit:ui` antes y después, capturas a 360 px en claro y oscuro de Home, Explorar, Publicar, Registro y Trades, y espacio para las pruebas en el celular (scroll y tamaño de fuente del sistema en grande).
 
-## Fase 3: Anillo de intercambio
+## Fase 3: Anillo de intercambio - ACTIVA
 - Componente `SwapRing` en SVG. Recibe de 2 a 4 participantes (nombre, avatar, objeto que entrega y estado: pendiente, aceptó o rechazó) y tiene variante `compact` y `full`.
 - Geometría: los avatares van repartidos en el círculo empezando arriba. Cada arco de órbita lleva una flecha en el sentido de la entrega y una insignia del objeto en su punto medio. En el centro, un disco con "3 personas" y el estado. Los arcos son punteados mientras alguien no ha aceptado y se vuelven sólidos al aceptar; cuando todos aceptan, el anillo se cierra y aparece el halo.
 - Accesibilidad: `role="img"` con un `aria-label` que narra el ciclo completo, y debajo una lista en texto ("Tú entregas la bicicleta a Laura"), porque un adulto mayor puede no leer el diagrama. Cada avatar es un botón de 48 px. Con `prefers-reduced-motion` no hay animación. Solo se animan `transform` y `stroke-dashoffset`.
@@ -119,6 +120,9 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 - Comportamiento nativo: botón atrás de Android (`@capacitor/app`, que salga de la app solo desde Home), color de la barra de estado por tema, zonas seguras, teclado que no tape los campos, ícono y splash con `@capacitor/assets`, nombre "SmartSwap" y textos en español al pedir permisos de cámara y ubicación.
 - Skeletons de carga y mitigación del arranque en frío de Render (el banner de servidor ya existe; se agrega un ping de calentamiento al abrir la app).
 - Capturar con `visual-snapshot` la línea base visual que se compara en la Fase 7.
+- `npm run lint` del mobile en verde.
+- Unificar "artículo" y "objeto": un solo término en toda la UI (es y en).
+- Introducción al crear la cuenta, foto de perfil opcional y avatar con iniciales cuando no hay foto.
 
 **Criterios de salida:** checklist de cada flujo con captura desde el celular; reporte de `flow-runner` e `i18n-audit` (es/en) sin fallos; lista de bugs encontrados en 0 abiertos o aceptados explícitamente por el orquestador.
 
@@ -130,16 +134,18 @@ Activar solo los de la fase en curso (`/plugin` para habilitar y deshabilitar); 
 
 **Criterios de salida:** salida de `apksigner verify`, `aapt dump badging` (versión y permisos), tamaño del APK y grabación de pantalla de un flujo completo en el celular.
 
-## Fase 6: Arquitectura 4+1 y guion de demo (en paralelo, solo `docs/`) - ACTIVA
+## Fase 6: Arquitectura 4+1 y guion de demo (en paralelo, solo `docs/`) - Aprobada
 - `docs/architecture/` en Mermaid y dibujable a mano, en el orden del profesor: **Contexto → Funcional (casos de uso) → Lógica (clases y módulos de Nest) → Desarrollo (paquetes del monorepo) → Despliegue (APK, Render, PostgreSQL, Supabase, OpenAI)**. Además: secuencia del consenso de propuestas, explicación del algoritmo de ciclos de 2 a 4, ER desde Prisma y ADRs cortos (Capacitor frente a React Native, COP en enteros, ciclos de máximo 4).
 - Actualizar el README y la sección de deuda conocida (las vulnerabilidades que exigen `--force`, el E2E sobre doble en memoria) dicha con honestidad.
 - `docs/demo/GUION.md`: 7 a 10 minutos cronometrados, quién habla en cada parte, qué cuenta usar y un plan B (video de respaldo, hotspot propio, calentar Render 10 minutos antes). El guion se ajusta al final con lo que entregue la Fase 3.
 
-**Criterios de salida:** los diagramas renderizan con `mmdc` sin errores; un ensayo cronometrado dentro del tiempo.
+**Criterios de salida:** los diagramas renderizan con `mmdc` sin errores. (El ensayo cronometrado pasó a la Fase 7.)
 
 ## Fase 7: Congelación y ensayo (mar 17)
 - Code freeze. Suite completa más `audit:ui` en `main`, `visual-regression` contra la línea base de la Fase 4, tag `v1.0.0` y GitHub Release con el APK adjunto.
 - Dos ensayos completos en el celular. Video de respaldo grabado. APK instalado en al menos 2 celulares.
+- Ensayo cronometrado del guion de `docs/demo/GUION.md` dentro de los 7 a 10 minutos (viene de la Fase 6).
+- Correr el seed el día anterior a la sustentación (la propuesta en curso vence a las 48 h).
 
 **Criterios de salida:** release publicado y checklist del día de la sustentación marcado.
 
