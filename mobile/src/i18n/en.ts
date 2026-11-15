@@ -84,8 +84,6 @@ export const en: TranslationSchema = {
     retry: 'Try again',
     homeRoutes: "You don't have any routes yet. Look for a swap with one of your items.",
     homeRoutesCta: 'Find a route',
-    homeNoItems: "Post your first item and we'll find swap routes for you.",
-    homeNoItemsCta: 'Post an item',
     homeCatalog: 'There are no items in your area yet. Widen the search to see more.',
     homeCatalogCta: 'Widen the area',
     tradesReceived: 'You have no proposals to answer.',
@@ -226,6 +224,12 @@ export const en: TranslationSchema = {
     greetingAnonymous: 'Hi',
     subtitle: "Trade what you don't use for what you need, no money involved.",
     quickActions: 'Quick actions',
+    firstItem: {
+      title: 'Publish your first item',
+      reason: 'To swap you need something to offer: a photo and a few details put you into the routes.',
+      cta: 'Publish my first item',
+      searchReason: 'Available once you have at least 1 published item: it is what you hand over in the swap.',
+    },
     engine: {
       title: 'Find a swap',
       description: 'We show you routes of 2 to 4 people that complete your swap.',
@@ -235,7 +239,6 @@ export const en: TranslationSchema = {
       title: 'Publish',
       itemsPublished_one: '{{count}} item published',
       itemsPublished_other: '{{count}} items published',
-      empty: 'Upload a photo of an item',
     },
     activeRoutes: {
       title: 'My swaps',

@@ -82,8 +82,6 @@ export const es = {
     retry: 'Reintentar',
     homeRoutes: 'Aún no tienes rutas. Busca un trueque con uno de tus objetos.',
     homeRoutesCta: 'Buscar una ruta',
-    homeNoItems: 'Publica tu primer objeto y encontraremos rutas de trueque para ti.',
-    homeNoItemsCta: 'Publicar un objeto',
     homeCatalog: 'Todavía no hay objetos en tu zona. Amplía la búsqueda para ver más.',
     homeCatalogCta: 'Ampliar la zona',
     tradesReceived: 'No tienes propuestas por responder.',
@@ -224,6 +222,12 @@ export const es = {
     greetingAnonymous: 'Hola',
     subtitle: 'Cambia lo que no usas por lo que buscas, sin dinero.',
     quickActions: 'Acciones rápidas',
+    firstItem: {
+      title: 'Publica tu primer objeto',
+      reason: 'Para canjear necesitas ofrecer algo: con una foto y unos datos ya entras en las rutas.',
+      cta: 'Publicar mi primer objeto',
+      searchReason: 'Se activa cuando tengas al menos 1 objeto publicado: es lo que entregas en el canje.',
+    },
     engine: {
       title: 'Buscar un canje',
       description: 'Te mostramos rutas de 2 a 4 personas que cierran tu canje.',
@@ -233,7 +237,6 @@ export const es = {
       title: 'Publicar',
       itemsPublished_one: '{{count}} objeto publicado',
       itemsPublished_other: '{{count}} objetos publicados',
-      empty: 'Sube la foto de un objeto',
     },
     activeRoutes: {
       title: 'Mis canjes',
