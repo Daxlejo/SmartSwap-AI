@@ -1,6 +1,10 @@
 import { ItemStatus } from '@prisma/client';
 import { z } from 'zod';
-import { itemConditionSchema } from './create-item.dto';
+import {
+  ITEM_DESCRIPTION_MAX_LENGTH,
+  ITEM_NAME_MAX_LENGTH,
+  itemConditionSchema,
+} from './create-item.dto';
 
 export type ItemStatusInput = 'ACTIVE' | 'PAUSED';
 
@@ -43,7 +47,7 @@ export const updateItemSchema = z
       .string()
       .trim()
       .min(2, 'Name must be at least 2 characters long')
-      .max(100, 'Name must be at most 100 characters long')
+      .max(ITEM_NAME_MAX_LENGTH, `Name must be at most ${ITEM_NAME_MAX_LENGTH} characters long`)
       .optional(),
     category: z
       .string()
@@ -56,7 +60,10 @@ export const updateItemSchema = z
       .string()
       .trim()
       .min(5, 'Description must be at least 5 characters long')
-      .max(1000, 'Description must be at most 1000 characters long')
+      .max(
+        ITEM_DESCRIPTION_MAX_LENGTH,
+        `Description must be at most ${ITEM_DESCRIPTION_MAX_LENGTH} characters long`,
+      )
       .optional(),
     estimatedValue: z.coerce
       .number()

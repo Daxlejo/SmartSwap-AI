@@ -403,7 +403,7 @@ paths:
                 name:
                   type: string
                   minLength: 2
-                  maxLength: 100
+                  maxLength: 60
                 category:
                   type: string
                   minLength: 2
@@ -413,7 +413,7 @@ paths:
                 description:
                   type: string
                   minLength: 5
-                  maxLength: 1000
+                  maxLength: 500
                 estimatedValue:
                   type: number
                   exclusiveMinimum: true
@@ -533,7 +533,7 @@ paths:
                 name:
                   type: string
                   minLength: 2
-                  maxLength: 100
+                  maxLength: 60
                 category:
                   type: string
                   minLength: 2
@@ -543,7 +543,7 @@ paths:
                 description:
                   type: string
                   minLength: 5
-                  maxLength: 1000
+                  maxLength: 500
                 estimatedValue:
                   type: number
                   exclusiveMinimum: true
