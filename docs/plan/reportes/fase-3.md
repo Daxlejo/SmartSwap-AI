@@ -3,7 +3,7 @@
 ```
 FASE: 3 — Anillo de intercambio (con el Bloque 0 de correcciones en Android)
 RAMA / PR: feat/swap-ring — https://github.com/Daxlejo/SmartSwap-AI/pull/22 (sin fusionar)
-COMMITS: 46 commits atómicos (git log --oneline main..feat/swap-ring)
+COMMITS: commits atómicos, listados con git log --oneline main..feat/swap-ring
 ```
 
 ## Checks
