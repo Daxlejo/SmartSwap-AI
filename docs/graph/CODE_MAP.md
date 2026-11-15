@@ -12,7 +12,7 @@
 | Method | Route | Controller | Handler | Summary |
 |:---|:---|:---|:---|:---|
 | `POST` | `/ai/analyze-photo` | `AiController` | `analyzePhoto` | Analyze an item photo and/or hint text to generate structured catalog metadata |
-| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate fair circular swap value (COP) for an item |
+| `POST` | `/ai/estimate-value` | `AiController` | `estimateValue` | Estimate the Colombian market price (COP) of an item |
 | `POST` | `/ai/explain-route` | `AiController` | `explainRoute` | Generate a concise 2-sentence Spanish explanation of a multi-party circular swap route |
 | `POST` | `/auth/login` | `AuthController` | `login` | Authenticate with email and password |
 | `GET` | `/auth/me` | `AuthController` | `getMe` | Get current authenticated user profile |
@@ -62,16 +62,16 @@
 - **`users/`**: `users.controller.ts`, `users.service.ts`, `mappers/user.mapper.ts` — Profile updates, stats.
 - **`items/`**: `items.controller.ts`, `items.service.ts`, `storage/supabase-storage.service.ts` — Item CRUD & uploads.
 - **`routes/`**: `routes.controller.ts`, `routes.service.ts`, `engine/swap-graph.engine.ts`, `engine/route-scoring.strategy.ts` — Bounded DFS cycle finder (k=2,3,4) & atomic swap consensus.
-- **`ai/`**: `ai.controller.ts`, `services/ai-vision.service.ts`, `services/ai-explainer.service.ts`, `services/openai-client.service.ts` — OpenAI vision, valuation, and route explanation.
+- **`ai/`**: `ai.controller.ts`, `services/ai-vision.service.ts`, `services/ai-explainer.service.ts`, `services/openai-client.service.ts`, `services/ai-price.service.ts` + `services/price-bounds.ts` (market price in COP, validated range and category bounds; `npm --workspace=api run price:cases`) — OpenAI vision, valuation, and route explanation.
 - **`health/`**: `health.controller.ts` — DB probe and service liveness check.
 - **`geo/`**: `geo.controller.ts`, `geo.service.ts`, `data/colombia-municipalities.ts` (DANE, generated) — public municipality lookup, GPS resolve and radius queries; users and items carry `departmentCode`/`municipalityCode`.
 - **`notifications/`**: `notifications.controller.ts`, `notifications.service.ts`, `mappers/notification.mapper.ts` — In-app notification center (list, unread count, read, delete).
 - **`common/` & `prisma/`**: `jwt-auth.guard.ts`, `zod-validation.pipe.ts`, `prisma.service.ts` (soft-delete/logging).
 
 ## 4. Mobile Architecture (`mobile/src/`)
-- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `geo/` (departments, municipalities, GPS resolve), `media/photoPicker.ts` (native camera and gallery), `device/appSettings.ts` (opens Android settings; native side `android/.../AppSettingsPlugin.java`), `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale/search area). Prices: `utils/currency.ts` (COP). Location UI: `components/LocationPicker.tsx`, `LocationScopeSelector.tsx`. Swap ring: `components/SwapRing.tsx` + `utils/swapRing.ts` (docs/architecture/09-swap-ring.md). Tabs vs secondary screens and Android back: `layouts/navigation.ts`.
+- **Services (`services/`)**: `http/apiClient.ts` (sole HTTP client), `auth/`, `items/`, `routes/`, `ai/`, `notifications/`, `geo/` (departments, municipalities, GPS resolve), `media/photoPicker.ts` (native camera and gallery), `device/appSettings.ts` (opens Android settings; native side `android/.../AppSettingsPlugin.java`), `storage/tokenStorage.ts`, `storage/preferencesStorage.ts` (theme/locale/search area). Prices: `utils/currency.ts` (COP). Location UI: `components/LocationPicker.tsx`, `LocationScopeSelector.tsx`. Swap ring: `components/SwapRing.tsx` + `utils/swapRing.ts` (docs/architecture/09-swap-ring.md). Tabs vs secondary screens and Android back: `layouts/navigation.ts`. Explore filters: `utils/exploreFilters.ts` + `components/ExploreFiltersSheet.tsx`. Avatars: `utils/avatarIdentity.ts` (initials, stable colour); item icons: `utils/categoryIcon.ts`. Form errors: `hooks/useRevealOnError.ts` + `components/ui/FormErrorAlert.tsx`.
 - **State (`context/`)**: `AppContext.tsx` (session, items, routes, notifications and their load/error states), `ThemeContext.tsx` (default `light`).
-- **Screens (`screens/`)**: `SplashScreen`, `LoginScreen`, `RegisterScreen`, `HomeScreen`, `ExploreScreen`, `PublishScreen`, `SearchingScreen`, `RouteResultsScreen`, `RouteDetailScreen`, `ConfigureSwapScreen`, `ProposalConfirmScreen`, `ProposalSentScreen`, `TradesScreen`, `NotificationsScreen`, `ProfileScreen`.
+- **Screens (`screens/`)**: `SplashScreen`, `LoginScreen`, `RegisterScreen`, `OnboardingScreen` (`/welcome`, once per user), `HomeScreen`, `ExploreScreen`, `PublishScreen`, `SearchingScreen`, `RouteResultsScreen`, `RouteDetailScreen`, `ConfigureSwapScreen`, `ProposalConfirmScreen`, `ProposalSentScreen`, `TradesScreen`, `NotificationsScreen`, `ProfileScreen`.
 - **i18n & Theme**: `i18n/es.ts` (source of truth, `TranslationSchema`) + `i18n/en.ts`; default `es`/`light`, persisted as `smartswap_locale` / `smartswap_theme`; use `hooks/useTranslation.ts`. Catalog values stay Spanish, labels via `catalog.*`. Brand: Primary `#00685f`, Accent `#fd761a`.
 
 ## 5. Architectural Guardrails (Zero Spaghetti)
