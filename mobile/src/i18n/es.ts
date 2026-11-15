@@ -389,6 +389,9 @@ export const es = {
       pending: 'Pendiente',
     },
     propose: 'Proponer intercambio',
+    valuesTitle: 'Lo que se entrega',
+    valueLine: 'De {{name}} · {{value}}',
+    noValue: 'Sin valor estimado',
   },
   proposalConfirm: {
     sendFailed: 'No se pudo enviar la propuesta. Intenta de nuevo.',

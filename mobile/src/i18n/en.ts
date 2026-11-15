@@ -391,6 +391,9 @@ export const en: TranslationSchema = {
       pending: 'Pending',
     },
     propose: 'Propose swap',
+    valuesTitle: 'What is handed over',
+    valueLine: 'From {{name}} · {{value}}',
+    noValue: 'No estimated value',
   },
   proposalConfirm: {
     sendFailed: 'The proposal could not be sent. Please try again.',

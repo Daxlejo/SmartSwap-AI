@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { SwapRoute, Item } from '@/types';
 import { useApp } from '@/context/AppContext';
@@ -7,10 +7,13 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { RouteStep } from '@/components/RouteStep';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
+import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { canProposeRoute, isSignedInUser } from '@/utils/routeView';
 import { formatCop } from '@/utils/currency';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { SwapRing } from '@/components/SwapRing';
+import { firstName, toRingParticipants } from '@/utils/swapRing';
 
 export const RouteDetailScreen: React.FC = () => {
   const location = useLocation();
@@ -28,6 +31,7 @@ export const RouteDetailScreen: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const route = fetchedRoute ?? knownRoute ?? null;
+  const ring = useMemo(() => toRingParticipants(route?.steps ?? []), [route]);
 
   useEffect(() => {
     if (location.state?.route || !routeIdParam) {
@@ -79,30 +83,88 @@ export const RouteDetailScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 gap-5">
-      <section aria-label={t('routeDetail.aiAria')} className="flex flex-col gap-1">
-        <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
-          {t('routeDetail.people', { count: route.participants.length || route.stepsCount })}
-        </h2>
-        <p className="font-body-md text-body-md text-on-surface-variant">{aiExplanationText}</p>
-      </section>
+      {ring ? (
+        <>
+          {/* The ring replaces the text explanation; its list says who gives what */}
+          <SwapRing
+            participants={ring}
+            currentUserId={currentUser?.id}
+            variant="full"
+            onFindAnotherRoute={() => navigate('/swap/configure')}
+          />
+          <section aria-label={t('routeDetail.valuesTitle')} className="flex flex-col gap-2">
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold">
+              {t('routeDetail.valuesTitle')}
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {(route.steps ?? []).map((step) => (
+                <li key={step.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(step.givesItem)}
+                    className="w-full min-h-[64px] flex items-center gap-3 p-2 rounded-xl bg-surface-container-lowest border border-surface-container-high text-left hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <ItemImage
+                      src={step.givesItem.imageUrl}
+                      alt=""
+                      category={step.givesItem.category}
+                      className="w-12 h-12 rounded-lg shrink-0"
+                    />
+                    <span className="flex flex-col min-w-0 flex-1">
+                      <span className="font-label-lg text-label-lg text-on-surface break-words">
+                        {step.givesItem.name}
+                      </span>
+                      <span className="font-body-sm text-body-sm text-on-surface-variant">
+                        {t('routeDetail.valueLine', {
+                          name: isSignedInUser(step.userId, currentUser?.id)
+                            ? t('routeDetail.you')
+                            : firstName(step.user.name),
+                          value:
+                            step.givesItem.estimatedValue !== undefined
+                              ? formatCop(step.givesItem.estimatedValue)
+                              : t('routeDetail.noValue'),
+                        })}
+                      </span>
+                    </span>
+                    <Icon
+                      name="chevron_right"
+                      size="md"
+                      className="text-on-surface-variant shrink-0"
+                    />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      ) : (
+        <>
+          <section aria-label={t('routeDetail.aiAria')} className="flex flex-col gap-1">
+            <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+              {t('routeDetail.people', { count: route.participants.length || route.stepsCount })}
+            </h2>
+            <p className="font-body-md text-body-md text-on-surface-variant">{aiExplanationText}</p>
+          </section>
 
-      <ol className="flex flex-col" aria-label={t('routeDetail.stepsAria')}>
-        {route.chainItems.map((item, index) => {
-          const fromUser = route.participants[index] || route.participants[0];
-          const toUser = route.participants[(index + 1) % route.participants.length];
-          return (
-            <RouteStep
-              key={`${item.id}-${index}`}
-              fromUser={fromUser}
-              toUser={toUser}
-              itemGiven={item}
-              isYou={isSignedInUser(fromUser?.id, currentUser?.id)}
-              acceptance={route.steps?.[index]?.acceptance}
-              onItemClick={(i) => setSelectedItem(i)}
-            />
-          );
-        })}
-      </ol>
+          <ol className="flex flex-col" aria-label={t('routeDetail.stepsAria')}>
+            {route.chainItems.map((item, index) => {
+              const fromUser = route.participants[index] || route.participants[0];
+              const toUser = route.participants[(index + 1) % route.participants.length];
+              return (
+                <RouteStep
+                  key={`${item.id}-${index}`}
+                  fromUser={fromUser}
+                  toUser={toUser}
+                  itemGiven={item}
+                  isYou={isSignedInUser(fromUser?.id, currentUser?.id)}
+                  acceptance={route.steps?.[index]?.acceptance}
+                  onItemClick={(i) => setSelectedItem(i)}
+                />
+              );
+            })}
+          </ol>
+        </>
+      )}
 
       {canPropose ? (
         <Button variant="primary" size="lg" fullWidth onClick={handlePropose}>
@@ -110,7 +172,13 @@ export const RouteDetailScreen: React.FC = () => {
         </Button>
       ) : (
         // A saved route is answered or completed from Trades, not proposed again
-        <Button variant="outline" size="lg" fullWidth rightIcon="arrow_forward" onClick={() => navigate('/swaps')}>
+        <Button
+          variant="outline"
+          size="lg"
+          fullWidth
+          rightIcon="arrow_forward"
+          onClick={() => navigate('/swaps')}
+        >
           {t('routeDetail.openTrades')}
         </Button>
       )}
