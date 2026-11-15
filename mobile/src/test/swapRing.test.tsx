@@ -198,7 +198,7 @@ describe('<SwapRing />', () => {
     expect(markup).toContain('role="img"');
     expect(markup).toContain('aria-label="Anillo de 3 personas: falta 1 respuesta.');
     expect(markup.match(/<button[^>]*aria-pressed/g)).toHaveLength(3);
-    expect(markup.match(/class="relative w-12 h-12/g)).toHaveLength(3);
+    expect(markup.match(/<button[^>]*class="[^"]*w-12 h-12/g)).toHaveLength(3);
     // The viewer's line is the first of the list
     const list = markup.slice(markup.indexOf('<ol'));
     expect(list.indexOf('Tú entregas la mochila a Camilo')).toBeLessThan(list.indexOf('Camilo entrega'));
@@ -206,12 +206,14 @@ describe('<SwapRing />', () => {
     expect(markup).toContain('3 personas');
   });
 
-  it('shows item names on the arcs only in the full variant', () => {
-    const people = ring(me(), laura());
+  it('shows the first word of each item on the arcs only in the full variant', () => {
+    const people = ring(me(), person('u-laura', 'Laura Benavides', 'Bicicleta de montaña'));
     const drawing = (markup: string) => markup.slice(0, markup.indexOf('<figcaption'));
     // As visible text (the narration in aria-label always names the items)
-    expect(drawing(html(people, 'full'))).toContain('>la bicicleta<');
-    expect(drawing(html(people, 'compact'))).not.toContain('>la bicicleta<');
+    expect(drawing(html(people, 'full'))).toContain('>Bicicleta<');
+    expect(drawing(html(people, 'compact'))).not.toContain('>Bicicleta<');
+    // The whole name stays in the list
+    expect(html(people, 'full')).toContain('Laura te entrega Bicicleta de montaña');
   });
 
   it('draws the halo only when everyone accepted', () => {

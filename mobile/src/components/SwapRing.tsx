@@ -39,8 +39,12 @@ export interface SwapRingProps {
 
 /** Item badge size in px. */
 const BADGE_PX: Readonly<Record<SwapRingVariant, number>> = { full: 40, compact: 36 };
-/** Width reserved for an item name under its badge (full only). */
-const ITEM_LABEL_PX = 96;
+/** Width reserved for an item's short name next to its badge (full only). */
+const ITEM_LABEL_PX = 112;
+/** Room above and below the ring in the full variant, for the item names of the top and bottom arcs. */
+const LABEL_ROOM_PX: Readonly<Record<SwapRingVariant, number>> = { full: 32, compact: 0 };
+/** Width of the column holding an avatar and its name tag. */
+const AVATAR_COLUMN_PX = 96;
 /** Centre disc diameter in px. */
 const DISC_PX: Readonly<Record<SwapRingVariant, number>> = { full: 120, compact: 112 };
 
@@ -89,6 +93,7 @@ export const SwapRing = ({
   const label = describeRing(ring, currentUserId, translate);
 
   const ringPx = RING_PX[variant];
+  const labelRoom = LABEL_ROOM_PX[variant];
   const badgePx = BADGE_PX[variant];
   const discPx = DISC_PX[variant];
   const haloLength = 2 * Math.PI * HALO_RADIUS;
@@ -98,9 +103,9 @@ export const SwapRing = ({
 
   return (
     <figure className={clsx('flex flex-col items-center gap-4 w-full', className)}>
-      <div className="relative shrink-0" style={{ width: ringPx, height: ringPx }}>
+      <div className="relative shrink-0" style={{ width: ringPx, height: ringPx + 2 * labelRoom }}>
         {/* The drawing: one image for screen readers, narrated by its label */}
-        <div role="img" aria-label={label} className="absolute inset-0">
+        <div role="img" aria-label={label} className="absolute inset-x-0" style={{ top: labelRoom, height: ringPx }}>
           <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible" aria-hidden="true">
             <defs>
               {(['pending', 'accepted'] as const).map((state) => (
@@ -161,30 +166,38 @@ export const SwapRing = ({
           {/* Item badges at the middle of each arc */}
           {layout.arcs.map((arc) => {
             const giver = ring[arc.from];
-            const showName = variant === 'full';
-            const boxPx = showName ? ITEM_LABEL_PX : badgePx;
-            const { left, top } = placeBox(arc.mid, ringPx, boxPx);
+            const badge = placeBox(arc.mid, ringPx, badgePx);
+            // Full: the item's first word, outside the ring (above the upper badges, below the
+            // lower ones), on one line; the whole name is in the list under the ring
+            const nameAbove = arc.mid.y < 45;
+            const nameLeft = placeBox(arc.mid, ringPx, ITEM_LABEL_PX).left;
             return (
-              <div
-                key={giver.id}
-                aria-hidden="true"
-                className="absolute flex flex-col items-center gap-1"
-                style={{ left, top: showName ? top + (boxPx - badgePx) / 2 : top, width: boxPx }}
-              >
+              <div key={giver.id} aria-hidden="true">
+                {variant === 'full' && (
+                  <span
+                    className="absolute flex justify-center"
+                    style={{
+                      left: nameLeft,
+                      width: ITEM_LABEL_PX,
+                      ...(nameAbove
+                        ? { bottom: ringPx - badge.top + 2 }
+                        : { top: badge.top + badgePx + 2 }),
+                    }}
+                  >
+                    <span className="px-2 rounded-full bg-surface-container-high font-label-sm text-caption font-semibold text-on-surface whitespace-nowrap">
+                      {firstName(giver.gives.name)}
+                    </span>
+                  </span>
+                )}
                 <span
                   className={clsx(
                     'block rounded-full overflow-hidden border-2 bg-surface-container-lowest shadow-sm',
                     giver.acceptance === 'rejected' ? 'border-error' : 'border-secondary-container',
                   )}
-                  style={{ width: badgePx, height: badgePx }}
+                  style={{ position: 'absolute', left: badge.left, top: badge.top, width: badgePx, height: badgePx }}
                 >
                   <ItemImage src={giver.gives.imageUrl} alt="" category={giver.gives.category} className="w-full h-full" />
                 </span>
-                {showName && (
-                  <span className="px-1.5 rounded-md bg-surface/90 font-label-sm text-caption font-semibold text-on-surface text-center break-words max-w-full">
-                    {giver.gives.name}
-                  </span>
-                )}
               </div>
             );
           })}
@@ -216,7 +229,11 @@ export const SwapRing = ({
           const mark = STATUS_MARK[person.acceptance];
           const showTag = isViewer || variant === 'full';
           return (
-            <div key={person.id} className="absolute flex flex-col items-center" style={{ left, top, width: AVATAR_PX }}>
+            <div
+              key={person.id}
+              className="absolute flex flex-col items-center pointer-events-none"
+              style={{ left: left - (AVATAR_COLUMN_PX - AVATAR_PX) / 2, top: top + labelRoom, width: AVATAR_COLUMN_PX }}
+            >
               <button
                 type="button"
                 onClick={() => toggle(person.id)}
@@ -227,7 +244,7 @@ export const SwapRing = ({
                   item: person.gives.name,
                 })}
                 className={clsx(
-                  'relative w-12 h-12 rounded-full motion-safe:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary focus-visible:ring-offset-surface',
+                  'pointer-events-auto relative w-12 h-12 rounded-full motion-safe:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary focus-visible:ring-offset-surface',
                   isSelected && 'scale-[1.06]',
                 )}
               >
