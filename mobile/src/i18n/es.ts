@@ -63,6 +63,7 @@ export const es = {
     openSettings: 'Abrir Ajustes',
     errors: {
       denied: 'SmartSwap necesita permiso para usar la cámara. Dalo en Ajustes, en Permisos, o elige una foto de la galería.',
+      galleryDenied: 'SmartSwap necesita permiso para ver tus fotos. Dalo en Ajustes, en Permisos, o toma una foto con la cámara.',
       noCamera: 'Este celular no tiene cámara. Elige una foto de la galería.',
       failed: 'No pudimos abrir la foto. Inténtalo de nuevo.',
     },

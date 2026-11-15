@@ -65,6 +65,7 @@ export const en: TranslationSchema = {
     openSettings: 'Open Settings',
     errors: {
       denied: 'SmartSwap needs permission to use the camera. Allow it in Settings, under Permissions, or choose a photo from the gallery.',
+      galleryDenied: 'SmartSwap needs permission to see your photos. Allow it in Settings, under Permissions, or take a photo with the camera.',
       noCamera: 'This phone has no camera. Choose a photo from the gallery.',
       failed: 'We could not open the photo. Please try again.',
     },

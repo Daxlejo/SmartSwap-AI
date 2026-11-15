@@ -6,11 +6,16 @@ export type PhotoSource = 'camera' | 'gallery';
 
 /**
  * - `denied`: the camera permission was refused; the person has to allow it in Settings.
+ * - `galleryDenied`: access to photos was refused (only Android 9 and older ask for it).
  * - `cancelled`: the person closed the camera or the gallery without choosing (not an error).
  * - `noCamera`: the device has no camera.
  * - `failed`: the photo could not be read.
  */
-export type PhotoPickFailure = 'denied' | 'cancelled' | 'noCamera' | 'failed';
+export type PhotoPickFailure = 'denied' | 'galleryDenied' | 'cancelled' | 'noCamera' | 'failed';
+
+/** Failures the person fixes in the app's Android settings. */
+export const isPermissionFailure = (reason: PhotoPickFailure): boolean =>
+  reason === 'denied' || reason === 'galleryDenied';
 
 export class PhotoPickError extends Error {
   public readonly reason: PhotoPickFailure;
@@ -25,7 +30,7 @@ export class PhotoPickError extends Error {
 
 const FAILURES: Readonly<Record<string, PhotoPickFailure>> = {
   [CameraErrorCode.CameraPermissionDenied]: 'denied',
-  [CameraErrorCode.GalleryPermissionDenied]: 'denied',
+  [CameraErrorCode.GalleryPermissionDenied]: 'galleryDenied',
   [CameraErrorCode.TakePhotoCancelled]: 'cancelled',
   [CameraErrorCode.ChooseMediaCancelled]: 'cancelled',
   [CameraErrorCode.NoCameraAvailable]: 'noCamera',
@@ -33,7 +38,7 @@ const FAILURES: Readonly<Record<string, PhotoPickFailure>> = {
 
 export const classifyPhotoFailure = (error: unknown): PhotoPickFailure => {
   const code = (error as { code?: unknown } | null)?.code;
-  return typeof code === 'string' && code in FAILURES ? FAILURES[code] : 'failed';
+  return typeof code === 'string' && Object.prototype.hasOwnProperty.call(FAILURES, code) ? FAILURES[code] : 'failed';
 };
 
 /**
@@ -89,7 +94,15 @@ export const pickPhotos = async (source: PhotoSource, limit: number): Promise<Fi
     }
     return await Promise.all(media.map(toFile));
   } catch (error) {
-    if (error instanceof PhotoPickError) throw error;
-    throw new PhotoPickError(classifyPhotoFailure(error), error instanceof Error ? error.message : String(error));
+    const failure =
+      error instanceof PhotoPickError
+        ? error
+        : new PhotoPickError(classifyPhotoFailure(error), error instanceof Error ? error.message : String(error));
+    // The native code reaches `adb logcat`, so a failed photo can be told apart from another
+    if (failure.reason !== 'cancelled') {
+      const code = (error as { code?: unknown } | null)?.code;
+      console.warn(`[photoPicker] ${source} failed: ${String(code ?? 'no code')} ${failure.message} -> ${failure.reason}`);
+    }
+    throw failure;
   }
 };

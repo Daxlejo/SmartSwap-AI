@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
   PhotoPickError,
+  isPermissionFailure,
   pickPhotos,
   usesNativePicker,
   type PhotoPickFailure,
@@ -130,7 +131,7 @@ export const PhotoSourceSheet = ({
           {failure && (
             <div role="alert" className="flex flex-col gap-3 rounded-2xl bg-error-container text-on-error-container p-4">
               <p className="font-body-md text-body-md">{t(`photoSource.errors.${failure}`)}</p>
-              {failure === 'denied' && canOpenSettings() && (
+              {isPermissionFailure(failure) && canOpenSettings() && (
                 <Button
                   variant="outline"
                   size="md"

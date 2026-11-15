@@ -37,6 +37,7 @@ describe('pickPhotos', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.isNativePlatform.mockReturnValue(true);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(new Blob(['jpeg'], { type: 'image/jpeg' }))),
@@ -92,6 +93,35 @@ describe('pickPhotos', () => {
     expect((error as PhotoPickError).reason).toBe('cancelled');
   });
 
+  it('does not ask again when the camera permission is already granted', async () => {
+    mocks.checkPermissions.mockResolvedValue({ camera: 'granted', photos: 'granted' });
+    mocks.takePhoto.mockResolvedValue(photo(1));
+    await pickPhotos('camera', 1);
+    expect(mocks.requestPermissions).not.toHaveBeenCalled();
+  });
+
+  it('treats a closed camera as cancelled', async () => {
+    mocks.checkPermissions.mockResolvedValue({ camera: 'granted', photos: 'granted' });
+    mocks.takePhoto.mockRejectedValue(Object.assign(new Error('cancelled'), { code: 'OS-PLUG-CAMR-0006' }));
+    await expect(pickPhotos('camera', 1)).rejects.toMatchObject({ reason: 'cancelled' });
+  });
+
+  it('reads a photo that only has a native uri', async () => {
+    mocks.chooseFromGallery.mockResolvedValue({ results: [{ type: 0, saved: false, uri: 'file:///x.jpg' }] });
+    await pickPhotos('gallery', 1);
+    expect(fetch).toHaveBeenCalledWith('local:file:///x.jpg');
+  });
+
+  it('fails when a picked photo has no path at all', async () => {
+    mocks.chooseFromGallery.mockResolvedValue({ results: [{ type: 0, saved: false }] });
+    await expect(pickPhotos('gallery', 1)).rejects.toMatchObject({ reason: 'failed' });
+  });
+
+  it('opens nothing when no photo fits', async () => {
+    await expect(pickPhotos('gallery', 0)).resolves.toEqual([]);
+    expect(mocks.chooseFromGallery).not.toHaveBeenCalled();
+  });
+
   it('fails when the picked file cannot be read', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })));
     mocks.chooseFromGallery.mockResolvedValue({ results: [photo(1)] });
@@ -102,6 +132,8 @@ describe('pickPhotos', () => {
 describe('classifyPhotoFailure', () => {
   it.each([
     ['OS-PLUG-CAMR-0003', 'denied'],
+    ['OS-PLUG-CAMR-0005', 'galleryDenied'],
+    ['toString', 'failed'],
     ['OS-PLUG-CAMR-0006', 'cancelled'],
     ['OS-PLUG-CAMR-0020', 'cancelled'],
     ['OS-PLUG-CAMR-0007', 'noCamera'],

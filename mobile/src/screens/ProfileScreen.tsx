@@ -18,7 +18,13 @@ import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
-import { PhotoPickError, pickPhotos, usesNativePicker, type PhotoSource } from '@/services/media/photoPicker';
+import {
+  PhotoPickError,
+  isPermissionFailure,
+  pickPhotos,
+  usesNativePicker,
+  type PhotoSource,
+} from '@/services/media/photoPicker';
 import { canOpenSettings, openSettings } from '@/services/device/appSettings';
 
 const ToggleSwitch = ({
@@ -173,7 +179,7 @@ export const ProfileScreen = () => {
     } catch (error) {
       const reason = error instanceof PhotoPickError ? error.reason : 'failed';
       if (reason === 'cancelled') return;
-      setCameraDenied(reason === 'denied');
+      setCameraDenied(isPermissionFailure(reason));
       setSheetError(t(`photoSource.errors.${reason}`));
     }
   };
