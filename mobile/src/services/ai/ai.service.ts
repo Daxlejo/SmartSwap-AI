@@ -36,6 +36,27 @@ export interface AiValueEstimateResponse {
   reasoning?: string;
 }
 
+/** Condition codes `/ai/estimate-value` accepts. */
+export type AiItemCondition = 'LIKE_NEW' | 'EXCELLENT' | 'GOOD' | 'FOR_PARTS';
+
+const UI_CONDITION_TO_AI: Record<string, AiItemCondition> = {
+  'como nuevo': 'LIKE_NEW',
+  like_new: 'LIKE_NEW',
+  'excelente estado': 'EXCELLENT',
+  excelente: 'EXCELLENT',
+  excellent: 'EXCELLENT',
+  'buen estado': 'GOOD',
+  bueno: 'GOOD',
+  good: 'GOOD',
+  'para repuesto': 'FOR_PARTS',
+  'para piezas': 'FOR_PARTS',
+  for_parts: 'FOR_PARTS',
+};
+
+/** Maps the publish form's condition label (or an API code) to the code the AI endpoint expects. */
+export const toAiCondition = (condition: string): AiItemCondition =>
+  UI_CONDITION_TO_AI[condition.trim().toLowerCase()] ?? 'GOOD';
+
 interface RawAiPhotoAnalysisDto {
   name?: string;
   title?: string;
@@ -58,15 +79,11 @@ interface RawAiPhotoAnalysisDto {
 }
 
 interface RawAiValueEstimateDto {
+  available?: boolean;
   estimatedValue?: number;
   minValue?: number;
   maxValue?: number;
-  suggestedValueRange?: {
-    min?: number;
-    max?: number;
-  };
   reasoning?: string;
-  explanation?: string;
 }
 
 const normalizePhotoAnalysisResponse = (
@@ -117,33 +134,32 @@ const normalizePhotoAnalysisResponse = (
   };
 };
 
+const isPositive = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+/**
+ * Keeps an estimate only when the API marked it available and its range is coherent; anything
+ * else becomes `null`, which the publish form shows as "no suggestion".
+ */
 const normalizeValueEstimateResponse = (
   raw: RawAiValueEstimateDto,
-): AiValueEstimateResponse => {
-  const estimatedValue =
-    typeof raw.estimatedValue === 'number' && raw.estimatedValue > 0
-      ? Math.round(raw.estimatedValue)
-      : DEFAULT_ESTIMATED_VALUE_COP;
-
-  const minValue =
-    typeof raw.minValue === 'number' && raw.minValue > 0
-      ? Math.round(raw.minValue)
-      : typeof raw.suggestedValueRange?.min === 'number' && raw.suggestedValueRange.min > 0
-        ? Math.round(raw.suggestedValueRange.min)
-        : Math.max(1, Math.round(estimatedValue * 0.85));
-
-  const maxValue =
-    typeof raw.maxValue === 'number' && raw.maxValue > 0
-      ? Math.round(raw.maxValue)
-      : typeof raw.suggestedValueRange?.max === 'number' && raw.suggestedValueRange.max > 0
-        ? Math.round(raw.suggestedValueRange.max)
-        : Math.max(minValue, Math.round(estimatedValue * 1.15));
+): AiValueEstimateResponse | null => {
+  if (
+    raw.available !== true ||
+    !isPositive(raw.estimatedValue) ||
+    !isPositive(raw.minValue) ||
+    !isPositive(raw.maxValue) ||
+    raw.minValue > raw.estimatedValue ||
+    raw.estimatedValue > raw.maxValue
+  ) {
+    return null;
+  }
 
   return {
-    estimatedValue,
-    minValue,
-    maxValue,
-    reasoning: raw.reasoning || raw.explanation || undefined,
+    estimatedValue: Math.round(raw.estimatedValue),
+    minValue: Math.round(raw.minValue),
+    maxValue: Math.round(raw.maxValue),
+    reasoning: raw.reasoning?.trim() || undefined,
   };
 };
 
@@ -158,13 +174,14 @@ export const aiService = {
     return normalizePhotoAnalysisResponse(raw ?? {});
   },
 
+  /** Colombian market price for the item, or `null` when the AI has no trustworthy answer. */
   async estimateItemValue(
     payload: EstimateItemValuePayload,
-  ): Promise<AiValueEstimateResponse> {
-    const raw = await apiClient.post<RawAiValueEstimateDto>(
-      '/ai/estimate-value',
-      payload,
-    );
+  ): Promise<AiValueEstimateResponse | null> {
+    const raw = await apiClient.post<RawAiValueEstimateDto>('/ai/estimate-value', {
+      ...payload,
+      condition: toAiCondition(payload.condition),
+    });
     return normalizeValueEstimateResponse(raw ?? {});
   },
 };

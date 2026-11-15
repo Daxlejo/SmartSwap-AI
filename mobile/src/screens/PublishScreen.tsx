@@ -16,10 +16,16 @@ import { itemsService } from '@/services/items/items.service';
 import { aiService } from '@/services/ai/ai.service';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import { ApiError } from '@/services/http/apiClient';
+import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
+import { useRevealOnError } from '@/hooks/useRevealOnError';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
+
+/** Same limits as the API DTO (`ITEM_NAME_MAX_LENGTH`, `ITEM_DESCRIPTION_MAX_LENGTH`). */
+const ITEM_NAME_MAX_LENGTH = 60;
+const ITEM_DESCRIPTION_MAX_LENGTH = 500;
 
 const STEPS_NAV = [
   { id: 1, label: 'Fotos' },
@@ -236,6 +242,10 @@ export const PublishScreen: React.FC = () => {
     reasoning?: string;
   } | null>(null);
   const [aiTags, setAiTags] = useState<string[]>([]);
+  // AI ideas for "what would you accept": offered as chips, never added on the user's behalf
+  const [aiSuggestedWants, setAiSuggestedWants] = useState<string[]>([]);
+  const [isEstimatingPrice, setIsEstimatingPrice] = useState(false);
+  const [priceNotice, setPriceNotice] = useState<string | null>(null);
 
   // Step 4: Publishing loader state
   const [isPublishing, setIsPublishing] = useState(false);
@@ -243,8 +253,60 @@ export const PublishScreen: React.FC = () => {
   // Step 5: Success animation state
   const [animateCheck, setAnimateCheck] = useState(false);
 
-  // Form errors
+  // Form errors: one notice per failed attempt (scrolled to and focused) plus a message per field
   const [errors, setErrors] = useState<FormErrors>({});
+  const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [errorAttempt, setErrorAttempt] = useState(0);
+  const formAlertRef = useRevealOnError<HTMLDivElement>(errorAttempt);
+
+  const showFormAlert = (message: string) => {
+    setFormAlert(message);
+    setErrorAttempt((prev) => prev + 1);
+  };
+
+  const failValidation = (nextErrors: FormErrors, fieldLabels: string[]) => {
+    setErrors((prev) => ({ ...prev, ...nextErrors }));
+    showFormAlert(t('publish.errors.reviewFields', { fields: fieldLabels.join(', ') }));
+  };
+
+  const goToStep = (step: WizardStep) => {
+    setFormAlert(null);
+    setCurrentStep(step);
+  };
+
+  // Colombian market price from the AI; with no trustworthy answer there is no suggestion
+  const requestPriceEstimate = async (input: {
+    name: string;
+    category: string;
+    condition: string;
+    description: string;
+  }) => {
+    setIsEstimatingPrice(true);
+    setPriceNotice(null);
+    try {
+      const valuation = await aiService
+        .estimateItemValue(input)
+        .catch((): null => null);
+      if (valuation) {
+        setEstimatedValue(String(valuation.estimatedValue));
+        setAiValueRange({
+          min: valuation.minValue,
+          max: valuation.maxValue,
+          reasoning: valuation.reasoning,
+        });
+        if (errors.estimatedValue) {
+          setErrors((prev) => ({ ...prev, estimatedValue: undefined }));
+        }
+      } else {
+        setAiValueRange(null);
+        setPriceNotice(t('publish.price.unavailable'));
+      }
+    } finally {
+      setIsEstimatingPrice(false);
+    }
+  };
+
+  const canEstimatePrice = name.trim().length >= 3 && category.trim().length > 0;
 
   // Enable AI button as soon as the user selects a photo OR types at least 3 chars in title
   const canAutocompleteWithAi =
@@ -283,10 +345,13 @@ export const PublishScreen: React.FC = () => {
         locale,
       });
 
-      const resolvedName = analysis.name || name.trim();
+      const resolvedName = (analysis.name || name.trim()).slice(0, ITEM_NAME_MAX_LENGTH);
       const resolvedCategory = mapAiCategoryToUi(analysis.category);
       const resolvedCondition = mapAiConditionToUi(analysis.condition);
-      const resolvedDescription = analysis.description || description.trim();
+      const resolvedDescription = (analysis.description || description.trim()).slice(
+        0,
+        ITEM_DESCRIPTION_MAX_LENGTH,
+      );
 
       if (resolvedName) {
         setName(resolvedName);
@@ -296,56 +361,26 @@ export const PublishScreen: React.FC = () => {
       if (resolvedDescription) {
         setDescription(resolvedDescription);
       }
-      if (analysis.estimatedValue > 0) {
-        setEstimatedValue(String(analysis.estimatedValue));
-      }
-
-      let minVal = analysis.minValue;
-      let maxVal = analysis.maxValue;
-      let reasoning: string | undefined;
-
-      // Optionally refine value range via /ai/estimate-value if name & category are available
-      if (resolvedName && resolvedCategory) {
-        try {
-          const valuation = await aiService.estimateItemValue({
-            name: resolvedName,
-            category: resolvedCategory,
-            condition: resolvedCondition,
-            description: resolvedDescription,
-          });
-          if (valuation.estimatedValue > 0 && !analysis.estimatedValue) {
-            setEstimatedValue(String(valuation.estimatedValue));
-          }
-          if (valuation.minValue > 0 && valuation.maxValue > 0) {
-            minVal = valuation.minValue;
-            maxVal = valuation.maxValue;
-          }
-          reasoning = valuation.reasoning;
-        } catch {
-          // Keep range from analyzeItemPhoto if secondary valuation endpoint fails
-        }
-      }
-
-      setAiValueRange({
-        min: minVal,
-        max: maxVal,
-        reasoning,
-      });
 
       if (analysis.aiTags.length > 0) {
         setAiTags(analysis.aiTags);
       }
+      setAiSuggestedWants(analysis.suggestedWants.slice(0, 6));
 
-      if (analysis.suggestedWants.length > 0) {
-        setWantedItems((prev) =>
-          mergeUniqueWants(prev, analysis.suggestedWants),
-        );
+      // The price comes only from the market-price estimate, never from the photo analysis
+      if (resolvedName.length >= 3) {
+        void requestPriceEstimate({
+          name: resolvedName,
+          category: resolvedCategory,
+          condition: resolvedCondition,
+          description: resolvedDescription,
+        });
       }
 
       setErrors({});
 
       if (currentStep === 1) {
-        setCurrentStep(2);
+        goToStep(2);
       }
     } catch (err) {
       const fallbackMsg = t('publish.ai.failed');
@@ -405,21 +440,18 @@ export const PublishScreen: React.FC = () => {
   const handlePrevStep = () => {
     if (currentStep > 1 && currentStep <= 4) {
       setErrors((prev) => ({ ...prev, submit: undefined }));
-      setCurrentStep((prev) => (prev - 1) as WizardStep);
+      goToStep((currentStep - 1) as WizardStep);
     }
   };
 
   // Step 1 Validation & Next
   const handleNextStep1 = () => {
     if (photos.length === 0) {
-      setErrors((prev) => ({
-        ...prev,
-        photos: t('publish.errors.photoRequired'),
-      }));
+      failValidation({ photos: t('publish.errors.photoRequired') }, [t('publish.steps.1')]);
       return;
     }
     setErrors((prev) => ({ ...prev, photos: undefined }));
-    setCurrentStep(2);
+    goToStep(2);
   };
 
   // Step 2 Validation & Next
@@ -428,9 +460,15 @@ export const PublishScreen: React.FC = () => {
 
     if (!name.trim()) {
       nextErrors.name = t('publish.errors.nameRequired');
+    } else if (name.trim().length > ITEM_NAME_MAX_LENGTH) {
+      nextErrors.name = t('publish.errors.nameTooLong', { max: ITEM_NAME_MAX_LENGTH });
     }
     if (!description.trim()) {
       nextErrors.description = t('publish.errors.descriptionRequired');
+    } else if (description.trim().length > ITEM_DESCRIPTION_MAX_LENGTH) {
+      nextErrors.description = t('publish.errors.descriptionTooLong', {
+        max: ITEM_DESCRIPTION_MAX_LENGTH,
+      });
     }
     if (!category.trim()) {
       nextErrors.category = t('publish.errors.categoryRequired');
@@ -447,12 +485,26 @@ export const PublishScreen: React.FC = () => {
     }
 
     if (Object.keys(nextErrors).length > 0) {
-      setErrors((prev) => ({ ...prev, ...nextErrors }));
+      const fieldLabels: Record<keyof FormErrors, string> = {
+        name: t('publish.info.name'),
+        description: t('publish.info.description'),
+        category: t('publish.info.category'),
+        condition: t('publish.info.condition'),
+        estimatedValue: t('publish.info.estimatedValue'),
+        location: t('publish.info.location'),
+        photos: t('publish.steps.1'),
+        wantedItems: t('publish.steps.3'),
+        submit: '',
+      };
+      failValidation(
+        nextErrors,
+        (Object.keys(nextErrors) as Array<keyof FormErrors>).map((key) => fieldLabels[key]),
+      );
       return;
     }
 
     setErrors({});
-    setCurrentStep(3);
+    goToStep(3);
   };
 
   // Step 3 Actions & Next
@@ -480,14 +532,11 @@ export const PublishScreen: React.FC = () => {
 
   const handleNextStep3 = () => {
     if (wantedItems.length === 0) {
-      setErrors((prev) => ({
-        ...prev,
-        wantedItems: t('publish.errors.wantedRequired'),
-      }));
+      failValidation({ wantedItems: t('publish.errors.wantedRequired') }, [t('publish.steps.3')]);
       return;
     }
     setErrors((prev) => ({ ...prev, wantedItems: undefined }));
-    setCurrentStep(4);
+    goToStep(4);
   };
 
   // Step 4 Real Publish Action -> POST /api/v1/items
@@ -496,6 +545,7 @@ export const PublishScreen: React.FC = () => {
 
     setIsPublishing(true);
     setErrors((prev) => ({ ...prev, submit: undefined }));
+    setFormAlert(null);
 
     try {
       // Upload every inline photo. A failure aborts the publish with a visible error; photos that
@@ -510,10 +560,7 @@ export const PublishScreen: React.FC = () => {
       } catch (uploadError) {
         setPhotos(uploadedImages);
         const detail = uploadError instanceof Error ? uploadError.message : '';
-        setErrors((prev) => ({
-          ...prev,
-          submit: t('publish.errors.photoUploadFailed', { detail }),
-        }));
+        showFormAlert(t('publish.errors.photoUploadFailed', { detail }));
         return;
       }
       setPhotos(uploadedImages);
@@ -532,30 +579,18 @@ export const PublishScreen: React.FC = () => {
         wants: wantedItems,
       });
 
-      setCurrentStep(5);
+      goToStep(5);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.statusCode === 401) {
-          setErrors((prev) => ({
-            ...prev,
-            submit: t('publish.errors.loginRequired'),
-          }));
-        } else {
-          setErrors((prev) => ({
-            ...prev,
-            submit: err.message || t('publish.errors.publishFailed'),
-          }));
-        }
+        showFormAlert(
+          err.statusCode === 401
+            ? t('publish.errors.loginRequired')
+            : err.message || t('publish.errors.publishFailed'),
+        );
       } else if (err instanceof Error) {
-        setErrors((prev) => ({
-          ...prev,
-          submit: err.message,
-        }));
+        showFormAlert(err.message);
       } else {
-        setErrors((prev) => ({
-          ...prev,
-          submit: t('publish.errors.publishUnexpected'),
-        }));
+        showFormAlert(t('publish.errors.publishUnexpected'));
       }
     } finally {
       setIsPublishing(false);
@@ -620,30 +655,8 @@ export const PublishScreen: React.FC = () => {
         </div>
       )}
 
-      {(aiValueRange || aiTags.length > 0) && (
+      {aiTags.length > 0 && (
         <div className="pt-1 flex flex-col gap-2 border-t border-primary/15">
-          {aiValueRange && (
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span
-                data-testid="ai-value-range-badge"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/15 text-primary font-label-sm text-label-sm font-bold"
-              >
-                <Icon name="payments" size="xs" />
-                <span>
-                  {t('publish.ai.valueRange', {
-                    min: formatCop(aiValueRange.min),
-                    max: formatCop(aiValueRange.max),
-                  })}
-                </span>
-              </span>
-              {aiValueRange.reasoning && (
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {aiValueRange.reasoning}
-                </span>
-              )}
-            </div>
-          )}
-
           {aiTags.length > 0 && (
             <div
               data-testid="ai-tags-list"
@@ -849,6 +862,17 @@ export const PublishScreen: React.FC = () => {
         </div>
       </div>
 
+      {formAlert && (
+        <FormErrorAlert
+          ref={formAlertRef}
+          testId="publish-error-alert"
+          className="mb-5"
+          message={formAlert}
+          onDismiss={() => setFormAlert(null)}
+          dismissLabel={t('auth.errors.dismiss')}
+        />
+      )}
+
       {/* ================= STEP 1: FOTOS ================= */}
       {currentStep === 1 && (
         <div className="flex flex-col space-y-6">
@@ -980,12 +1004,22 @@ export const PublishScreen: React.FC = () => {
 
           {/* Nombre del artículo */}
           <Input
+            id="publish-name"
             label={t('publish.info.name')}
+            subLabel={
+              <span
+                data-testid="publish-name-counter"
+                className="font-body-sm text-body-sm text-on-surface-variant tabular-nums"
+              >
+                {t('publish.info.counter', { count: name.length, max: ITEM_NAME_MAX_LENGTH })}
+              </span>
+            }
             required
+            maxLength={ITEM_NAME_MAX_LENGTH}
             placeholder={t('publish.info.namePlaceholder')}
             value={name}
             onChange={(e) => {
-              setName(e.target.value);
+              setName(e.target.value.slice(0, ITEM_NAME_MAX_LENGTH));
               if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             error={errors.name}
@@ -997,17 +1031,26 @@ export const PublishScreen: React.FC = () => {
               <label htmlFor="description" className="font-label-md text-label-md text-on-surface">
                 {t('publish.info.description')}
               </label>
-              <span className="font-body-sm text-body-sm text-on-surface-variant">
-                {description.length} caracteres
+              <span
+                data-testid="publish-description-counter"
+                className="font-body-sm text-body-sm text-on-surface-variant tabular-nums"
+              >
+                {t('publish.info.counter', {
+                  count: description.length,
+                  max: ITEM_DESCRIPTION_MAX_LENGTH,
+                })}
               </span>
             </div>
             <textarea
               id="description"
               rows={3}
+              maxLength={ITEM_DESCRIPTION_MAX_LENGTH}
+              aria-invalid={errors.description ? true : undefined}
+              aria-describedby={errors.description ? 'description-message' : undefined}
               placeholder={t('publish.info.descriptionPlaceholder')}
               value={description}
               onChange={(e) => {
-                setDescription(e.target.value);
+                setDescription(e.target.value.slice(0, ITEM_DESCRIPTION_MAX_LENGTH));
                 if (errors.description) {
                   setErrors((prev) => ({ ...prev, description: undefined }));
                 }
@@ -1020,7 +1063,9 @@ export const PublishScreen: React.FC = () => {
               )}
             />
             {errors.description && (
-              <span className="font-body-sm text-body-sm text-error">{errors.description}</span>
+              <span id="description-message" className="font-body-sm text-body-sm text-error">
+                {errors.description}
+              </span>
             )}
           </div>
 
@@ -1107,27 +1152,33 @@ export const PublishScreen: React.FC = () => {
             )}
           </div>
 
-          {/* Valor estimado (COP) */}
+          {/* Precio estimado (COP): editable; the AI only suggests it */}
           <div className="flex flex-col gap-1.5 w-full">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <label
                 htmlFor="estimated-value-input"
                 className="font-label-md text-label-md text-on-surface"
               >
                 {t('publish.info.estimatedValue')}
               </label>
-              {aiValueRange ? (
-                <span className="font-label-sm text-label-sm text-primary font-bold">
-                  {t('publish.ai.valueRange', {
-                    min: formatCop(aiValueRange.min),
-                    max: formatCop(aiValueRange.max),
-                  })}
-                </span>
-              ) : (
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {t('publish.info.reference')}
-                </span>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={isEstimatingPrice ? undefined : 'auto_awesome'}
+                isLoading={isEstimatingPrice}
+                disabled={!canEstimatePrice || isEstimatingPrice}
+                data-testid="estimate-price-btn"
+                onClick={() =>
+                  void requestPriceEstimate({
+                    name: name.trim(),
+                    category,
+                    condition,
+                    description: description.trim(),
+                  })
+                }
+              >
+                {t('publish.price.estimate')}
+              </Button>
             </div>
             <div
               className={clsx(
@@ -1144,6 +1195,8 @@ export const PublishScreen: React.FC = () => {
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
+                aria-invalid={errors.estimatedValue ? true : undefined}
+                aria-describedby="estimated-value-message"
                 value={formatCopDigits(estimatedValue)}
                 onChange={(e) => {
                   setEstimatedValue(sanitizeCopDigits(e.target.value));
@@ -1158,9 +1211,43 @@ export const PublishScreen: React.FC = () => {
                 COP
               </span>
             </div>
-            {errors.estimatedValue && (
-              <span className="font-body-sm text-body-sm text-error">{errors.estimatedValue}</span>
-            )}
+            <div id="estimated-value-message" className="flex flex-col gap-0.5">
+              {errors.estimatedValue && (
+                <span className="font-body-sm text-body-sm text-error">{errors.estimatedValue}</span>
+              )}
+              {aiValueRange ? (
+                <>
+                  <span
+                    data-testid="ai-value-range"
+                    className="font-label-md text-label-md text-primary font-bold"
+                  >
+                    {t('publish.ai.valueRange', {
+                      min: formatCop(aiValueRange.min),
+                      max: formatCop(aiValueRange.max),
+                    })}
+                  </span>
+                  {aiValueRange.reasoning && (
+                    <span className="font-body-sm text-body-sm text-on-surface-variant">
+                      {aiValueRange.reasoning}
+                    </span>
+                  )}
+                  <span className="font-body-sm text-body-sm text-on-surface-variant">
+                    {t('publish.price.editable')}
+                  </span>
+                </>
+              ) : priceNotice ? (
+                <span
+                  data-testid="price-unavailable"
+                  className="font-body-sm text-body-sm text-on-surface-variant"
+                >
+                  {priceNotice}
+                </span>
+              ) : (
+                <span className="font-body-sm text-body-sm text-on-surface-variant">
+                  {t('publish.price.helper')}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Ubicación */}
@@ -1242,7 +1329,7 @@ export const PublishScreen: React.FC = () => {
           {/* Suggestion Chips */}
           <div className="space-y-2">
             <span className="font-label-md text-label-md font-semibold text-on-surface">
-              {t('publish.wants.popular')}
+              {t('publish.wants.ideas')}
             </span>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((item) => {
@@ -1261,23 +1348,53 @@ export const PublishScreen: React.FC = () => {
             </div>
           </div>
 
+          {aiSuggestedWants.length > 0 && (
+            <div className="space-y-2" data-testid="ai-suggested-wants">
+              <span className="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
+                <Icon name="auto_awesome" size="xs" className="text-primary" />
+                {t('publish.wants.aiIdeas')}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {aiSuggestedWants.map((item) => {
+                  const isAdded = wantedItems.includes(item);
+                  return (
+                    <Chip
+                      key={item}
+                      active={isAdded}
+                      icon={isAdded ? 'check' : 'add'}
+                      onClick={() => handleToggleSuggestion(item)}
+                    >
+                      {item}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Added Items List (Removable Chips with ×) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-label-md text-label-md font-semibold text-on-surface">
-                {t('publish.wants.accepted', { count: wantedItems.length })}
-              </span>
-              {wantedItems.length > 0 && (
-                <span className="font-label-sm text-label-sm text-primary font-bold">
-                  {wantedItems.length >= 2 ? t('publish.wants.optimalVariety') : t('publish.wants.minimumOne')}
-                </span>
-              )}
-            </div>
+            <span className="font-label-md text-label-md font-semibold text-on-surface">
+              {t('publish.wants.accepted', { count: wantedItems.length })}
+            </span>
 
             {wantedItems.length === 0 ? (
-              <div className="p-4 rounded-xl border border-dashed border-error/50 bg-error-container/20 text-center">
-                <p className="font-body-sm text-body-sm text-error">
-                  {t('publish.errors.wantedRequired')}
+              <div
+                data-testid="accepted-wants-empty"
+                className={clsx(
+                  'p-4 rounded-xl border border-dashed text-center',
+                  errors.wantedItems
+                    ? 'border-error/50 bg-error-container/20'
+                    : 'border-outline/50 bg-surface-container-low',
+                )}
+              >
+                <p
+                  className={clsx(
+                    'font-body-sm text-body-sm',
+                    errors.wantedItems ? 'text-error' : 'text-on-surface-variant',
+                  )}
+                >
+                  {t('publish.wants.empty')}
                 </p>
               </div>
             ) : (
@@ -1333,18 +1450,6 @@ export const PublishScreen: React.FC = () => {
               {t('publish.preview.subtitle')}
             </p>
           </div>
-
-          {errors.submit && (
-            <div
-              role="alert"
-              className="p-3.5 rounded-2xl bg-error-container/25 border border-error/40 text-error flex items-start gap-2.5"
-            >
-              <Icon name="error" size="sm" className="shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-label-md text-label-md font-bold">{errors.submit}</p>
-              </div>
-            </div>
-          )}
 
           {/* Large ObjectCard Preview */}
           <article className="flex flex-col rounded-2xl bg-surface-container-lowest p-4 shadow-sm space-y-4 border border-surface-container-high/60">
@@ -1457,7 +1562,7 @@ export const PublishScreen: React.FC = () => {
               variant="outline"
               size="lg"
               className="flex-1"
-              onClick={() => setCurrentStep(2)}
+              onClick={() => goToStep(2)}
             >
               {t('publish.edit')}
             </Button>
