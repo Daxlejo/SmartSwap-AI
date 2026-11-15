@@ -211,8 +211,9 @@ export const ExploreScreen = () => {
           an opaque background so the cards scrolling underneath never show through */}
       <div className="sticky top-safe z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex items-center flex-1 min-w-0">
+        {/* With large system text the button drops under the search instead of squeezing it */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex items-center flex-1 min-w-[11rem]">
             <span className="absolute left-4 text-on-surface-variant pointer-events-none flex items-center">
               <Icon name="search" size="md" />
             </span>
@@ -222,7 +223,7 @@ export const ExploreScreen = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('explore.searchPlaceholder')}
               aria-label={t('explore.searchAria')}
-              className="w-full h-12 pl-11 pr-11 rounded-2xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md border border-surface-container-high/60 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all"
+              className={`w-full h-12 pl-11 ${searchQuery ? 'pr-11' : 'pr-3'} rounded-2xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md border border-surface-container-high/60 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all`}
             />
             {searchQuery.length > 0 && (
               <button
@@ -292,11 +293,11 @@ export const ExploreScreen = () => {
 
       {/* Filters and result count (not sticky: they scroll away with the list) */}
       <div className="px-margin pt-3 pb-2 flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-2">
           <span className="font-body-sm text-body-sm text-on-surface-variant">
             {showSkeleton ? t('explore.loadingCatalog') : t('explore.itemsFound', { count: filteredItems.length })}
           </span>
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center">
             {hasActiveFilters && (
               <button
                 type="button"
