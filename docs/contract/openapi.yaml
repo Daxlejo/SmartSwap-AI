@@ -361,6 +361,18 @@ paths:
             type: number
             minimum: 1
             maximum: 300
+        - name: minPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - name: maxPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
       responses:
         '200':
           description: Filtered list of catalog items

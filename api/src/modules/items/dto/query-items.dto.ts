@@ -18,6 +18,15 @@ export const queryItemsSchema = z.object({
     .optional(),
   scope: z.enum(['nearby', 'department', 'country']).optional(),
   radiusKm: z.coerce.number().min(1).max(300).optional(),
-});
+  /** Price range in whole Colombian pesos (COP), both ends inclusive. */
+  minPrice: z.coerce.number().int().min(0).optional(),
+  maxPrice: z.coerce.number().int().min(0).optional(),
+}).refine(
+  (query) =>
+    query.minPrice === undefined ||
+    query.maxPrice === undefined ||
+    query.minPrice <= query.maxPrice,
+  { message: 'minPrice must be less than or equal to maxPrice', path: ['minPrice'] },
+);
 
 export type QueryItemsDto = z.infer<typeof queryItemsSchema>;
