@@ -104,6 +104,16 @@ const SCREENS = [
   { id: 'searching', path: '/swap/searching?have=i-me-1&q=Bicicleta', settleMs: 600 },
   { id: 'results', path: '/swap/results?have=i-me-1&q=Bicicleta' },
   { id: 'route-detail', path: '/swap/route/r-active' },
+  // The swap ring with 2 and 4 people, closed and declined (the 3-person waiting ring is route-detail)
+  { id: 'ring-n2-broken', path: '/swap/route/r-n2-broken' },
+  { id: 'ring-n4-closed', path: '/swap/route/r-n4-closed' },
+  {
+    id: 'trades-in-progress',
+    path: '/swaps',
+    go: async (page) => {
+      await page.getByRole('tab', { name: /en curso/i }).click();
+    },
+  },
   {
     id: 'proposal-confirm',
     expectPath: '/swap/proposal/confirm',
