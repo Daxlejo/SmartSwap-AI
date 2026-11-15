@@ -55,6 +55,9 @@ export const en: TranslationSchema = {
       brokenByYou: 'Ring of {{people}} people, open: you declined',
     },
   },
+  device: {
+    settingsUnavailable: 'We could not open Settings. Open them on your phone: Settings, Apps, SmartSwap.',
+  },
   photoSource: {
     title: 'Add photos',
     camera: 'Take a photo',

@@ -9,6 +9,7 @@ import {
   type PhotoSource,
 } from '@/services/media/photoPicker';
 import { canOpenSettings, openSettings } from '@/services/device/appSettings';
+import { useAppResume } from '@/hooks/useAppResume';
 import { BottomSheet } from './ui/BottomSheet';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
@@ -46,6 +47,12 @@ export const PhotoSourceSheet = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [failure, setFailure] = useState<Exclude<PhotoPickFailure, 'cancelled'> | null>(null);
   const [busy, setBusy] = useState<PhotoSource | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
+
+  // Back from Settings: the old "no permission" message no longer applies
+  useAppResume(() => {
+    if (failure && isPermissionFailure(failure)) setFailure(null);
+  });
 
   const close = () => {
     setFailure(null);
@@ -137,12 +144,17 @@ export const PhotoSourceSheet = ({
                   size="md"
                   leftIcon="settings"
                   onClick={() => {
-                    openSettings('app').catch(() => setFailure('failed'));
+                    setSettingsFailed(false);
+                    openSettings('app').catch((error: unknown) => {
+                      console.warn('[photos] could not open settings', error);
+                      setSettingsFailed(true);
+                    });
                   }}
                 >
                   {t('photoSource.openSettings')}
                 </Button>
               )}
+              {settingsFailed && <p className="font-body-sm text-body-sm">{t('device.settingsUnavailable')}</p>}
             </div>
           )}
         </div>

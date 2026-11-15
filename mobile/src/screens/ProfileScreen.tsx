@@ -26,6 +26,7 @@ import {
   type PhotoSource,
 } from '@/services/media/photoPicker';
 import { canOpenSettings, openSettings } from '@/services/device/appSettings';
+import { useAppResume } from '@/hooks/useAppResume';
 
 const ToggleSwitch = ({
   enabled,
@@ -167,22 +168,37 @@ export const ProfileScreen = () => {
 
   /** Android app: native camera or system photo picker. Browser: a plain file input. */
   const pickAvatar = async (source: PhotoSource) => {
+    if (isProcessingPhoto) return;
     setSheetError(null);
     setCameraDenied(false);
     if (!usesNativePicker()) {
       photoInputRef.current?.click();
       return;
     }
+    // Busy while the camera or the picker is open, so a second tap cannot open another one
+    setIsProcessingPhoto(true);
+    let file: File | undefined;
     try {
-      const [file] = await pickPhotos(source, 1);
-      if (file) await applyPhotoFile(file);
+      [file] = await pickPhotos(source, 1);
     } catch (error) {
       const reason = error instanceof PhotoPickError ? error.reason : 'failed';
-      if (reason === 'cancelled') return;
-      setCameraDenied(isPermissionFailure(reason));
-      setSheetError(t(`photoSource.errors.${reason}`));
+      if (reason !== 'cancelled') {
+        setCameraDenied(isPermissionFailure(reason));
+        setSheetError(t(`photoSource.errors.${reason}`));
+      }
+    } finally {
+      setIsProcessingPhoto(false);
     }
+    if (file) await applyPhotoFile(file);
   };
+
+  // Back from Settings: the old "no permission" message no longer applies
+  useAppResume(() => {
+    if (cameraDenied) {
+      setCameraDenied(false);
+      setSheetError(null);
+    }
+  });
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -639,7 +655,11 @@ export const ProfileScreen = () => {
                   size="md"
                   leftIcon="settings"
                   onClick={() => {
-                    openSettings('app').catch(() => setCameraDenied(false));
+                    openSettings('app').catch((error: unknown) => {
+                      console.warn('[profile] could not open settings', error);
+                      setCameraDenied(false);
+                      setSheetError(t('device.settingsUnavailable'));
+                    });
                   }}
                 >
                   {t('photoSource.openSettings')}

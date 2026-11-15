@@ -53,6 +53,9 @@ export const es = {
       brokenByYou: 'Anillo de {{people}} personas, abierto: rechazaste',
     },
   },
+  device: {
+    settingsUnavailable: 'No pudimos abrir Ajustes. Ábrelos desde el celular: Ajustes, Aplicaciones, SmartSwap.',
+  },
   photoSource: {
     title: 'Agregar fotos',
     camera: 'Tomar foto',

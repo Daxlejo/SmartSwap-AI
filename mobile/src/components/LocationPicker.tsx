@@ -8,6 +8,7 @@ import {
 } from '@/services/geo/geo.service';
 import { GeolocationError, getApproximatePosition } from '@/services/geo/geolocation';
 import { canOpenSettings, openSettings, type SettingsTarget } from '@/services/device/appSettings';
+import { useAppResume } from '@/hooks/useAppResume';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
 import { Select } from './ui/Select';
@@ -47,6 +48,7 @@ export const LocationPicker = ({
   const [listFailed, setListFailed] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectError, setDetectError] = useState<DetectError | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
   const [detected, setDetected] = useState<Municipality | null>(null);
 
   useEffect(() => {
@@ -121,6 +123,14 @@ export const LocationPicker = ({
     }
   }, [onChange]);
 
+  // Back from Settings with the permission granted or the location on: try again by itself
+  useAppResume(() => {
+    if (detectError && SETTINGS_FOR[detectError]) {
+      setSettingsFailed(false);
+      void handleDetect();
+    }
+  });
+
   const handleDepartmentChange = (code: string) => {
     setDetectError(null);
     setSelectedDepartment(code);
@@ -158,11 +168,19 @@ export const LocationPicker = ({
               leftIcon="settings"
               onClick={() => {
                 const target = SETTINGS_FOR[detectError];
-                if (target) openSettings(target).catch(() => setDetectError('unavailable'));
+                if (!target) return;
+                setSettingsFailed(false);
+                openSettings(target).catch((error: unknown) => {
+                  console.warn('[location] could not open settings', error);
+                  setSettingsFailed(true);
+                });
               }}
             >
               {detectError === 'denied' ? t('location.openAppSettings') : t('location.openLocationSettings')}
             </Button>
+          )}
+          {settingsFailed && (
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{t('device.settingsUnavailable')}</p>
           )}
         </div>
       )}
