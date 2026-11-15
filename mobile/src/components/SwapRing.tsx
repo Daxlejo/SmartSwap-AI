@@ -314,9 +314,9 @@ export const SwapRing = ({
                   <Icon name={STATUS_MARK[line.acceptance].icon} size="xs" />
                 </span>
                 <span className="flex flex-col min-w-0">
-                  {line.sentences.map((sentence) => (
+                  {line.sentences.map((sentence, index) => (
                     <span
-                      key={sentence}
+                      key={index}
                       className={clsx('font-body-md text-body-md text-on-surface break-words', line.isViewer && 'font-semibold')}
                     >
                       {sentence}

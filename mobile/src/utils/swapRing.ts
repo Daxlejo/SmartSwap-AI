@@ -40,7 +40,7 @@ export type SwapRingVariant = 'compact' | 'full';
 export type RingStatus =
   | { kind: 'waiting'; pending: number }
   | { kind: 'closed' }
-  | { kind: 'broken'; rejectedBy: string };
+  | { kind: 'broken'; rejectedBy: RingParticipant };
 
 /** Narrows a list to the ring tuple, or null when it has fewer than 2 or more than 4 people. */
 export const asRing = (list: readonly RingParticipant[]): RingParticipants | null => {
@@ -59,24 +59,36 @@ const ACCEPTANCE: Readonly<Record<NormalizedRouteStep['acceptance'], RingAccepta
 
 /**
  * Builds the ring from the route steps (each step: who gives, what, and their answer).
- * Returns null when the route has fewer than 2 or more than 4 steps.
+ * Returns null, and the screen keeps its plain layout, when the steps cannot draw a
+ * true ring: fewer than 2 or more than 4, a person twice, a step without a person or
+ * an item name, or a step whose receiver is not the next giver. A wrong ring would
+ * tell people the wrong thing about who gives them what.
  */
-export const toRingParticipants = (steps: readonly NormalizedRouteStep[]): RingParticipants | null =>
-  asRing(
-    [...steps]
-      .sort((a, b) => a.stepOrder - b.stepOrder)
-      .map((step) => ({
-        id: step.userId,
-        name: step.user?.name ?? '',
-        avatarUrl: step.user?.avatarUrl,
-        gives: {
-          name: step.givesItem?.name ?? '',
-          imageUrl: step.givesItem?.imageUrl,
-          category: step.givesItem?.category,
-        },
-        acceptance: ACCEPTANCE[step.acceptance] ?? 'pending',
-      })),
+export const toRingParticipants = (steps: readonly NormalizedRouteStep[]): RingParticipants | null => {
+  const ordered = [...steps].sort((a, b) => a.stepOrder - b.stepOrder);
+  const ids = ordered.map((step) => step.userId);
+  if (new Set(ids).size !== ids.length) return null;
+  const complete = ordered.every((step) => step.user?.name?.trim() && step.givesItem?.name?.trim());
+  if (!complete) return null;
+  const chained = ordered.every(
+    (step, index) => !step.toUserId || step.toUserId === ids[(index + 1) % ids.length],
   );
+  if (!chained) return null;
+
+  return asRing(
+    ordered.map((step) => {
+      const acceptance = ACCEPTANCE[step.acceptance];
+      if (!acceptance) console.warn(`[swapRing] unknown acceptance "${String(step.acceptance)}", shown as pending`);
+      return {
+        id: step.userId,
+        name: step.user.name,
+        avatarUrl: step.user.avatarUrl,
+        gives: { name: step.givesItem.name, imageUrl: step.givesItem.imageUrl, category: step.givesItem.category },
+        acceptance: acceptance ?? 'pending',
+      };
+    }),
+  );
+};
 
 /**
  * Rotates the ring so the viewer comes first (drawn at the top, first line of the
@@ -90,7 +102,7 @@ export const fromViewer = (ring: RingParticipants, viewerId: string | undefined)
 
 export const ringStatus = (ring: RingParticipants): RingStatus => {
   const rejected = ring.find((p) => p.acceptance === 'rejected');
-  if (rejected) return { kind: 'broken', rejectedBy: rejected.id };
+  if (rejected) return { kind: 'broken', rejectedBy: rejected };
   const pending = ring.filter((p) => p.acceptance === 'pending').length;
   return pending === 0 ? { kind: 'closed' } : { kind: 'waiting', pending };
 };
@@ -136,8 +148,8 @@ export interface RingArc {
 }
 
 export interface RingLayout {
-  nodes: RingNode[];
-  arcs: RingArc[];
+  readonly nodes: readonly RingNode[];
+  readonly arcs: readonly RingArc[];
   /** Avatar radius in viewBox units. */
   avatarRadius: number;
   /** Angle cut from each end of an arc so it never runs under an avatar, in degrees. */
@@ -232,12 +244,9 @@ export const describeRing = (ring: RingParticipants, viewerId: string | undefine
     summary = t('ring.summary.closed', { people });
   } else if (status.kind === 'broken') {
     summary =
-      status.rejectedBy === viewerId
+      status.rejectedBy.id === viewerId
         ? t('ring.summary.brokenByYou', { people })
-        : t('ring.summary.broken', {
-            people,
-            name: firstName(ring.find((p) => p.id === status.rejectedBy)?.name ?? ''),
-          });
+        : t('ring.summary.broken', { people, name: firstName(status.rejectedBy.name) });
   } else {
     summary = t('ring.summary.waiting', { people, count: status.pending });
   }
