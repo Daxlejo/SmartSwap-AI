@@ -105,9 +105,9 @@ describe('ring status', () => {
   });
 
   it('breaks as soon as someone declines, even if the rest accepted', () => {
-    expect(ringStatus(ring(me('accepted'), camilo('rejected'), laura('accepted')))).toEqual({
+    expect(ringStatus(ring(me('accepted'), camilo('rejected'), laura('accepted')))).toMatchObject({
       kind: 'broken',
-      rejectedBy: 'u-camilo',
+      rejectedBy: { id: 'u-camilo' },
     });
   });
 });
@@ -131,6 +131,23 @@ describe('ring order and text', () => {
     expect(lines[1].sentences).toEqual(['Camilo entrega los libros a Laura']);
     expect(lines[2].sentences).toEqual(['Laura te entrega la bicicleta']);
     expect(lines[2].status).toBe('Aceptó');
+  });
+
+  it('with two people, the viewer gives to and gets from the same person', () => {
+    const lines = describeLines(ring(me(), laura()), 'u-me', t);
+    expect(lines[0].sentences).toEqual(['Tú entregas la mochila a Laura', 'Tú recibes la bicicleta de Laura']);
+    expect(lines[1].sentences).toEqual(['Laura te entrega la bicicleta']);
+  });
+
+  it('writes every line in the third person when the viewer is not in the ring', () => {
+    const lines = describeLines(threeWay, undefined, t);
+    expect(lines.every((line) => !line.isViewer)).toBe(true);
+    expect(lines.map((line) => line.sentences[0])).toEqual([
+      'Camilo entrega los libros a Laura',
+      'Laura entrega la bicicleta a Alejandra',
+      'Alejandra entrega la mochila a Camilo',
+    ]);
+    expect(describeRing(ring(me('rejected'), laura()), undefined, t)).toMatch(/abierto: Alejandra rechazó/);
   });
 
   it('narrates the state and the whole cycle in the label', () => {
@@ -179,6 +196,23 @@ describe('toRingParticipants', () => {
     ]);
   });
 
+  it('returns null when the steps do not chain into a ring', () => {
+    const c = user('c', 'Carla');
+    const broken = [
+      { ...step(1, a, item('i1', 'x'), 'PENDING'), toUserId: 'c' },
+      { ...step(2, b, item('i2', 'y'), 'PENDING'), toUserId: 'a' },
+      { ...step(3, c, item('i3', 'z'), 'PENDING'), toUserId: 'a' },
+    ];
+    expect(toRingParticipants(broken)).toBeNull();
+    const chained = broken.map((s, i) => ({ ...s, toUserId: ['b', 'c', 'a'][i] }));
+    expect(toRingParticipants(chained)?.map((p) => p.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('returns null with a person twice or a step without a name', () => {
+    expect(toRingParticipants([step(1, a, item('i1', 'x'), 'PENDING'), step(2, a, item('i2', 'y'), 'PENDING')])).toBeNull();
+    expect(toRingParticipants([step(1, a, item('i1', ''), 'PENDING'), step(2, b, item('i2', 'y'), 'PENDING')])).toBeNull();
+  });
+
   it('returns null outside 2 to 4 people', () => {
     expect(toRingParticipants([])).toBeNull();
     expect(toRingParticipants([step(1, a, item('i1', 'x'), 'PENDING')])).toBeNull();
@@ -219,6 +253,22 @@ describe('<SwapRing />', () => {
   it('draws the halo only when everyone accepted', () => {
     expect(html(ring(me('accepted'), laura('accepted')))).toContain('ring-halo');
     expect(html(ring(me('accepted'), laura()))).not.toContain('ring-halo');
+  });
+
+  it('opens the ring exactly at the arc of the person who declined', () => {
+    // Viewer first: me (0) -> camilo (1, declined) -> laura (2)
+    const markup = html(ring(me('accepted'), camilo('rejected'), laura('accepted')));
+    const { arcs } = ringLayout(3, 'full');
+    expect(markup).toContain(`d="${arcs[0].d}"`);
+    expect(markup).not.toContain(`d="${arcs[1].d}"`);
+    expect(markup).toContain(`d="${arcs[2].d}"`);
+  });
+
+  it('offers "Buscar otra ruta" only when the ring broke and there is somewhere to go', () => {
+    const noop = () => undefined;
+    expect(html(ring(me('accepted'), laura('rejected')))).not.toContain('Buscar otra ruta');
+    expect(html(ring(me(), laura()), 'full', noop)).not.toContain('Buscar otra ruta');
+    expect(html(ring(me('accepted'), laura('accepted')), 'full', noop)).not.toContain('Buscar otra ruta');
   });
 
   it('leaves the declined arc open and offers to look for another route', () => {

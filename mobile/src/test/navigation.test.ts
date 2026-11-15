@@ -15,9 +15,8 @@ describe('main tabs', () => {
 });
 
 describe('Android back button', () => {
-  it('closes the app on Home and on the sign-in screens', () => {
-    expect(backActionFor('/home')).toBe('exit');
-    expect(backActionFor('/login')).toBe('exit');
+  it.each(['/home', '/login', '/splash', '/', '/index.html'])('closes the app on %s', (path) => {
+    expect(backActionFor(path)).toBe('exit');
   });
 
   it.each(['/explore', '/swaps', '/profile'])('goes to Home from the %s tab', (path) => {
