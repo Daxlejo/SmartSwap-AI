@@ -15,6 +15,8 @@ import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
 import { toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { SwapRing } from '@/components/SwapRing';
+import { toRingParticipants } from '@/utils/swapRing';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
@@ -34,6 +36,9 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
   onOpen,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { currentUser } = useApp();
+  const ring = toRingParticipants(route.steps ?? []);
   const totalSteps = route.stepsCount;
   const acceptedSteps = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
   const progressPct = isCompleted
@@ -83,58 +88,75 @@ const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
-        <div className="flex items-center justify-between">
-          <span className="font-label-sm text-caption text-on-surface-variant font-semibold">
-            {t('trades.circuitChain')}
-          </span>
-        </div>
+      {/* The ring shows each person's answer; the old chain and AI text stay only as a fallback */}
+      {ring ? (
+        <SwapRing
+          participants={ring}
+          currentUserId={currentUser?.id}
+          variant="compact"
+          onFindAnotherRoute={() => navigate('/swap/configure')}
+        />
+      ) : (
+        <>
+          <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
+            <div className="flex items-center justify-between">
+              <span className="font-label-sm text-caption text-on-surface-variant font-semibold">
+                {t('trades.circuitChain')}
+              </span>
+            </div>
 
-        <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
-          {chainSteps.map((step, idx) => {
-            const isLast = idx === chainSteps.length - 1;
-            return (
-              <div key={step.id} className="flex items-center shrink-0">
-                <div className="flex flex-col items-center min-w-[56px]">
-                  <div
-                    className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
-                      idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
-                    }`}
-                  >
-                    <ItemImage src={step.img} alt={step.name} category={step.category} className="w-full h-full" />
-                    {idx === 0 && (
-                      <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
-                        {t('trades.you')}
+            <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
+              {chainSteps.map((step, idx) => {
+                const isLast = idx === chainSteps.length - 1;
+                return (
+                  <div key={step.id} className="flex items-center shrink-0">
+                    <div className="flex flex-col items-center min-w-[56px]">
+                      <div
+                        className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
+                          idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
+                        }`}
+                      >
+                        <ItemImage
+                          src={step.img}
+                          alt={step.name}
+                          category={step.category}
+                          className="w-full h-full"
+                        />
+                        {idx === 0 && (
+                          <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
+                            {t('trades.you')}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`font-label-sm text-caption font-semibold text-center mt-1 break-words max-w-[62px] ${
+                          idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
+                        }`}
+                      >
+                        {step.name}
                       </span>
+                    </div>
+                    {!isLast && (
+                      <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
+                        <Icon name="arrow_forward" size="xs" />
+                      </div>
                     )}
                   </div>
-                  <span
-                    className={`font-label-sm text-caption font-semibold text-center mt-1 break-words max-w-[62px] ${
-                      idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
-                    }`}
-                  >
-                    {step.name}
-                  </span>
-                </div>
-                {!isLast && (
-                  <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
-                    <Icon name="arrow_forward" size="xs" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {route.aiExplanation && (
-        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-caption leading-snug">
-          <div className="flex items-center gap-1 text-primary font-label-sm text-caption font-bold mb-0.5">
-            <Icon name="auto_awesome" size="xs" filled />
-            <span>{t('trades.aiFairness')}</span>
+                );
+              })}
+            </div>
           </div>
-          {route.aiExplanation}
-        </div>
+
+          {route.aiExplanation && (
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-caption leading-snug">
+              <div className="flex items-center gap-1 text-primary font-label-sm text-caption font-bold mb-0.5">
+                <Icon name="auto_awesome" size="xs" filled />
+                <span>{t('trades.aiFairness')}</span>
+              </div>
+              {route.aiExplanation}
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex flex-col sm:flex-row gap-2">
@@ -252,14 +274,17 @@ export const TradesScreen: React.FC = () => {
     }
   };
 
-  const showTabs =
-    routes.length > 0 || loadStates.routes === 'ready';
+  const showTabs = routes.length > 0 || loadStates.routes === 'ready';
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 space-y-4">
       <ScreenHeader title={t('headers.swaps.title')} />
       {/* Tabs */}
-      <div role="tablist" aria-label={t('trades.tabsAria')} className="flex p-1 rounded-2xl bg-surface-container-low border border-surface-container-high gap-1 select-none">
+      <div
+        role="tablist"
+        aria-label={t('trades.tabsAria')}
+        className="flex p-1 rounded-2xl bg-surface-container-low border border-surface-container-high gap-1 select-none"
+      >
         <button
           type="button"
           role="tab"
@@ -390,7 +415,9 @@ export const TradesScreen: React.FC = () => {
                     <span className="font-headline-sm text-headline-sm text-on-surface break-words">
                       {proposal.senderName}
                     </span>
-                    <Badge variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}>
+                    <Badge
+                      variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}
+                    >
                       {isAccepted
                         ? t('trades.status.accepted')
                         : isDeclined
@@ -404,7 +431,12 @@ export const TradesScreen: React.FC = () => {
                 <div className="flex flex-col gap-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high">
                   {/* Offers */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <ItemImage src={proposal.offeredItemImg} alt={proposal.offeredItemName} category={proposal.offeredItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
+                    <ItemImage
+                      src={proposal.offeredItemImg}
+                      alt={proposal.offeredItemName}
+                      category={proposal.offeredItemCategory}
+                      className="w-11 h-11 rounded-lg  bg-surface-container shrink-0"
+                    />
                     <div className="flex flex-col min-w-0">
                       <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.offers')}
@@ -415,10 +447,14 @@ export const TradesScreen: React.FC = () => {
                     </div>
                   </div>
 
-
                   {/* Wants */}
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <ItemImage src={proposal.targetItemImg} alt={proposal.targetItemName} category={proposal.targetItemCategory} className="w-11 h-11 rounded-lg  bg-surface-container shrink-0" />
+                    <ItemImage
+                      src={proposal.targetItemImg}
+                      alt={proposal.targetItemName}
+                      category={proposal.targetItemCategory}
+                      className="w-11 h-11 rounded-lg  bg-surface-container shrink-0"
+                    />
                     <div className="flex flex-col min-w-0">
                       <span className="font-body-sm text-body-sm text-on-surface-variant">
                         {t('trades.inExchangeFor')}
@@ -518,7 +554,9 @@ export const TradesScreen: React.FC = () => {
                         <span className="font-body-sm text-caption text-on-surface-variant">
                           {route.code ? `${route.code} • ` : ''}
                           {route.createdAt
-                            ? t('trades.sentAt', { time: formatRelativeTime(route.createdAt, language) })
+                            ? t('trades.sentAt', {
+                                time: formatRelativeTime(route.createdAt, language),
+                              })
                             : t('trades.participants', { count: route.participants.length })}
                         </span>
                       </div>
@@ -528,7 +566,12 @@ export const TradesScreen: React.FC = () => {
 
                   <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <ItemImage src={offered?.imageUrl} alt={offered?.name ?? ''} category={offered?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
+                      <ItemImage
+                        src={offered?.imageUrl}
+                        alt={offered?.name ?? ''}
+                        category={offered?.category}
+                        className="w-12 h-12 rounded-lg  bg-surface-container shrink-0"
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.youOffer')}
@@ -544,7 +587,12 @@ export const TradesScreen: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <ItemImage src={target?.imageUrl} alt={target?.name ?? ''} category={target?.category} className="w-12 h-12 rounded-lg  bg-surface-container shrink-0" />
+                      <ItemImage
+                        src={target?.imageUrl}
+                        alt={target?.name ?? ''}
+                        category={target?.category}
+                        className="w-12 h-12 rounded-lg  bg-surface-container shrink-0"
+                      />
                       <div className="flex flex-col min-w-0">
                         <span className="font-label-sm text-caption text-outline uppercase font-bold">
                           {t('trades.inExchange')}
@@ -613,7 +661,6 @@ export const TradesScreen: React.FC = () => {
           )}
         </div>
       )}
-
     </div>
   );
 };
