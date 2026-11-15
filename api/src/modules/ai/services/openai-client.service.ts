@@ -75,8 +75,29 @@ export class OpenAiClientService {
     userContent: string | OpenAiContentPart[],
     fallbackFactory: () => T,
   ): Promise<T> {
-    if (!this.isApiKeyConfigured()) {
+    const parsed = await this.chatJsonOrNull(systemPrompt, userContent);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return fallbackFactory();
+    }
+
+    return {
+      ...fallbackFactory(),
+      ...(parsed as Partial<T>),
+      source: 'openai',
+    } as T;
+  }
+
+  /**
+   * Same request as `chatJson`, but without a fallback: resolves to the parsed JSON body, or to
+   * `null` when the key is a placeholder, the request fails or times out, or the body is not JSON.
+   * Callers must validate the shape themselves.
+   */
+  async chatJsonOrNull(
+    systemPrompt: string,
+    userContent: string | OpenAiContentPart[],
+  ): Promise<unknown> {
+    if (!this.isApiKeyConfigured()) {
+      return null;
     }
 
     const apiKey = (
@@ -108,37 +129,24 @@ export class OpenAiClientService {
       });
 
       if (!response.ok) {
-        this.logger.warn(
-          `OpenAI chat completion returned HTTP ${response.status} — using deterministic fallback`,
-        );
-        return fallbackFactory();
+        this.logger.warn(`OpenAI chat completion returned HTTP ${response.status}`);
+        return null;
       }
 
       const payload = (await response.json()) as OpenAiChatCompletionResponse;
       const rawContent = payload.choices?.[0]?.message?.content;
 
       if (!rawContent || typeof rawContent !== 'string') {
-        this.logger.warn(
-          'OpenAI chat completion returned empty content — using deterministic fallback',
-        );
-        return fallbackFactory();
+        this.logger.warn('OpenAI chat completion returned empty content');
+        return null;
       }
 
-      const parsed = JSON.parse(rawContent) as Partial<T>;
-      const fallbackBase = fallbackFactory();
-
-      return {
-        ...fallbackBase,
-        ...parsed,
-        source: 'openai',
-      } as T;
+      return JSON.parse(rawContent) as unknown;
     } catch (error) {
       const reason =
         error instanceof Error ? error.message : 'Unknown OpenAI error';
-      this.logger.warn(
-        `OpenAI chatJson fallback triggered (${reason}) — continuing seamlessly`,
-      );
-      return fallbackFactory();
+      this.logger.warn(`OpenAI chat completion failed (${reason})`);
+      return null;
     } finally {
       clearTimeout(timeoutId);
     }
