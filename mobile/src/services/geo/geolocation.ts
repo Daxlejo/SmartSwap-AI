@@ -50,12 +50,23 @@ const BROWSER_FAILURES: Readonly<Record<number, GeolocationFailure>> = {
   3: 'timeout',
 };
 
+const hasOwn = (map: object, key: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(map, key);
+
+const errorCode = (error: unknown): unknown => (error as { code?: unknown } | null)?.code;
+
 export const classifyGeolocationFailure = (error: unknown): GeolocationFailure => {
-  const code = (error as { code?: unknown } | null)?.code;
-  if (typeof code === 'string' && code in PLUGIN_FAILURES) return PLUGIN_FAILURES[code];
-  if (typeof code === 'number' && code in BROWSER_FAILURES) return BROWSER_FAILURES[code];
+  const code = errorCode(error);
+  if (typeof code === 'string' && hasOwn(PLUGIN_FAILURES, code)) return PLUGIN_FAILURES[code];
+  if (typeof code === 'number' && hasOwn(BROWSER_FAILURES, code)) return BROWSER_FAILURES[code];
   return 'unavailable';
 };
+
+/**
+ * Failures GPS cannot get around: a refused permission, the location switch off, or
+ * the person dismissing the "turn on location" dialog. Settings errors with only
+ * network location off (0016, 0017) may still work with GPS, so they are retried.
+ */
+const FINAL_PLUGIN_CODES = new Set(['OS-PLUG-GLOC-0003', 'OS-PLUG-GLOC-0007', 'OS-PLUG-GLOC-0009']);
 
 /** Quick first try: Wi-Fi and cell towers, or a fix from the last 10 minutes. */
 export const LOW_ACCURACY: PositionOptions = { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 };
@@ -70,7 +81,7 @@ const read = async (options: PositionOptions): Promise<Coordinates> => {
 /** The failure is logged with its native code so `adb logcat` shows what really happened. */
 const fail = (error: unknown, attempt: string): GeolocationError => {
   const reason = classifyGeolocationFailure(error);
-  const code = (error as { code?: unknown } | null)?.code;
+  const code = errorCode(error);
   const message = error instanceof Error ? error.message : String(error);
   console.warn(`[geolocation] ${attempt} failed: ${String(code ?? 'no code')} ${message} -> ${reason}`);
   return new GeolocationError(reason, message);
@@ -107,17 +118,21 @@ export const getApproximatePosition = async (): Promise<Coordinates> => {
   }
 
   let first: GeolocationError;
+  let isFinal: boolean;
   try {
     return await read(LOW_ACCURACY);
   } catch (error) {
     first = fail(error, 'low accuracy');
+    const code = errorCode(error);
+    isFinal = first.reason === 'denied' || (typeof code === 'string' && FINAL_PLUGIN_CODES.has(code));
   }
-  // A refused permission or a switched-off location will not fix itself with GPS
-  if (first.reason === 'denied' || first.reason === 'disabled' || !preciseAllowed) throw first;
+  if (isFinal || !preciseAllowed) throw first;
 
   try {
     return await read(HIGH_ACCURACY);
   } catch (error) {
-    throw fail(error, 'high accuracy');
+    const second = fail(error, 'high accuracy');
+    // A vague GPS failure after a timeout: the timeout advice (Wi-Fi, a window) is the useful one
+    throw second.reason === 'unavailable' && first.reason !== 'unavailable' ? first : second;
   }
 };

@@ -120,6 +120,61 @@ describe('getApproximatePosition', () => {
   });
 });
 
+describe('GPS fallback', () => {
+  const plugin = (code: string) => Object.assign(new Error(code), { code });
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    mocks.isNativePlatform.mockReturnValue(true);
+    mocks.checkPermissions.mockResolvedValue({ location: 'granted', coarseLocation: 'granted' });
+  });
+
+  it('also tries GPS after a vague first failure', async () => {
+    mocks.getCurrentPosition.mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0002')).mockResolvedValueOnce(fix);
+    await expect(getApproximatePosition()).resolves.toEqual({ latitude: 1.2136, longitude: -77.2811 });
+    expect(mocks.getCurrentPosition).toHaveBeenNthCalledWith(2, HIGH_ACCURACY);
+  });
+
+  it('tries GPS when only network location is off', async () => {
+    mocks.getCurrentPosition.mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0017')).mockResolvedValueOnce(fix);
+    await expect(getApproximatePosition()).resolves.toEqual({ latitude: 1.2136, longitude: -77.2811 });
+  });
+
+  it('keeps the timeout advice when GPS then fails vaguely', async () => {
+    mocks.getCurrentPosition
+      .mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0010'))
+      .mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0002'));
+    await expect(getApproximatePosition()).rejects.toMatchObject({ reason: 'timeout' });
+    expect(mocks.getCurrentPosition).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports the GPS failure when both readings time out', async () => {
+    mocks.getCurrentPosition
+      .mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0010'))
+      .mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0010'));
+    await expect(getApproximatePosition()).rejects.toMatchObject({ reason: 'timeout' });
+  });
+
+  it('stops at a refused permission or a dismissed "turn on location" dialog', async () => {
+    mocks.getCurrentPosition.mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0003'));
+    await expect(getApproximatePosition()).rejects.toMatchObject({ reason: 'denied' });
+    mocks.getCurrentPosition.mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0009'));
+    await expect(getApproximatePosition()).rejects.toMatchObject({ reason: 'disabled' });
+    expect(mocks.getCurrentPosition).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads "location off" from checkPermissions too', async () => {
+    mocks.checkPermissions.mockRejectedValueOnce(plugin('OS-PLUG-GLOC-0007'));
+    await expect(getApproximatePosition()).rejects.toMatchObject({ reason: 'disabled' });
+    expect(mocks.getCurrentPosition).not.toHaveBeenCalled();
+  });
+
+  it('never matches inherited object keys as plugin codes', () => {
+    expect(classifyGeolocationFailure({ code: 'toString' })).toBe('unavailable');
+  });
+});
+
 describe('classifyGeolocationFailure', () => {
   it.each([
     ['OS-PLUG-GLOC-0003', 'denied'],
