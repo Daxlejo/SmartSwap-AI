@@ -24,7 +24,7 @@ const PHOTO_STEP = 3 as const;
 export const OnboardingScreen = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { currentUser, uploadAvatarReal } = useApp();
+  const { currentUser, isAuthenticated, uploadAvatarReal } = useApp();
   const [step, setStep] = useState<OnboardingStep>(0);
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,7 +56,8 @@ export const OnboardingScreen = () => {
     [currentUser?.id, currentUser?.name, currentUser?.avatarUrl, t],
   );
 
-  if (!currentUser) return <Navigate to="/login" replace />;
+  // The session is restored in the background: wait for the user instead of bouncing to login
+  if (!currentUser) return isAuthenticated ? null : <Navigate to="/login" replace />;
 
   const finish = () => {
     preferencesStorage.markOnboardingDone(currentUser.id);
