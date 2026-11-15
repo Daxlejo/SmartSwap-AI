@@ -22,7 +22,10 @@ export const TopBar = ({ title, onBack }: TopBarProps) => {
     if (onBack) {
       onBack();
     } else {
-      navigate(-1);
+      // Opened straight on this screen (no history inside the app): go to Home instead of nowhere
+      const historyIndex = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+      if (historyIndex > 0) navigate(-1);
+      else navigate('/home', { replace: true });
     }
   };
 
