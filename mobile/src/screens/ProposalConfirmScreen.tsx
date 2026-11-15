@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
@@ -10,6 +10,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { SwapRing } from '@/components/SwapRing';
+import { toRingParticipants } from '@/utils/swapRing';
 
 interface ProposalConfirmContentProps {
   route: SwapRoute;
@@ -18,7 +20,8 @@ interface ProposalConfirmContentProps {
 const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { proposeRouteReal } = useApp();
+  const { proposeRouteReal, currentUser } = useApp();
+  const ring = useMemo(() => toRingParticipants(route.steps ?? []), [route]);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +56,8 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
       <p className="font-body-md text-body-md text-on-surface-variant">
         {t('proposalConfirm.subtitle')}
       </p>
+
+      {ring && <SwapRing participants={ring} currentUserId={currentUser?.id} variant="full" />}
 
       {/* Exchange Cards Container */}
       <div className="flex flex-col space-y-3">
