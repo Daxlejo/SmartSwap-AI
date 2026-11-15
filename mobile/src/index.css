@@ -151,18 +151,18 @@
    * never set `overflow: auto/hidden` or a fixed height on a wrapper (the one
    * exception is the BottomSheet modal, which scrolls its own content), so a drag anywhere
    * scrolls the page (an inner scroller with `overscroll-behavior: contain`
-   * swallowed the gesture on Android). Bars are `sticky`/`fixed` on top, and the
-   * bottom padding below keeps the end of each screen above them.
+   * swallowed the gesture on Android). Top bars are `sticky`. The BottomNav is
+   * `fixed` and `.pb-nav` keeps the end of each tab above it; the action bars of
+   * Publish and New swap are `sticky bottom-0` at the end of the flow, so they take
+   * their own room and never cover content, however tall the text makes them.
    */
   :root {
     /* TopBar row height (TopBar.tsx uses this variable) */
     --topbar-h: 4rem;
-    /* BottomNav row: h-20 in BottomNav.tsx */
+    /* BottomNav row: min-h-20 in BottomNav.tsx */
     --bottom-nav-h: 5rem;
-    /* The floating Publish button rises 1rem above the BottomNav (-top-4 in BottomNav.tsx) */
+    /* The Publish button rises 1rem above the BottomNav (-mt-4 in BottomNav.tsx) */
     --bottom-nav-overhang: 1rem;
-    /* Fixed action bars of Publish and New swap: a 48 px button plus padding and border */
-    --action-bar-h: 5.5rem;
   }
 
   .pb-safe {
@@ -173,12 +173,13 @@
     padding-bottom: calc(var(--bottom-nav-h) + var(--bottom-nav-overhang) + 1rem + env(safe-area-inset-bottom, 0px));
   }
 
-  .pb-action-bar {
-    padding-bottom: calc(var(--action-bar-h) + 1rem + env(safe-area-inset-bottom, 0px));
-  }
-
   .pb-flow {
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Sticky elements of the main tabs (no TopBar) stop under the status bar */
+  .top-safe {
+    top: env(safe-area-inset-top, 0px);
   }
 
   /* Sticky elements inside a screen sit right under the TopBar */
@@ -205,4 +206,53 @@
 
 ::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Swap ring (components/SwapRing.tsx). Only stroke-dashoffset and transform move,
+ * and only when the person has not asked the system to reduce motion.
+ */
+@keyframes ring-march {
+  to {
+    stroke-dashoffset: -4.8;
+  }
+}
+
+@keyframes ring-draw {
+  from {
+    stroke-dashoffset: var(--arc-len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes ring-pop {
+  from {
+    transform: scale(0.92);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Pending arcs: the dots walk slowly towards the person who receives */
+  .ring-march {
+    animation: ring-march 1.6s linear infinite;
+  }
+
+  /* Accepted arcs draw themselves from giver to receiver */
+  .ring-draw {
+    animation: ring-draw 700ms ease-out both;
+  }
+
+  /* When everyone accepts, the halo traces itself around the ring from the top */
+  .ring-halo {
+    animation: ring-draw 900ms ease-out 300ms both;
+  }
+
+  .ring-pop {
+    animation: ring-pop 400ms ease-out 300ms both;
+  }
 }

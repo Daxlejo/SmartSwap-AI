@@ -114,6 +114,37 @@ export const activeRoute = {
 /** The same cycle as a search returns it: an unsaved preview, also marked PROPOSED. */
 export const suggestedRoute = { ...activeRoute, id: 'preview-00ab12cd', code: 'SW-5310', status: 'PROPOSED', initiatorId: me.id };
 
+/**
+ * Swap rings of 2, 3 and 4 people in each state, for the ring screenshots and the
+ * audit: `r-n<people>-<waiting|closed|broken>`. The viewer always takes part.
+ */
+const ringPeople = [
+  [me, mochila],
+  [camilo, libros],
+  [laura, bici],
+  [sofia, publicItems[2]],
+];
+const ringAnswers = {
+  waiting: ['PENDING', 'ACCEPTED', 'PENDING', 'ACCEPTED'],
+  closed: ['ACCEPTED', 'ACCEPTED', 'ACCEPTED', 'ACCEPTED'],
+  broken: ['ACCEPTED', 'DECLINED', 'ACCEPTED', 'PENDING'],
+};
+export const ringRoutes = Object.fromEntries(
+  [2, 3, 4].flatMap((n) =>
+    Object.entries(ringAnswers).map(([state, answers]) => {
+      const people = ringPeople.slice(0, n);
+      const steps = people.map(([from, gives], i) => {
+        const [to] = people[(i + 1) % n];
+        const [, receives] = people[(i - 1 + n) % n];
+        return step(i + 1, from, to, gives, receives, answers[i]);
+      });
+      const id = `r-n${n}-${state}`;
+      const status = state === 'closed' ? 'CONFIRMED' : state === 'broken' ? 'CANCELLED' : 'PROPOSED';
+      return [id, { ...activeRoute, id, code: `SW-${n}00${state.length}`, status, steps }];
+    }),
+  ),
+);
+
 export const notifications = [
   {
     id: 'n-1',
@@ -134,9 +165,19 @@ export const notifications = [
   },
 ];
 
-/** Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown. */
-export const respond = (method, path) => {
+/**
+ * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
+ * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
+ */
+export const respond = (method, path, scenario = 'default') => {
   const p = path.replace(/\?.*$/, '');
+  if (scenario === 'empty') {
+    if (p === '/items/me' || p === '/items/mine') return [200, []];
+    if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, []];
+    if (p === '/notifications') return [200, []];
+    if (p === '/notifications/unread-count') return [200, { unreadCount: 0 }];
+    if (p === '/users/me/stats') return [200, { tradesCompleted: 0, activeItems: 0, activeRoutes: 0 }];
+  }
   if (p === '/health') return [200, { status: 'ok' }];
   if (p === '/auth/me' || p === '/users/me') return [200, me];
   if (p === '/auth/login' || p === '/auth/register') return [201, { accessToken: 'audit-token', user: me }];
@@ -154,6 +195,7 @@ export const respond = (method, path) => {
   if (p === '/routes/propose' || p === '/proposals') return [201, { ...suggestedRoute, id: 'r-new', status: 'PROPOSED' }];
   if (p.startsWith('/routes/') || p.startsWith('/proposals/')) {
     const id = p.split('/')[2];
+    if (ringRoutes[id]) return [200, ringRoutes[id]];
     return [200, id === suggestedRoute.id || id === suggestedRoute.code ? suggestedRoute : activeRoute];
   }
   if (p === '/notifications') return [200, notifications];

@@ -3,70 +3,53 @@ import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { ServerStatusBanner } from '@/components/ServerStatusBanner';
 import { useTranslation } from '@/hooks/useTranslation';
+import { isMainTab } from './navigation';
 
 export const AppLayout = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const { t } = useTranslation();
-  const pathname = location.pathname;
 
-  // Determine header configuration based on route
-  const getHeaderProps = () => {
-    if (pathname.startsWith('/swap/route/')) {
-      return { title: t('headers.routeDetail.title'), showBack: true };
-    }
-
+  // Title of the secondary screens; they keep the fixed bar with the back arrow
+  const getTitle = (): string => {
+    if (pathname.startsWith('/swap/route/')) return t('headers.routeDetail.title');
     switch (pathname) {
-      case '/home':
-        return { showNotifications: true, showProfile: true, showThemeToggle: true };
-      case '/explore':
-        return { title: t('headers.explore.title'), showBack: true };
       case '/publish':
-        return { title: t('headers.publish.title'), showBack: true };
-      case '/swaps':
-      case '/trades':
-        return { title: t('headers.swaps.title'), showBack: true };
-      case '/profile':
-        return {
-          title: t('headers.profile.title'),
-          showBack: true,
-          showProfile: false,
-        };
+        return t('headers.publish.title');
       case '/swap/configure':
-        return { title: t('headers.configure.title'), showBack: true };
+        return t('headers.configure.title');
       case '/swap/searching':
-        return { title: t('headers.searching.title'), showBack: true };
+        return t('headers.searching.title');
       case '/swap/results':
-        return { title: t('headers.results.title'), showBack: true };
+        return t('headers.results.title');
       case '/swap/proposal/confirm':
-      case '/swap/confirm':
-        return { title: t('headers.confirm.title'), showBack: true };
+        return t('headers.confirm.title');
       case '/swap/proposal/sent':
-      case '/swap/sent':
-        return { title: t('headers.sent.title'), showBack: true };
+        return t('headers.sent.title');
       case '/notifications':
-        return { title: t('headers.notifications.title'), showBack: true, showNotifications: false };
+        return t('headers.notifications.title');
       default:
-        return { showNotifications: true, showProfile: true };
+        return '';
     }
   };
 
-  const isSwapFlow = pathname.startsWith('/swap');
-  // Screens that pin their own primary action to the bottom of the viewport. They hide the
-  // BottomNav so the two bars never stack; pb-action-bar keeps the last field above the action.
+  // The four main tabs show their title inside the content (ScreenHeader) and the
+  // BottomNav; every other screen gets the TopBar with the back arrow instead.
+  const isTab = isMainTab(pathname);
+  // Screens with their own action bar (sticky at the bottom of the flow, so it needs no
+  // reserved space and handles the safe area itself)
   const hasActionBar = pathname === '/publish' || pathname === '/swap/configure';
-  const showBottomNav = !isSwapFlow && !hasActionBar;
-  const headerProps = getHeaderProps();
+  const showBottomNav = isTab;
 
   // The document is the only scroll container (see `index.css`). The bottom padding keeps
-  // the end of every screen above the BottomNav, its floating Publish button or the action bar.
-  const bottomSpace = showBottomNav ? 'pb-nav' : hasActionBar ? 'pb-action-bar' : 'pb-flow';
+  // the end of every screen above the fixed BottomNav and its floating Publish button.
+  const bottomSpace = showBottomNav ? 'pb-nav' : hasActionBar ? '' : 'pb-flow';
 
   return (
     <div className="min-h-[100dvh] w-full bg-surface sm:bg-surface-container-low flex justify-center">
       <div className="w-full max-w-[390px] min-h-[100dvh] bg-surface flex flex-col sm:shadow-2xl sm:ring-1 sm:ring-surface-container-high/20 relative overflow-x-clip">
-        <TopBar {...headerProps} />
+        {!isTab && <TopBar title={getTitle()} />}
         <ServerStatusBanner />
-        <main className={`flex-1 flex flex-col w-full ${bottomSpace}`}>
+        <main className={`flex-1 flex flex-col w-full ${isTab ? 'pt-safe' : ''} ${bottomSpace}`}>
           <Outlet />
         </main>
         {showBottomNav && <BottomNav />}

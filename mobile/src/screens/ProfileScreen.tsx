@@ -11,12 +11,22 @@ import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { LocationPicker } from '@/components/LocationPicker';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
+import {
+  PhotoPickError,
+  isPermissionFailure,
+  pickPhotos,
+  usesNativePicker,
+  type PhotoSource,
+} from '@/services/media/photoPicker';
+import { canOpenSettings, openSettings } from '@/services/device/appSettings';
+import { useAppResume } from '@/hooks/useAppResume';
 
 const ToggleSwitch = ({
   enabled,
@@ -80,8 +90,9 @@ export const ProfileScreen = () => {
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  // The camera permission was refused: the error offers a shortcut to Android's settings
+  const [cameraDenied, setCameraDenied] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     refreshItems().catch(() => {});
@@ -135,10 +146,7 @@ export const ProfileScreen = () => {
     setSheetError(null);
   };
 
-  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const applyPhotoFile = async (file: File) => {
     setIsProcessingPhoto(true);
     setSheetError(null);
     try {
@@ -151,6 +159,46 @@ export const ProfileScreen = () => {
       setIsProcessingPhoto(false);
     }
   };
+
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) void applyPhotoFile(file);
+  };
+
+  /** Android app: native camera or system photo picker. Browser: a plain file input. */
+  const pickAvatar = async (source: PhotoSource) => {
+    if (isProcessingPhoto) return;
+    setSheetError(null);
+    setCameraDenied(false);
+    if (!usesNativePicker()) {
+      photoInputRef.current?.click();
+      return;
+    }
+    // Busy while the camera or the picker is open, so a second tap cannot open another one
+    setIsProcessingPhoto(true);
+    let file: File | undefined;
+    try {
+      [file] = await pickPhotos(source, 1);
+    } catch (error) {
+      const reason = error instanceof PhotoPickError ? error.reason : 'failed';
+      if (reason !== 'cancelled') {
+        setCameraDenied(isPermissionFailure(reason));
+        setSheetError(t(`photoSource.errors.${reason}`));
+      }
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+    if (file) await applyPhotoFile(file);
+  };
+
+  // Back from Settings: the old "no permission" message no longer applies
+  useAppResume(() => {
+    if (cameraDenied) {
+      setCameraDenied(false);
+      setSheetError(null);
+    }
+  });
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +242,7 @@ export const ProfileScreen = () => {
 
   return (
     <div className="flex flex-col px-margin py-4 space-y-6">
+      <ScreenHeader title={t('headers.profile.title')} />
       {/* Section 1: Profile hero */}
       <section className="flex flex-col items-center text-center pt-2">
         <Avatar
@@ -202,9 +251,9 @@ export const ProfileScreen = () => {
           size="xl"
           className="mb-3"
         />
-        <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
+        <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
           {currentUser?.name ?? ''}
-        </h1>
+        </h2>
         <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 mb-1">
           {currentUser?.email ?? ''}
         </p>
@@ -317,7 +366,7 @@ export const ProfileScreen = () => {
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface break-words">
                       {item.name}
                     </h3>
                     <button
@@ -554,7 +603,7 @@ export const ProfileScreen = () => {
                 variant="outline"
                 size="sm"
                 isLoading={isProcessingPhoto}
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => void pickAvatar('camera')}
               >
                 {t('profile.takePhoto')}
               </Button>
@@ -563,7 +612,7 @@ export const ProfileScreen = () => {
                 variant="outline"
                 size="sm"
                 isLoading={isProcessingPhoto}
-                onClick={() => galleryInputRef.current?.click()}
+                onClick={() => void pickAvatar('gallery')}
               >
                 {t('profile.chooseFromGallery')}
               </Button>
@@ -571,17 +620,9 @@ export const ProfileScreen = () => {
             <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
               {t('profile.photoHint')}
             </p>
+            {/* Browser only; without `capture`, which forced the camera on Android */}
             <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="user"
-              className="hidden"
-              onChange={handlePhotoSelected}
-              data-testid="avatar-camera-input"
-            />
-            <input
-              ref={galleryInputRef}
+              ref={photoInputRef}
               type="file"
               accept="image/*"
               className="hidden"
@@ -605,9 +646,26 @@ export const ProfileScreen = () => {
             />
           </div>
           {sheetError && (
-            <p role="alert" className="font-body-sm text-body-sm text-error">
-              {sheetError}
-            </p>
+            <div role="alert" className="flex flex-col gap-2">
+              <p className="font-body-sm text-body-sm text-error">{sheetError}</p>
+              {cameraDenied && canOpenSettings() && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon="settings"
+                  onClick={() => {
+                    openSettings('app').catch((error: unknown) => {
+                      console.warn('[profile] could not open settings', error);
+                      setCameraDenied(false);
+                      setSheetError(t('device.settingsUnavailable'));
+                    });
+                  }}
+                >
+                  {t('photoSource.openSettings')}
+                </Button>
+              )}
+            </div>
           )}
           <div className="flex items-center gap-3 pt-2">
             <Button

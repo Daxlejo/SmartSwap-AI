@@ -12,7 +12,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
-import { buildSwapSearchNavigation, getSwapSearchBlocker, isOfferableItem } from '@/utils/swapSearch';
+import {
+  buildSwapSearchNavigation,
+  getSwapSearchBlocker,
+  isOfferableItem,
+} from '@/utils/swapSearch';
 
 const MAX_SAVED_WANT_CHIPS = 6;
 
@@ -41,14 +45,17 @@ export const ConfigureSwapScreen = () => {
     }
     if (trimmedQuery.length < 2) return undefined;
     const query = trimmedQuery.toLowerCase();
-    return items.find((item) => item.ownerId !== selectedOfferItem?.ownerId && item.name.toLowerCase().includes(query));
+    return items.find(
+      (item) =>
+        item.ownerId !== selectedOfferItem?.ownerId && item.name.toLowerCase().includes(query),
+    );
   }, [items, preselectedWant?.wantItemId, trimmedQuery, selectedOfferItem?.ownerId]);
 
   const savedWants = useMemo(
     () =>
-      Array.from(new Set(myItems.flatMap((item) => item.wants.map((want) => want.trim())))).filter(
-        (want) => want.length > 0,
-      ).slice(0, MAX_SAVED_WANT_CHIPS),
+      Array.from(new Set(myItems.flatMap((item) => item.wants.map((want) => want.trim()))))
+        .filter((want) => want.length > 0)
+        .slice(0, MAX_SAVED_WANT_CHIPS),
     [myItems],
   );
 
@@ -57,7 +64,10 @@ export const ConfigureSwapScreen = () => {
   };
 
   const searchBlocker = getSwapSearchBlocker(
-    { loaded: !isItemsLoading && loadStates.items === 'ready', publishedCount: offerableItems.length },
+    {
+      loaded: !isItemsLoading && loadStates.items === 'ready',
+      publishedCount: offerableItems.length,
+    },
     trimmedQuery,
   );
   const searchNavigation = buildSwapSearchNavigation({
@@ -75,7 +85,7 @@ export const ConfigureSwapScreen = () => {
   };
 
   return (
-    <div className="flex flex-col w-full px-margin pt-2">
+    <div className="flex flex-col flex-1 w-full px-margin pt-2">
       {/* Network Header Pill */}
       <div className="flex items-center justify-between gap-space-sm mb-space-md">
         <div className="flex items-center gap-space-xs bg-surface-container-high px-3 py-1.5 rounded-full">
@@ -131,7 +141,7 @@ export const ConfigureSwapScreen = () => {
 
             {selectedOfferItem && (
               <div className="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm border border-surface-container-high flex flex-col gap-3">
-                <h3 className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                <h3 className="font-headline-sm text-headline-sm text-on-surface break-words">
                   {selectedOfferItem.name}
                 </h3>
                 <div className="flex items-center gap-3">
@@ -143,8 +153,12 @@ export const ConfigureSwapScreen = () => {
                   />
                   <p className="min-w-0 font-body-sm text-body-sm text-on-surface-variant break-words">
                     {[
-                      t(`catalog.conditions.${selectedOfferItem.condition}`, { defaultValue: selectedOfferItem.condition }),
-                      selectedOfferItem.estimatedValue !== undefined ? formatCop(selectedOfferItem.estimatedValue) : null,
+                      t(`catalog.conditions.${selectedOfferItem.condition}`, {
+                        defaultValue: selectedOfferItem.condition,
+                      }),
+                      selectedOfferItem.estimatedValue !== undefined
+                        ? formatCop(selectedOfferItem.estimatedValue)
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -198,16 +212,16 @@ export const ConfigureSwapScreen = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={t('configure.searchPlaceholder')}
-                  className="w-full h-12 pl-12 pr-11 py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all"
+                  className={`w-full h-12 pl-12 ${searchQuery ? 'pr-12' : 'pr-4'} py-2 bg-surface-container-low rounded-2xl font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 transition-all`}
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     aria-label={t('configure.clearSearch')}
-                    className="absolute right-3.5 w-7 h-7 flex items-center justify-center rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface active:scale-90 transition-all"
+                    className="absolute right-0.5 w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface active:scale-90 transition-all"
                   >
-                    <Icon name="close" size="xs" />
+                    <Icon name="close" size="sm" />
                   </button>
                 )}
               </div>
@@ -236,10 +250,15 @@ export const ConfigureSwapScreen = () => {
               {targetItem && (
                 <div className="flex items-center gap-3 p-2.5 bg-surface-container-low rounded-xl">
                   <div className="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">
-                    <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-full h-full" />
+                    <ItemImage
+                      src={targetItem.imageUrl}
+                      alt={targetItem.name}
+                      category={targetItem.category}
+                      className="w-full h-full"
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-headline-sm text-[14px] text-on-surface font-semibold line-clamp-2">
+                    <p className="font-headline-sm text-[14px] text-on-surface font-semibold">
                       {targetItem.name}
                     </p>
                     {targetItem.estimatedValue !== undefined && (
@@ -301,8 +320,12 @@ export const ConfigureSwapScreen = () => {
                   {swapMode === 'circular' && <span className="w-3 h-3 rounded-full bg-primary" />}
                 </span>
                 <span className="flex flex-col flex-1">
-                  <span className="font-label-lg text-label-lg text-on-surface font-bold">{t('configure.circularTitle')}</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('configure.circularDescription')}</span>
+                  <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                    {t('configure.circularTitle')}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                    {t('configure.circularDescription')}
+                  </span>
                 </span>
               </label>
 
@@ -330,38 +353,49 @@ export const ConfigureSwapScreen = () => {
                   {swapMode === 'direct' && <span className="w-3 h-3 rounded-full bg-primary" />}
                 </span>
                 <span className="flex flex-col flex-1">
-                  <span className="font-label-lg text-label-lg text-on-surface font-bold">{t('configure.directTitle')}</span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{t('configure.directDescription')}</span>
+                  <span className="font-label-lg text-label-lg text-on-surface font-bold">
+                    {t('configure.directTitle')}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                    {t('configure.directDescription')}
+                  </span>
                 </span>
               </label>
             </div>
           </section>
-
         </div>
       )}
 
-      {/* Fixed Bottom Floating CTA - End of ConfigureSwap flow */}
-      <div className="fixed bottom-0 inset-x-0 px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 flex flex-col gap-2 max-w-[390px] mx-auto">
-        <Button
-          data-testid="configure-search-button"
-          size="lg"
-          variant="primary"
-          fullWidth
-          rightIcon="explore"
-          disabled={searchNavigation === null}
-          onClick={handleSearch}
-        >
-          <span>{t('configure.searchRoutes')}</span>
-        </Button>
-        {searchBlocker && (
-          <p
-            data-testid="configure-search-hint"
-            className="text-center font-body-sm text-body-sm text-on-surface-variant"
-          >
-            {searchBlocker === 'noItems' ? t('configure.needItemHint') : t('configure.needWantHint')}
-          </p>
-        )}
-      </div>
+      {/* Search action, only when there is an item to offer: without one the empty state and
+          its "Publish an item" button are the only way forward. Sticky, not fixed, so the
+          bar and its hint take their own room and never cover the form. */}
+      {offerableItems.length > 0 && (
+        <>
+          <div aria-hidden="true" className="h-6 shrink-0" />
+          <div className="sticky bottom-0 mt-auto -mx-margin px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40 flex flex-col gap-2">
+            <Button
+              data-testid="configure-search-button"
+              size="lg"
+              variant="primary"
+              fullWidth
+              rightIcon="explore"
+              disabled={searchNavigation === null}
+              onClick={handleSearch}
+            >
+              <span>{t('configure.searchRoutes')}</span>
+            </Button>
+            {/* The bar only shows with an item to offer, so the one thing left to ask for is a want */}
+            {searchBlocker && searchBlocker !== 'noItems' && (
+              <p
+                data-testid="configure-search-hint"
+                className="text-center font-body-sm text-body-sm text-on-surface-variant"
+              >
+                {t('configure.needWantHint')}
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

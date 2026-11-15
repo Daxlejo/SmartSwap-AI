@@ -7,6 +7,8 @@ import {
   type Municipality,
 } from '@/services/geo/geo.service';
 import { GeolocationError, getApproximatePosition } from '@/services/geo/geolocation';
+import { canOpenSettings, openSettings, type SettingsTarget } from '@/services/device/appSettings';
+import { useAppResume } from '@/hooks/useAppResume';
 import { Button } from './ui/Button';
 import { Icon } from './ui/Icon';
 import { Select } from './ui/Select';
@@ -20,7 +22,13 @@ export interface LocationPickerProps {
   error?: string;
 }
 
-type DetectError = 'denied' | 'timeout' | 'unavailable' | 'outside';
+type DetectError = 'denied' | 'disabled' | 'timeout' | 'unavailable' | 'outside';
+
+/** Errors the person can fix in Android's settings, and which screen fixes each one. */
+const SETTINGS_FOR: Partial<Record<DetectError, SettingsTarget>> = {
+  denied: 'app',
+  disabled: 'location',
+};
 
 /**
  * Lets the user set their municipality in two ways: detect it with the phone's approximate
@@ -40,6 +48,7 @@ export const LocationPicker = ({
   const [listFailed, setListFailed] = useState(false);
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectError, setDetectError] = useState<DetectError | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
   const [detected, setDetected] = useState<Municipality | null>(null);
 
   useEffect(() => {
@@ -114,6 +123,14 @@ export const LocationPicker = ({
     }
   }, [onChange]);
 
+  // Back from Settings with the permission granted or the location on: try again by itself
+  useAppResume(() => {
+    if (detectError && SETTINGS_FOR[detectError]) {
+      setSettingsFailed(false);
+      void handleDetect();
+    }
+  });
+
   const handleDepartmentChange = (code: string) => {
     setDetectError(null);
     setSelectedDepartment(code);
@@ -142,9 +159,30 @@ export const LocationPicker = ({
       </Button>
 
       {detectError && (
-        <p role="alert" className="font-body-sm text-body-sm text-error">
-          {t(`location.errors.${detectError}`)}
-        </p>
+        <div role="alert" className="flex flex-col gap-2">
+          <p className="font-body-sm text-body-sm text-error">{t(`location.errors.${detectError}`)}</p>
+          {SETTINGS_FOR[detectError] && canOpenSettings() && (
+            <Button
+              variant="outline"
+              size="md"
+              leftIcon="settings"
+              onClick={() => {
+                const target = SETTINGS_FOR[detectError];
+                if (!target) return;
+                setSettingsFailed(false);
+                openSettings(target).catch((error: unknown) => {
+                  console.warn('[location] could not open settings', error);
+                  setSettingsFailed(true);
+                });
+              }}
+            >
+              {detectError === 'denied' ? t('location.openAppSettings') : t('location.openLocationSettings')}
+            </Button>
+          )}
+          {settingsFailed && (
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{t('device.settingsUnavailable')}</p>
+          )}
+        </div>
       )}
 
       <div className="flex items-center gap-3 text-on-surface-variant">

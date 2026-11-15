@@ -27,7 +27,7 @@ export const ObjectCard = ({ item, owner, onOfferSwap, className }: ObjectCardPr
     <article
       className={`flex flex-col gap-3 rounded-2xl bg-surface-container-lowest p-4 shadow-sm border border-surface-container-high ${className ?? ''}`}
     >
-      <h3 className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">{item.name}</h3>
+      <h3 className="font-headline-sm text-headline-sm text-on-surface break-words">{item.name}</h3>
       <div className="flex items-center gap-3">
         <ItemImage
           src={item.imageUrl}

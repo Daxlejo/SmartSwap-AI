@@ -51,7 +51,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
             {isReceived ? t('cards.theyOffer') : t('cards.youOffer')}
           </span>
           <ItemImage src={offeredItem.imageUrl} alt={offeredItem.name} category={offeredItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />
-          <span className="font-body-sm text-body-sm font-medium text-on-surface text-center line-clamp-1">
+          <span className="font-body-sm text-body-sm font-medium text-on-surface text-center break-words">
             {offeredItem.name}
           </span>
         </div>
@@ -71,7 +71,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
             {isReceived ? t('cards.yourItem') : t('cards.youWant')}
           </span>
           <ItemImage src={targetItem.imageUrl} alt={targetItem.name} category={targetItem.category} className="w-14 h-14 rounded-lg mb-1.5 border border-surface-container-high/60 bg-surface-container-highest" />
-          <span className="font-body-sm text-body-sm font-medium text-on-surface text-center line-clamp-1">
+          <span className="font-body-sm text-body-sm font-medium text-on-surface text-center break-words">
             {targetItem.name}
           </span>
         </div>

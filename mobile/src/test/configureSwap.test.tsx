@@ -172,13 +172,14 @@ describe('ConfigureSwapScreen search gate', () => {
     vi.restoreAllMocks();
   });
 
-  it('disables Search and offers "Publicar un artículo" when nothing is published', () => {
+  it('shows only the empty state with "Publicar un artículo" when nothing is published', () => {
     const html = render('Cámara');
 
-    expect(searchButtonTag(html)).toMatch(DISABLED_ATTRIBUTE);
+    // No Search bar and no hint under it: the empty state is the only way forward
+    expect(html).not.toContain('data-testid="configure-search-button"');
+    expect(html).not.toContain('data-testid="configure-search-hint"');
     expect(html).toContain('Aún no tienes artículos publicados');
     expect(html).toContain('Publicar un artículo');
-    expect(html).toContain('Publica un artículo para poder buscar rutas.');
   });
 
   it('treats items that were already traded or reserved as not published', () => {
@@ -188,7 +189,7 @@ describe('ConfigureSwapScreen search gate', () => {
     ];
     const html = render('Cámara');
 
-    expect(searchButtonTag(html)).toMatch(DISABLED_ATTRIBUTE);
+    expect(html).not.toContain('data-testid="configure-search-button"');
     expect(html).toContain('Publicar un artículo');
   });
 
@@ -206,8 +207,9 @@ describe('ConfigureSwapScreen search gate', () => {
     itemsLoadState = 'loading';
     const html = render('Cámara');
 
-    expect(searchButtonTag(html)).toMatch(DISABLED_ATTRIBUTE);
+    expect(html).not.toContain('data-testid="configure-search-button"');
     expect(html).not.toContain('Publica un artículo para poder buscar rutas.');
+    expect(html).not.toContain('Publicar un artículo');
   });
 
   it('enables Search with a published item and an objective', () => {

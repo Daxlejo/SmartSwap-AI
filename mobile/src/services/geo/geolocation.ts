@@ -1,7 +1,15 @@
 import { Capacitor } from '@capacitor/core';
-import { Geolocation } from '@capacitor/geolocation';
+import { Geolocation, type PermissionStatus, type PositionOptions } from '@capacitor/geolocation';
 
-export type GeolocationFailure = 'denied' | 'unavailable' | 'timeout';
+/**
+ * Why a position could not be read:
+ * - `denied`: the location permission was refused (or refused for good).
+ * - `disabled`: the phone's location is off, or the person dismissed the system
+ *   dialog that asks to turn it on.
+ * - `timeout`: no fix arrived in time (indoors, no Wi-Fi, no GPS signal).
+ * - `unavailable`: anything else (no Google Play Services, hardware error).
+ */
+export type GeolocationFailure = 'denied' | 'disabled' | 'unavailable' | 'timeout';
 
 export class GeolocationError extends Error {
   public readonly reason: GeolocationFailure;
@@ -19,39 +27,112 @@ export interface Coordinates {
   longitude: number;
 }
 
-const classifyFailure = (error: unknown): GeolocationFailure => {
-  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
-  const code = (error as { code?: number } | null)?.code;
+/**
+ * Error codes of @capacitor/geolocation 8 on Android (GeolocationErrors.kt). The
+ * plugin rejects with these string codes, never with the numeric codes of the
+ * browser API, so classifying by message text mislabelled them: "Request to
+ * enable location was denied" read as a refused permission and "Could not obtain
+ * location in time" was not recognised as a timeout.
+ */
+const PLUGIN_FAILURES: Readonly<Record<string, GeolocationFailure>> = {
+  'OS-PLUG-GLOC-0003': 'denied', // permission request denied
+  'OS-PLUG-GLOC-0007': 'disabled', // location services are not enabled
+  'OS-PLUG-GLOC-0009': 'disabled', // the "turn on location" dialog was dismissed
+  'OS-PLUG-GLOC-0016': 'disabled', // location settings error
+  'OS-PLUG-GLOC-0017': 'disabled', // network and location both off
+  'OS-PLUG-GLOC-0010': 'timeout', // could not obtain location in time
+};
 
-  if (code === 1 || message.includes('denied') || message.includes('permission')) return 'denied';
-  if (code === 3 || message.includes('timeout') || message.includes('timed out')) return 'timeout';
+/** Browser `GeolocationPositionError` codes. */
+const BROWSER_FAILURES: Readonly<Record<number, GeolocationFailure>> = {
+  1: 'denied',
+  2: 'unavailable',
+  3: 'timeout',
+};
+
+const hasOwn = (map: object, key: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(map, key);
+
+const errorCode = (error: unknown): unknown => (error as { code?: unknown } | null)?.code;
+
+export const classifyGeolocationFailure = (error: unknown): GeolocationFailure => {
+  const code = errorCode(error);
+  if (typeof code === 'string' && hasOwn(PLUGIN_FAILURES, code)) return PLUGIN_FAILURES[code];
+  if (typeof code === 'number' && hasOwn(BROWSER_FAILURES, code)) return BROWSER_FAILURES[code];
   return 'unavailable';
 };
 
 /**
- * Reads an approximate position (municipality-level accuracy is enough, so only coarse location
- * is requested). Works with the Capacitor plugin on Android/iOS and with the browser API on the web.
+ * Failures GPS cannot get around: a refused permission, the location switch off, or
+ * the person dismissing the "turn on location" dialog. Settings errors with only
+ * network location off (0016, 0017) may still work with GPS, so they are retried.
+ */
+const FINAL_PLUGIN_CODES = new Set(['OS-PLUG-GLOC-0003', 'OS-PLUG-GLOC-0007', 'OS-PLUG-GLOC-0009']);
+
+/** Quick first try: Wi-Fi and cell towers, or a fix from the last 10 minutes. */
+export const LOW_ACCURACY: PositionOptions = { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 };
+/** Fallback: GPS, which works without network location but needs more time. */
+export const HIGH_ACCURACY: PositionOptions = { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 };
+
+const read = async (options: PositionOptions): Promise<Coordinates> => {
+  const position = await Geolocation.getCurrentPosition(options);
+  return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+};
+
+/** The failure is logged with its native code so `adb logcat` shows what really happened. */
+const fail = (error: unknown, attempt: string): GeolocationError => {
+  const reason = classifyGeolocationFailure(error);
+  const code = errorCode(error);
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`[geolocation] ${attempt} failed: ${String(code ?? 'no code')} ${message} -> ${reason}`);
+  return new GeolocationError(reason, message);
+};
+
+/**
+ * On Android asks for location (the person may grant only "approximate") and returns
+ * the resulting state. Order matters: permissions are settled before reading the
+ * position, so the plugin never prompts in the middle of a read.
+ */
+const ensurePermission = async (): Promise<PermissionStatus> => {
+  const current = await Geolocation.checkPermissions();
+  if (current.coarseLocation === 'granted') return current;
+  const requested = await Geolocation.requestPermissions({ permissions: ['location', 'coarseLocation'] });
+  if (requested.coarseLocation !== 'granted') throw new GeolocationError('denied');
+  return requested;
+};
+
+/**
+ * Reads an approximate position (municipality-level accuracy is enough). Tries
+ * low accuracy first and, when it times out or finds nothing, GPS. On Android
+ * 12+ GPS needs the precise permission, so it is only tried when granted; asking
+ * for it again would show the permission dialog a second time.
  */
 export const getApproximatePosition = async (): Promise<Coordinates> => {
-  try {
-    if (Capacitor.isNativePlatform()) {
-      const status = await Geolocation.checkPermissions();
-      if (status.coarseLocation !== 'granted' && status.location !== 'granted') {
-        const requested = await Geolocation.requestPermissions({ permissions: ['coarseLocation'] });
-        if (requested.coarseLocation !== 'granted' && requested.location !== 'granted') {
-          throw new GeolocationError('denied');
-        }
-      }
+  let preciseAllowed = true;
+  if (Capacitor.isNativePlatform()) {
+    try {
+      preciseAllowed = (await ensurePermission()).location === 'granted';
+    } catch (error) {
+      if (error instanceof GeolocationError) throw error;
+      throw fail(error, 'permission');
     }
+  }
 
-    const position = await Geolocation.getCurrentPosition({
-      enableHighAccuracy: false,
-      timeout: 12000,
-      maximumAge: 300000,
-    });
-    return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+  let first: GeolocationError;
+  let isFinal: boolean;
+  try {
+    return await read(LOW_ACCURACY);
   } catch (error) {
-    if (error instanceof GeolocationError) throw error;
-    throw new GeolocationError(classifyFailure(error));
+    first = fail(error, 'low accuracy');
+    const code = errorCode(error);
+    isFinal = first.reason === 'denied' || (typeof code === 'string' && FINAL_PLUGIN_CODES.has(code));
+  }
+  if (isFinal || !preciseAllowed) throw first;
+
+  try {
+    return await read(HIGH_ACCURACY);
+  } catch (error) {
+    const second = fail(error, 'high accuracy');
+    // A vague GPS failure after a timeout: the timeout advice (Wi-Fi, a window) is the useful one
+    throw second.reason === 'unavailable' && first.reason !== 'unavailable' ? first : second;
   }
 };

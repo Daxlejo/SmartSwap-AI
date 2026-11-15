@@ -33,7 +33,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, onClick }) => {
         )}
         <div className="flex flex-col min-w-0">
           <span className="font-body-sm text-body-sm text-on-surface-variant">{t('cards.receives')}</span>
-          <h3 className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+          <h3 className="font-headline-sm text-headline-sm text-on-surface break-words">
             {targetItem?.name}
           </h3>
         </div>

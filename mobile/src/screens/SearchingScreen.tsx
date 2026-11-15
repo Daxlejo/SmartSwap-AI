@@ -387,11 +387,11 @@ export const SearchingScreen: React.FC = () => {
             <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
               {chainSummary.map((step, idx) => (
                 <React.Fragment key={`${step.user}-${idx}`}>
-                  <div className="flex flex-col items-center min-w-0">
+                  <div className="flex-1 basis-0 min-w-fit flex flex-col items-center">
                     <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
                       <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
                     </div>
-                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 line-clamp-2 break-words max-w-[50px] text-center">
+                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 text-center">
                       {step.user}
                     </span>
                   </div>

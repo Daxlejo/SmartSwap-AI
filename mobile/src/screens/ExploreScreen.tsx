@@ -17,6 +17,7 @@ import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { ScreenHeader } from '@/components/ScreenHeader';
 
 interface CategoryOption {
   id: string;
@@ -228,13 +229,14 @@ export const ExploreScreen = () => {
 
   return (
     <div className="flex flex-col flex-1 w-full">
-      <div className="px-margin pt-3 space-y-3">
+      <div className="px-margin pt-4 space-y-3">
+        <ScreenHeader title={t('headers.explore.title')} />
         <LocationPrompt />
         <LocationScopeSelector />
       </div>
-      {/* Sticky under the TopBar: only search and categories, on an opaque background so the
-          cards scrolling underneath never show through */}
-      <div className="sticky top-below-header z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
+      {/* Sticky at the top (this tab has no TopBar): only search and categories, on an opaque
+          background so the cards scrolling underneath never show through */}
+      <div className="sticky top-safe z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
         <div className="space-y-1.5">
           <div className="relative flex items-center w-full">
@@ -290,7 +292,7 @@ export const ExploreScreen = () => {
 
       {/* Filters and result count (not sticky: they scroll away with the list) */}
       <div className="px-margin pt-3 pb-2 flex flex-col gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto -mx-margin px-margin [scrollbar-width:none]">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleCycleCondition}
@@ -522,12 +524,12 @@ export const ExploreScreen = () => {
                     size="md"
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="font-headline-sm text-headline-sm text-on-surface line-clamp-2 break-words">
+                    <span className="font-headline-sm text-headline-sm text-on-surface break-words">
                       {selectedItemOwner.name}
                     </span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 line-clamp-2 break-words">
+                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 break-words">
                       <Icon name="location_on" size="xs" />
-                      <span className="line-clamp-2 break-words">{selectedItemOwner.location}</span>
+                      <span className="break-words">{selectedItemOwner.location}</span>
                     </span>
                   </div>
                 </div>
