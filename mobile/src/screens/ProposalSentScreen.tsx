@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useApp } from '@/context/AppContext';
+import { SwapRing } from '@/components/SwapRing';
+import { toRingParticipants } from '@/utils/swapRing';
 
 interface ProposalSentContentProps {
   route: SwapRoute;
@@ -12,6 +15,8 @@ interface ProposalSentContentProps {
 const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { currentUser } = useApp();
+  const ring = useMemo(() => toRingParticipants(route.steps ?? []), [route]);
 
   const [animateCheck, setAnimateCheck] = useState(false);
 
@@ -26,14 +31,15 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
     <div className="flex flex-col items-center justify-between flex-1 bg-surface px-margin pt-8 text-center space-y-6">
       {/* Top Celebration & Title */}
       <div className="flex flex-col items-center space-y-4 w-full">
-        {/* Large Checkmark Circle in Primary Color with Scale-in Animation */}
-        <div
-          className={`w-24 h-24 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg ring-8 ring-primary-fixed/50 transition-transform duration-500 ease-out ${
-            animateCheck ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-          }`}
-        >
-          <Icon name="check" size="xl" />
-        </div>
+        {!ring && (
+          <div
+            className={`w-24 h-24 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg ring-8 ring-primary-fixed/50 transition-transform duration-500 ease-out ${
+              animateCheck ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+            }`}
+          >
+            <Icon name="check" size="xl" />
+          </div>
+        )}
 
         <div className="space-y-1.5 max-w-xs">
           <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
@@ -43,6 +49,12 @@ const ProposalSentContent: React.FC<ProposalSentContentProps> = ({ route }) => {
             {t('proposalSent.description', { count: Math.max(1, route.participants.length - 1) })}
           </p>
         </div>
+        {/* The ring as it stands now: the viewer's arc is drawn, the rest wait for their answers */}
+        {ring && (
+          <div className="w-full text-left">
+            <SwapRing participants={ring} currentUserId={currentUser?.id} variant="full" />
+          </div>
+        )}
       </div>
 
       {/* Bottom Navigation Actions */}
