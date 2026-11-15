@@ -13,6 +13,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { NotificationBell } from '@/components/NotificationBell';
+import { SwapRing } from '@/components/SwapRing';
+import { toRingParticipants } from '@/utils/swapRing';
 
 const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'COMPLETED']);
 
@@ -39,6 +41,7 @@ export const HomeScreen = () => {
   const activeRoute = activeRoutes[0];
   const activeRouteTarget = activeRoute?.chainItems[activeRoute.chainItems.length - 1];
   const activeUserItemsCount = myItems.length;
+  const activeRing = useMemo(() => toRingParticipants(activeRoute?.steps ?? []), [activeRoute]);
 
   const isLoading = isItemsLoading || loadStates.items === 'loading';
   const hasError = loadStates.items === 'error';
@@ -58,7 +61,9 @@ export const HomeScreen = () => {
 
   const openActiveRoute = () => {
     if (!activeRoute) return;
-    navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, { state: { route: activeRoute } });
+    navigate(`/swap/route/${activeRoute.code || activeRoute.id}`, {
+      state: { route: activeRoute },
+    });
   };
 
   return (
@@ -79,8 +84,12 @@ export const HomeScreen = () => {
         {/* Main action: one title, one line, one button */}
         <div className="col-span-2 rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <h2 className="font-headline-md text-headline-md text-on-hero font-bold">{t('home.engine.title')}</h2>
-            <p className="font-body-md text-body-md text-on-hero-variant">{t('home.engine.description')}</p>
+            <h2 className="font-headline-md text-headline-md text-on-hero font-bold">
+              {t('home.engine.title')}
+            </h2>
+            <p className="font-body-md text-body-md text-on-hero-variant">
+              {t('home.engine.description')}
+            </p>
           </div>
           <Button
             variant="tonal"
@@ -101,7 +110,9 @@ export const HomeScreen = () => {
         >
           <Icon name="add_a_photo" size="lg" className="text-primary" />
           <span className="flex flex-col gap-0.5">
-            <span className="font-headline-sm text-headline-sm text-on-surface">{t('home.publish.title')}</span>
+            <span className="font-headline-sm text-headline-sm text-on-surface">
+              {t('home.publish.title')}
+            </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">
               {activeUserItemsCount > 0
                 ? t('home.publish.itemsPublished', { count: activeUserItemsCount })
@@ -117,7 +128,9 @@ export const HomeScreen = () => {
         >
           <Icon name="sync_alt" size="lg" className="text-secondary" />
           <span className="flex flex-col gap-0.5">
-            <span className="font-headline-sm text-headline-sm text-on-surface">{t('home.activeRoutes.title')}</span>
+            <span className="font-headline-sm text-headline-sm text-on-surface">
+              {t('home.activeRoutes.title')}
+            </span>
             <span className="font-body-sm text-body-sm text-on-surface-variant">
               {t('home.activeRoutes.circuits', { count: activeRoutes.length })}
             </span>
@@ -141,32 +154,55 @@ export const HomeScreen = () => {
         />
       )}
 
-      {!activeRoute && loadStates.routes === 'error' && <ErrorState onRetry={() => void refreshItems()} />}
+      {!activeRoute && loadStates.routes === 'error' && (
+        <ErrorState onRetry={() => void refreshItems()} />
+      )}
 
       {activeRoute && (
         <section aria-label={t('home.route.aria')} className="flex flex-col gap-3">
-          <h2 className="font-headline-md text-headline-md text-on-surface font-bold">{t('home.route.title')}</h2>
+          <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+            {t('home.route.title')}
+          </h2>
           <div className="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high p-space-md shadow-sm">
-            <div className="flex items-center gap-3">
-              {activeRouteTarget && (
-                <ItemImage
-                  src={activeRouteTarget.imageUrl}
-                  alt={activeRouteTarget.name}
-                  category={activeRouteTarget.category}
-                  className="w-16 h-16 rounded-xl bg-surface-container-high shrink-0"
-                />
-              )}
-              <div className="flex flex-col min-w-0">
-                <span className="font-body-sm text-body-sm text-on-surface-variant">{t('home.route.receives')}</span>
-                <span className="font-headline-sm text-headline-sm text-on-surface break-words">
-                  {activeRouteTarget?.name}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {t('home.route.people', { count: activeRoute.participants?.length || activeRoute.stepsCount })}
-                </span>
+            {activeRing ? (
+              <SwapRing
+                participants={activeRing}
+                currentUserId={currentUser?.id}
+                variant="compact"
+                onFindAnotherRoute={() => navigate('/swap/configure')}
+              />
+            ) : (
+              <div className="flex items-center gap-3">
+                {activeRouteTarget && (
+                  <ItemImage
+                    src={activeRouteTarget.imageUrl}
+                    alt={activeRouteTarget.name}
+                    category={activeRouteTarget.category}
+                    className="w-16 h-16 rounded-xl bg-surface-container-high shrink-0"
+                  />
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="font-body-sm text-body-sm text-on-surface-variant">
+                    {t('home.route.receives')}
+                  </span>
+                  <span className="font-headline-sm text-headline-sm text-on-surface break-words">
+                    {activeRouteTarget?.name}
+                  </span>
+                  <span className="font-body-sm text-body-sm text-on-surface-variant">
+                    {t('home.route.people', {
+                      count: activeRoute.participants?.length || activeRoute.stepsCount,
+                    })}
+                  </span>
+                </div>
               </div>
-            </div>
-            <Button variant="primary" size="lg" fullWidth rightIcon="arrow_forward" onClick={openActiveRoute}>
+            )}
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              rightIcon="arrow_forward"
+              onClick={openActiveRoute}
+            >
               {t('home.route.view')}
             </Button>
           </div>
@@ -174,8 +210,14 @@ export const HomeScreen = () => {
       )}
 
       <section aria-label={t('home.recommended.aria')} className="flex flex-col gap-3">
-        <h2 className="font-headline-md text-headline-md text-on-surface font-bold">{t('home.recommended.title')}</h2>
-        <div role="group" aria-label={t('home.recommended.filterAria')} className="flex items-center gap-2">
+        <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
+          {t('home.recommended.title')}
+        </h2>
+        <div
+          role="group"
+          aria-label={t('home.recommended.filterAria')}
+          className="flex items-center gap-2"
+        >
           <Chip
             active={filterMode === 'nearby'}
             aria-pressed={filterMode === 'nearby'}
