@@ -1,6 +1,5 @@
 package com.smartswap.app;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.Settings;
@@ -32,8 +31,9 @@ public class AppSettingsPlugin extends Plugin {
         try {
             getActivity().startActivity(intent);
             call.resolve();
-        } catch (ActivityNotFoundException error) {
-            call.reject("No settings screen available", "SETTINGS_UNAVAILABLE");
+        } catch (Exception error) {
+            // No settings screen, no activity or a SecurityException: JS shows its own message
+            call.reject("Could not open settings: " + error.getMessage(), "SETTINGS_UNAVAILABLE", error);
         }
     }
 }
