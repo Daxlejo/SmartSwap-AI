@@ -256,6 +256,35 @@ export const es = {
       emptyDescription: 'Ningún objeto cercano coincide con lo que buscas. Mira todos los objetos.',
     },
   },
+  onboarding: {
+    skip: 'Saltar',
+    next: 'Siguiente',
+    back: 'Atrás',
+    progress: 'Paso {{current}} de {{total}}',
+    what: {
+      title: 'Cambia lo que no usas por lo que necesitas',
+      body: 'SmartSwap es trueque sin dinero entre vecinos. Publica lo que ya no usas: es lo que ofreces a cambio.',
+    },
+    ring: {
+      title: 'Así funciona el anillo',
+      body: 'Si nadie tiene justo lo que buscas, la app arma un círculo de 2 a 4 personas: cada una entrega su objeto a la siguiente y todas reciben algo.',
+      example: 'Ejemplo',
+      you: 'Tú',
+      item1: 'la bicicleta',
+      item2: 'la guitarra',
+      item3: 'la cafetera',
+    },
+    propose: {
+      title: 'Propones y todos aceptan',
+      body: 'Eliges una ruta y la propones. El canje se cierra solo cuando todas las personas del anillo aceptan; si alguien no acepta, buscas otra ruta.',
+    },
+    photo: {
+      title: 'Agrega tu foto (opcional)',
+      body: 'Ayuda a que los demás te reconozcan en sus canjes. Puedes hacerlo después desde tu perfil.',
+      notNow: 'Ahora no',
+      save: 'Guardar foto',
+    },
+  },
   profile: {
     itemsPublished: 'Objetos publicados',
     deleteError: 'No se pudo eliminar el artículo.',

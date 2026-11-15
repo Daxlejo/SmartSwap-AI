@@ -258,6 +258,35 @@ export const en: TranslationSchema = {
       emptyDescription: 'No nearby item matches what you want. See all items.',
     },
   },
+  onboarding: {
+    skip: 'Skip',
+    next: 'Next',
+    back: 'Back',
+    progress: 'Step {{current}} of {{total}}',
+    what: {
+      title: 'Swap what you do not use for what you need',
+      body: 'SmartSwap is money-free bartering between neighbours. Publish what you no longer use: it is what you offer in exchange.',
+    },
+    ring: {
+      title: 'How the ring works',
+      body: 'If nobody has exactly what you want, the app builds a circle of 2 to 4 people: each one hands their item to the next and everybody gets something.',
+      example: 'Example',
+      you: 'You',
+      item1: 'the bike',
+      item2: 'the guitar',
+      item3: 'the coffee maker',
+    },
+    propose: {
+      title: 'You propose, everyone accepts',
+      body: 'Pick a route and propose it. The swap closes only when everyone in the ring accepts; if someone declines, you look for another route.',
+    },
+    photo: {
+      title: 'Add your photo (optional)',
+      body: 'It helps others recognise you in their swaps. You can do it later from your profile.',
+      notNow: 'Not now',
+      save: 'Save photo',
+    },
+  },
   profile: {
     itemsPublished: 'Items published',
     deleteError: 'The item could not be deleted.',

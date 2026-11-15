@@ -11,6 +11,7 @@ import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { LocationPicker } from '@/components/LocationPicker';
 import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
 import { useRevealOnError } from '@/hooks/useRevealOnError';
+import { preferencesStorage } from '@/services/storage/preferencesStorage';
 
 type AuthMode = 'login' | 'register';
 
@@ -106,15 +107,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
     try {
       if (mode === 'login') {
         await loginWithEmail(trimmedEmail, password);
+        navigate('/home', { replace: true });
       } else {
-        await registerWithEmail({
+        const user = await registerWithEmail({
           name: trimmedName,
           email: trimmedEmail,
           password,
           municipalityCode: municipalityCode as string,
         });
+        // A new account starts with the short introduction, once per user
+        navigate(preferencesStorage.isOnboardingDone(user.id) ? '/home' : '/welcome', {
+          replace: true,
+        });
       }
-      navigate('/home', { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.statusCode === 401) {
