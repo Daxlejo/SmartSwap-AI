@@ -9,8 +9,16 @@ import { ApiError } from '@/services/http/apiClient';
 import { useTranslation } from '@/hooks/useTranslation';
 import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { LocationPicker } from '@/components/LocationPicker';
+import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
+import { useRevealOnError } from '@/hooks/useRevealOnError';
 
 type AuthMode = 'login' | 'register';
+
+interface AuthFieldErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+}
 
 export interface LoginScreenProps {
   initialMode?: AuthMode;
@@ -35,38 +43,60 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+  // Bumped on every failed submit so the alert scrolls into view and takes focus again
+  const [errorAttempt, setErrorAttempt] = useState(0);
+  const errorAlertRef = useRevealOnError<HTMLDivElement>(errorAttempt);
+
+  const clearErrors = () => {
+    setErrorMessage(null);
+    setErrorDetails([]);
+    setFieldErrors({});
+    setLocationError(undefined);
+  };
+
+  const showError = (message: string, fields: AuthFieldErrors = {}) => {
+    setErrorMessage(message);
+    setFieldErrors(fields);
+    setErrorAttempt((prev) => prev + 1);
+  };
 
   const handleModeSwitch = (nextMode: AuthMode) => {
     setMode(nextMode);
-    setErrorMessage(null);
-    setErrorDetails([]);
+    clearErrors();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
 
-    setErrorMessage(null);
-    setErrorDetails([]);
+    clearErrors();
 
     const trimmedEmail = email.trim();
     const trimmedName = name.trim();
 
+    if (mode === 'register' && trimmedName.length < 2) {
+      showError(t('auth.errors.nameTooShort'), { name: t('auth.errors.nameTooShort') });
+      return;
+    }
+
     if (!trimmedEmail || !password) {
-      setErrorMessage(t('auth.errors.missingCredentials'));
+      showError(t('auth.errors.missingCredentials'), {
+        email: trimmedEmail ? undefined : t('auth.errors.emailRequired'),
+        password: password ? undefined : t('auth.errors.passwordRequired'),
+      });
       return;
     }
 
     if (mode === 'register') {
-      if (trimmedName.length < 2) {
-        setErrorMessage(t('auth.errors.nameTooShort'));
-        return;
-      }
       if (password.length < 8) {
-        setErrorMessage(t('auth.errors.passwordTooShort'));
+        showError(t('auth.errors.passwordTooShort'), {
+          password: t('auth.errors.passwordTooShort'),
+        });
         return;
       }
       if (!municipalityCode) {
+        showError(t('auth.errors.locationRequiredSummary'));
         setLocationError(t('location.required'));
         return;
       }
@@ -88,21 +118,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.statusCode === 401) {
-          setErrorMessage(t('auth.errors.invalidCredentials'));
+          showError(t('auth.errors.invalidCredentials'), {
+            email: t('auth.errors.invalidCredentialsField'),
+            password: t('auth.errors.invalidCredentialsField'),
+          });
         } else if (err.statusCode === 409) {
-          setErrorMessage(t('auth.errors.emailTaken'));
+          showError(t('auth.errors.emailTaken'), { email: t('auth.errors.emailTakenField') });
         } else if (err.statusCode === 0) {
-          setErrorMessage(t('auth.errors.serverUnreachable'));
+          showError(t('auth.errors.serverUnreachable'));
         } else {
-          setErrorMessage(err.message);
+          showError(err.message);
         }
         if (err.details && err.details.length > 1) {
           setErrorDetails(err.details);
         }
       } else if (err instanceof Error) {
-        setErrorMessage(err.message);
+        showError(err.message);
       } else {
-        setErrorMessage(t('auth.errors.unexpected'));
+        showError(t('auth.errors.unexpected'));
       }
     } finally {
       setIsLoading(false);
@@ -169,36 +202,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
         </button>
       </div>
 
-      {/* Inline Error Banner from ApiError */}
+      {/* Form error: scrolls into view and takes focus; each field repeats its own cause */}
       {errorMessage && (
-        <div
-          role="alert"
-          aria-live="assertive"
-          className="mb-space-md p-3.5 rounded-2xl bg-error-container/25 border border-error/40 text-error flex items-start gap-2.5 shadow-2xs"
-        >
-          <Icon name="error" size="sm" className="shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="font-label-md text-label-md font-bold">{errorMessage}</p>
-            {errorDetails.length > 0 && (
-              <ul className="mt-1 list-disc list-inside font-body-sm text-body-sm space-y-0.5">
-                {errorDetails.map((detail, idx) => (
-                  <li key={idx}>{detail}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setErrorMessage(null);
-              setErrorDetails([]);
-            }}
-            aria-label={t('auth.errors.dismiss')}
-            className="text-error/80 hover:text-error p-0.5 rounded-full"
-          >
-            <Icon name="close" size="xs" />
-          </button>
-        </div>
+        <FormErrorAlert
+          ref={errorAlertRef}
+          testId="auth-error-alert"
+          className="mb-space-md"
+          message={errorMessage}
+          details={errorDetails}
+          onDismiss={() => {
+            setErrorMessage(null);
+            setErrorDetails([]);
+          }}
+          dismissLabel={t('auth.errors.dismiss')}
+        />
       )}
 
       {/* Main Authentication Form */}
@@ -211,7 +228,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
               type="text"
               placeholder={t('auth.fullNamePlaceholder')}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, name: undefined }));
+              }}
+              error={fieldErrors.name}
               leftIcon="person"
               required
               autoComplete="name"
@@ -225,7 +246,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             type="email"
             placeholder={t('auth.emailPlaceholder')}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, email: undefined }));
+            }}
+            error={fieldErrors.email}
             leftIcon="mail"
             required
             autoComplete="email"
@@ -238,7 +263,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
             type={showPassword ? 'text' : 'password'}
             placeholder={mode === 'register' ? t('auth.passwordPlaceholderRegister') : t('auth.passwordPlaceholderLogin')}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, password: undefined }));
+            }}
+            error={fieldErrors.password}
             leftIcon="lock"
             rightIcon={showPassword ? 'visibility_off' : 'visibility'}
             onRightIconClick={() => setShowPassword(!showPassword)}
