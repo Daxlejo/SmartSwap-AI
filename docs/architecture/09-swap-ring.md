@@ -1,7 +1,7 @@
 # 9. Anillo de intercambio (`SwapRing`): diseño
 
-**Estado:** propuesta de la Fase 3, Bloque 1. Se implementa después del OK de David.
-**Archivos previstos:** `mobile/src/components/SwapRing.tsx` (vista), `mobile/src/utils/swapRing.ts` (geometría, estado y texto accesible, funciones puras y testeadas) y `mobile/src/test/swapRing.test.ts`.
+**Estado:** aprobado por David con ajustes (Fase 3, Bloque 1) e implementado. La sección 10 resume lo que cambió respecto a la propuesta.
+**Archivos:** `mobile/src/components/SwapRing.tsx` (vista), `mobile/src/utils/swapRing.ts` (geometría, estado y texto accesible, funciones puras y testeadas) y `mobile/src/test/swapRing.test.tsx`.
 
 ## 1. Qué tiene que lograr
 Un trueque circular es difícil de explicar con texto: "Tú entregas la mochila a Camilo, Camilo entrega los libros a Laura y Laura te entrega la bicicleta". El anillo lo muestra de un vistazo: **personas en un círculo, cada una pasándole un objeto a la siguiente, y el círculo se cierra cuando todas dicen que sí.** Es el elemento distintivo de la app, así que toda la apuesta visual va aquí; lo que lo rodea (tarjetas, textos) sigue sobrio.
@@ -192,3 +192,17 @@ El movimiento continuo de los arcos pendientes es la única animación que no re
 - Estados: `ringStatus` da `waiting` con el número de pendientes, `closed` con todos aceptando y `broken` en cuanto alguien rechaza, aunque los demás hayan aceptado.
 - Texto accesible: la narración y la lista usan "Tú" y "te entrega" para quien mira, nombran a cada persona y objeto en orden, y cierran el ciclo (la última persona le entrega a la primera).
 - `toRingParticipants`: devuelve null con 0, 1 o 5 pasos y mapea `DECLINED` a `rejected`.
+
+## 10. Ajustes aprobados e implementados
+| Punto | Propuesta | Implementado |
+|---|---|---|
+| Tocar un avatar | Resaltar lo que entrega y recibe | Resalta su línea en la lista y engruesa sus dos arcos (`aria-pressed`) |
+| Disco central | "3 personas" y el estado | El estado en una palabra ("Esperando", "Cerrado", "Rechazado") y debajo, más pequeño, "N personas" |
+| Nombres en los arcos | En las dos variantes | `compact`: solo la foto o el ícono del objeto. `full`: además, la **primera palabra** del objeto ("Mochila", "Bicicleta") en una etiqueta de una línea, por fuera del anillo (encima de las insignias de la mitad superior y debajo de las de la inferior). Con el nombre completo, al 130 % las etiquetas se partían y se montaban sobre la lista (lo detectó `audit:ui`); el nombre completo queda en la lista |
+| "Tú" | Borde teal y etiqueta | Borde teal de 4 px, etiqueta "Tú" y **el anillo se rota para que quien mira quede arriba**. En la lista su línea va primero, con dos frases: "Tú entregas…" y "Tú recibes…" |
+| Rechazo | Arco rojo punteado | El arco de quien rechazó **no se dibuja** (el anillo queda abierto), su insignia tiene borde `error`, no hay halo y aparece "Buscar otra ruta" (va a Nuevo canje) |
+| Tamaños | `full` 300 px, `compact` 240 px | `full` 320 px (más 32 px arriba y abajo para las etiquetas), `compact` 260 px, para que la etiqueta "Tú" no toque el disco con la fuente al 130 % |
+
+Las coordenadas de la sección 3 no cambian: están en el `viewBox` de 100 × 100, y el radio del avatar se recalcula con el tamaño de cada variante (`ringLayout`).
+
+`npm run audit:ui` mide el anillo en `route-detail` (3 personas esperando), `ring-n2-broken`, `ring-n4-closed`, `trades-in-progress`, `home`, `proposal-confirm` y `proposal-sent`, en claro y oscuro y con la fuente al 100 % y al 130 %.
