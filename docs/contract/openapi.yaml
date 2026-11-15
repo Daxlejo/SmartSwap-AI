@@ -712,11 +712,13 @@ paths:
   /api/v1/ai/estimate-value:
     post:
       operationId: AiController_estimateValue
-      summary: Estimate fair circular swap value (COP) for an item
+      summary: Estimate the Colombian market price (COP) of an item
       parameters: []
       responses:
         '200':
-          description: Estimated swap value range, tags, and reasoning
+          description: >-
+            Price range with reasoning (available: true), or available: false with the reason when the AI is offline or
+            its answer fails validation
         '400':
           description: Validation error
         '401':

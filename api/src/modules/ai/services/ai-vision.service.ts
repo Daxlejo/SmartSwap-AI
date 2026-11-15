@@ -5,10 +5,7 @@ import {
   DEFAULT_AI_LOCALE,
 } from '../dto/ai-locale.dto';
 import { AnalyzePhotoDto } from '../dto/analyze-photo.dto';
-import {
-  EstimateValueDto,
-  ItemConditionType,
-} from '../dto/estimate-value.dto';
+import { ItemConditionType } from '../dto/estimate-value.dto';
 import {
   OpenAiClientService,
   OpenAiContentPart,
@@ -35,22 +32,8 @@ export interface VisionAnalysisResult extends Record<string, unknown> {
   source: 'openai' | 'fallback';
 }
 
-export interface ValueEstimationResult extends Record<string, unknown> {
-  estimatedValue: number;
-  minValue: number;
-  maxValue: number;
-  condition: ItemConditionType;
-  conditionLabel: ConditionLabelEs;
-  reasoning: string;
-  aiTags: string[];
-  suggestedWants: string[];
-  confidence: number;
-  source: 'openai' | 'fallback';
-}
-
 /** All money in SmartSwap is Colombian pesos (COP), always whole numbers. */
 const COP_ROUNDING_STEP = 10_000;
-const MIN_ESTIMATED_VALUE_COP = 40_000;
 const MIN_RANGE_VALUE_COP = 20_000;
 
 const CONDITION_LABELS: Record<ItemConditionType, ConditionLabelEs> = {
@@ -58,13 +41,6 @@ const CONDITION_LABELS: Record<ItemConditionType, ConditionLabelEs> = {
   EXCELLENT: 'Excelente',
   GOOD: 'Bueno',
   FOR_PARTS: 'Para piezas',
-};
-
-const CONDITION_MULTIPLIERS: Record<ItemConditionType, number> = {
-  LIKE_NEW: 1.15,
-  EXCELLENT: 1.0,
-  GOOD: 0.8,
-  FOR_PARTS: 0.35,
 };
 
 interface ArchetypeTemplate {
@@ -265,96 +241,6 @@ export class AiVisionService {
     return this.sanitizeVisionResult(rawResult, fallbackFactory);
   }
 
-  /**
-   * Estimates the fair market swap value (COP) of an item based on its name, category, condition, and description.
-   */
-  async estimateValue(dto: EstimateValueDto): Promise<ValueEstimationResult> {
-    const fallbackFactory = (): ValueEstimationResult =>
-      this.buildFallbackValueEstimate(dto);
-
-    const systemPrompt = [
-      'Eres un tasador experto de economía circular y trueque tecnológico en Colombia.',
-      'Calcula el valor estimado de intercambio en pesos colombianos (COP) según el nombre, categoría, condición y descripción, con precios del mercado de segunda mano colombiano. Responde enteros sin puntos ni decimales (por ejemplo 1500000).',
-      'Devuelve ÚNICAMENTE un JSON válido con esta estructura:',
-      '{',
-      '  "estimatedValue": numero_entero_COP,',
-      '  "minValue": numero_entero_COP,',
-      '  "maxValue": numero_entero_COP,',
-      '  "condition": "LIKE_NEW | EXCELLENT | GOOD | FOR_PARTS",',
-      '  "conditionLabel": "Como nuevo | Excelente | Bueno | Para piezas",',
-      '  "reasoning": "Explicación breve de 1 oración en español sobre la valoración.",',
-      '  "aiTags": ["etiqueta1", "etiqueta2", "etiqueta3", "etiqueta4"],',
-      '  "suggestedWants": ["sugerencia 1", "sugerencia 2", "sugerencia 3"],',
-      '  "confidence": numero_entre_0_y_1',
-      '}',
-    ].join('\n');
-
-    const userPrompt = JSON.stringify({
-      name: dto.name,
-      category: dto.category,
-      condition: dto.condition,
-      description: dto.description ?? '',
-    });
-
-    const rawResult = await this.openAiClient.chatJson<ValueEstimationResult>(
-      systemPrompt,
-      userPrompt,
-      fallbackFactory,
-    );
-
-    const fallback = fallbackFactory();
-    const condition = this.normalizeCondition(rawResult.condition, dto.condition);
-    const estimatedValue =
-      typeof rawResult.estimatedValue === 'number' &&
-      Number.isFinite(rawResult.estimatedValue) &&
-      rawResult.estimatedValue > 0
-        ? this.roundCop(rawResult.estimatedValue)
-        : fallback.estimatedValue;
-
-    const minValue =
-      typeof rawResult.minValue === 'number' &&
-      Number.isFinite(rawResult.minValue) &&
-      rawResult.minValue > 0
-        ? this.roundCop(rawResult.minValue)
-        : this.roundCop(estimatedValue * 0.85);
-
-    const maxValue =
-      typeof rawResult.maxValue === 'number' &&
-      Number.isFinite(rawResult.maxValue) &&
-      rawResult.maxValue >= estimatedValue
-        ? this.roundCop(rawResult.maxValue)
-        : this.roundCop(estimatedValue * 1.15);
-
-    return {
-      estimatedValue,
-      minValue,
-      maxValue,
-      condition,
-      conditionLabel: CONDITION_LABELS[condition],
-      reasoning:
-        typeof rawResult.reasoning === 'string' &&
-        rawResult.reasoning.trim().length > 0
-          ? rawResult.reasoning.trim()
-          : fallback.reasoning,
-      aiTags:
-        Array.isArray(rawResult.aiTags) && rawResult.aiTags.length > 0
-          ? rawResult.aiTags.map((t) => String(t).toLowerCase().trim()).slice(0, 6)
-          : fallback.aiTags,
-      suggestedWants:
-        Array.isArray(rawResult.suggestedWants) &&
-        rawResult.suggestedWants.length > 0
-          ? rawResult.suggestedWants.map((w) => String(w).trim()).slice(0, 4)
-          : fallback.suggestedWants,
-      confidence:
-        typeof rawResult.confidence === 'number' &&
-        rawResult.confidence >= 0 &&
-        rawResult.confidence <= 1
-          ? Number(rawResult.confidence.toFixed(2))
-          : fallback.confidence,
-      source: rawResult.source === 'openai' ? 'openai' : 'fallback',
-    };
-  }
-
   private normalizeImageSource(imageInput: string): string {
     const trimmed = imageInput.trim();
     if (
@@ -447,72 +333,12 @@ export class AiVisionService {
     };
   }
 
-  private buildFallbackValueEstimate(
-    dto: EstimateValueDto,
-  ): ValueEstimationResult {
-    const combinedText =
-      `${dto.name} ${dto.category} ${dto.description ?? ''}`.toLowerCase();
-    const matched = ARCHETYPES.find((arch) =>
-      arch.keywords.some((kw) => combinedText.includes(kw)),
-    );
-
-    const baseCategoryValue = matched
-      ? matched.baseValue
-      : this.inferCategoryBaseValue(dto.category);
-
-    const multiplier = CONDITION_MULTIPLIERS[dto.condition] ?? 1.0;
-    const estimatedValue = Math.max(
-      MIN_ESTIMATED_VALUE_COP,
-      this.roundCop(baseCategoryValue * multiplier),
-    );
-    const minValue = this.roundCop(estimatedValue * 0.85);
-    const maxValue = this.roundCop(estimatedValue * 1.15);
-    const conditionLabel = CONDITION_LABELS[dto.condition];
-
-    return {
-      estimatedValue,
-      minValue,
-      maxValue,
-      condition: dto.condition,
-      conditionLabel,
-      reasoning: `Valoración calculada para ${dto.name} en categoría ${dto.category} con estado "${conditionLabel}" según referencias del mercado circular.`,
-      aiTags: matched
-        ? matched.aiTags
-        : [
-            dto.category.toLowerCase(),
-            dto.condition.toLowerCase(),
-            'trueque',
-            'smartswap',
-          ],
-      suggestedWants: matched
-        ? matched.suggestedWants
-        : [
-            'Audífonos inalámbricos',
-            'Monitor Full HD',
-            'Accesorios tecnológicos',
-          ],
-      confidence: 0.85,
-      source: 'fallback',
-    };
-  }
-
   /** Rounds a peso amount to a tidy step (never below the minimum). */
   private roundCop(value: number): number {
     return Math.max(
       MIN_RANGE_VALUE_COP,
       Math.round(value / COP_ROUNDING_STEP) * COP_ROUNDING_STEP,
     );
-  }
-
-  private inferCategoryBaseValue(category: string): number {
-    const lower = category.toLowerCase();
-    if (lower.includes('tecnolog') || lower.includes('comput')) return 1_280_000;
-    if (lower.includes('fotograf') || lower.includes('camara')) return 1_520_000;
-    if (lower.includes('music') || lower.includes('audio')) return 840_000;
-    if (lower.includes('deport') || lower.includes('bici')) return 960_000;
-    if (lower.includes('gaming') || lower.includes('consol')) return 1_000_000;
-    if (lower.includes('libro') || lower.includes('educa')) return 180_000;
-    return 600_000;
   }
 
   private sanitizeVisionResult(
