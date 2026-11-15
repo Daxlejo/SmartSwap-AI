@@ -542,7 +542,6 @@ export const en: TranslationSchema = {
     noItemsTitle: "You haven't published any items yet",
     noItemsDescription: 'To search for swap routes you need something to offer. Publish your first item and come back here.',
     publishItem: 'Publish an item',
-    needItemHint: 'Publish an item to search for routes.',
     needWantHint: 'Type or pick what you want to receive to search for routes.',
   },
   trades: {

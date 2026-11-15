@@ -384,14 +384,13 @@ export const ConfigureSwapScreen = () => {
             >
               <span>{t('configure.searchRoutes')}</span>
             </Button>
-            {searchBlocker && (
+            {/* The bar only shows with an item to offer, so the one thing left to ask for is a want */}
+            {searchBlocker && searchBlocker !== 'noItems' && (
               <p
                 data-testid="configure-search-hint"
                 className="text-center font-body-sm text-body-sm text-on-surface-variant"
               >
-                {searchBlocker === 'noItems'
-                  ? t('configure.needItemHint')
-                  : t('configure.needWantHint')}
+                {t('configure.needWantHint')}
               </p>
             )}
           </div>

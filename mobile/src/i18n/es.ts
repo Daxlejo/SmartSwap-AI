@@ -540,7 +540,6 @@ export const es = {
     noItemsTitle: 'Aún no tienes artículos publicados',
     noItemsDescription: 'Para buscar rutas de canje necesitas ofrecer algo. Publica tu primer artículo y vuelve aquí.',
     publishItem: 'Publicar un artículo',
-    needItemHint: 'Publica un artículo para poder buscar rutas.',
     needWantHint: 'Escribe o elige qué quieres recibir para buscar rutas.',
   },
   trades: {
