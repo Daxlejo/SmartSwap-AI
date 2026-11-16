@@ -25,7 +25,7 @@ export interface AiPhotoAnalysisResponse {
 export interface EstimateItemValuePayload {
   name: string;
   category: string;
-  condition: string;
+  condition: ItemConditionLabel | AiItemCondition;
   description?: string;
 }
 
@@ -39,23 +39,25 @@ export interface AiValueEstimateResponse {
 /** Condition codes `/ai/estimate-value` accepts. */
 export type AiItemCondition = 'LIKE_NEW' | 'EXCELLENT' | 'GOOD' | 'FOR_PARTS';
 
-const UI_CONDITION_TO_AI: Record<string, AiItemCondition> = {
-  'como nuevo': 'LIKE_NEW',
-  like_new: 'LIKE_NEW',
-  'excelente estado': 'EXCELLENT',
-  excelente: 'EXCELLENT',
-  excellent: 'EXCELLENT',
-  'buen estado': 'GOOD',
-  bueno: 'GOOD',
-  good: 'GOOD',
-  'para repuesto': 'FOR_PARTS',
-  'para piezas': 'FOR_PARTS',
-  for_parts: 'FOR_PARTS',
+/** Condition labels of the publish form. */
+export type ItemConditionLabel = 'Como nuevo' | 'Excelente estado' | 'Buen estado' | 'Para repuesto';
+
+const LABEL_TO_AI: Record<ItemConditionLabel, AiItemCondition> = {
+  'Como nuevo': 'LIKE_NEW',
+  'Excelente estado': 'EXCELLENT',
+  'Buen estado': 'GOOD',
+  'Para repuesto': 'FOR_PARTS',
 };
 
-/** Maps the publish form's condition label (or an API code) to the code the AI endpoint expects. */
-export const toAiCondition = (condition: string): AiItemCondition =>
-  UI_CONDITION_TO_AI[condition.trim().toLowerCase()] ?? 'GOOD';
+const isAiCondition = (value: string): value is AiItemCondition =>
+  value === 'LIKE_NEW' || value === 'EXCELLENT' || value === 'GOOD' || value === 'FOR_PARTS';
+
+/**
+ * Maps a publish-form label (or an API code) to the code the AI endpoint expects. Both inputs
+ * are closed unions, so a new label that is not mapped fails to compile instead of guessing.
+ */
+export const toAiCondition = (condition: ItemConditionLabel | AiItemCondition): AiItemCondition =>
+  isAiCondition(condition) ? condition : LABEL_TO_AI[condition];
 
 interface RawAiPhotoAnalysisDto {
   name?: string;

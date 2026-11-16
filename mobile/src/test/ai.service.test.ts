@@ -133,6 +133,7 @@ describe('aiService', () => {
       expect(toAiCondition('Buen estado')).toBe('GOOD');
       expect(toAiCondition('Para repuesto')).toBe('FOR_PARTS');
       expect(toAiCondition('LIKE_NEW')).toBe('LIKE_NEW');
+      expect(toAiCondition('FOR_PARTS')).toBe('FOR_PARTS');
     });
   });
 

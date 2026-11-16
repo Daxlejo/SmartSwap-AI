@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LocationPicker } from '@/components/LocationPicker';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
 import { useApp } from '@/context/AppContext';
 import { itemsService } from '@/services/items/items.service';
-import { aiService } from '@/services/ai/ai.service';
+import { aiService, type ItemConditionLabel } from '@/services/ai/ai.service';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import { ApiError } from '@/services/http/apiClient';
 import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
@@ -44,7 +44,7 @@ const CATEGORIES = [
   'Otros',
 ];
 
-const CONDITIONS = [
+const CONDITIONS: ReadonlyArray<{ label: ItemConditionLabel; desc: string; icon: string }> = [
   {
     label: 'Como nuevo',
     desc: 'Sin marcas de uso, impecable',
@@ -151,7 +151,7 @@ const mapAiCategoryToUi = (rawCategory: string): string => {
   return 'Otros';
 };
 
-const mapAiConditionToUi = (rawCondition: string): string => {
+const mapAiConditionToUi = (rawCondition: string): ItemConditionLabel => {
   const upper = rawCondition.trim().toUpperCase();
   if (upper === 'LIKE_NEW' || upper === 'NEW' || upper === 'COMO NUEVO') {
     return 'Como nuevo';
@@ -220,7 +220,9 @@ export const PublishScreen: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [condition, setCondition] = useState('Excelente estado');
+  const [condition, setCondition] = useState<ItemConditionLabel>('Excelente estado');
+  // Once the user types a price, an automatic estimate never replaces it
+  const priceTypedByUserRef = useRef(false);
   const [estimatedValue, setEstimatedValue] = useState('');
   // Items are located where they are published: the owner's municipality unless changed here
   const [municipalityCode, setMunicipalityCode] = useState<string | null>(
@@ -275,20 +277,29 @@ export const PublishScreen: React.FC = () => {
   };
 
   // Colombian market price from the AI; with no trustworthy answer there is no suggestion
-  const requestPriceEstimate = async (input: {
-    name: string;
-    category: string;
-    condition: string;
-    description: string;
-  }) => {
+  const requestPriceEstimate = async (
+    input: {
+      name: string;
+      category: string;
+      condition: ItemConditionLabel;
+      description: string;
+    },
+    { overwriteTypedPrice }: { overwriteTypedPrice: boolean },
+  ) => {
     setIsEstimatingPrice(true);
     setPriceNotice(null);
     try {
-      const valuation = await aiService
-        .estimateItemValue(input)
-        .catch((): null => null);
+      const valuation = await aiService.estimateItemValue(input).catch((err: unknown): null => {
+        // The user only sees "no suggestion"; a 4xx means our request is wrong, so say it in dev
+        if (import.meta.env.DEV || (err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500)) {
+          console.warn('[publish] price estimate failed', err);
+        }
+        return null;
+      });
       if (valuation) {
-        setEstimatedValue(String(valuation.estimatedValue));
+        if (overwriteTypedPrice || !priceTypedByUserRef.current) {
+          setEstimatedValue(String(valuation.estimatedValue));
+        }
         setAiValueRange({
           min: valuation.minValue,
           max: valuation.maxValue,
@@ -369,12 +380,15 @@ export const PublishScreen: React.FC = () => {
 
       // The price comes only from the market-price estimate, never from the photo analysis
       if (resolvedName.length >= 3) {
-        void requestPriceEstimate({
-          name: resolvedName,
-          category: resolvedCategory,
-          condition: resolvedCondition,
-          description: resolvedDescription,
-        });
+        void requestPriceEstimate(
+          {
+            name: resolvedName,
+            category: resolvedCategory,
+            condition: resolvedCondition,
+            description: resolvedDescription,
+          },
+          { overwriteTypedPrice: false },
+        );
       }
 
       setErrors({});
@@ -1169,12 +1183,15 @@ export const PublishScreen: React.FC = () => {
                 disabled={!canEstimatePrice || isEstimatingPrice}
                 data-testid="estimate-price-btn"
                 onClick={() =>
-                  void requestPriceEstimate({
-                    name: name.trim(),
-                    category,
-                    condition,
-                    description: description.trim(),
-                  })
+                  void requestPriceEstimate(
+                    {
+                      name: name.trim(),
+                      category,
+                      condition,
+                      description: description.trim(),
+                    },
+                    { overwriteTypedPrice: true },
+                  )
                 }
               >
                 {t('publish.price.estimate')}
@@ -1199,6 +1216,7 @@ export const PublishScreen: React.FC = () => {
                 aria-describedby="estimated-value-message"
                 value={formatCopDigits(estimatedValue)}
                 onChange={(e) => {
+                  priceTypedByUserRef.current = true;
                   setEstimatedValue(sanitizeCopDigits(e.target.value));
                   if (errors.estimatedValue) {
                     setErrors((prev) => ({ ...prev, estimatedValue: undefined }));
