@@ -51,6 +51,12 @@ describe('Item query price range', () => {
     expect(result.maxPrice).toBe(400000);
   });
 
+  it('treats an empty price as no limit instead of 0', () => {
+    const result = queryItemsSchema.parse({ minPrice: '', maxPrice: '' });
+    expect(result.minPrice).toBeUndefined();
+    expect(result.maxPrice).toBeUndefined();
+  });
+
   it('rejects a negative or fractional price', () => {
     expect(queryItemsSchema.safeParse({ minPrice: '-1' }).success).toBe(false);
     expect(queryItemsSchema.safeParse({ maxPrice: '1500.5' }).success).toBe(false);
