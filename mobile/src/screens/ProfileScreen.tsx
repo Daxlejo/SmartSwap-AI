@@ -168,7 +168,7 @@ export const ProfileScreen = () => {
       <ScreenHeader title={t('headers.profile.title')} />
       {/* Section 1: Profile hero */}
       <section className="flex flex-col items-center text-center pt-2">
-        <div className="relative mb-3">
+        <div className="relative mb-6">
           <Avatar
             src={currentUser?.avatarUrl}
             alt={currentUser?.name ?? ''}
@@ -180,7 +180,7 @@ export const ProfileScreen = () => {
             onClick={openEditSheet}
             aria-label={t('profile.editProfile')}
             data-testid="profile-edit-badge"
-            className="absolute -bottom-1 -right-3 w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md ring-4 ring-surface active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-primary/40"
+            className="absolute -bottom-4 -right-7 w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md ring-4 ring-surface active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-primary/40"
           >
             <Icon name="edit" size="sm" />
           </button>
