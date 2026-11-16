@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-15T20:06:00.142Z",
+  "generatedAt": "2026-11-16T17:35:02.605Z",
   "stats": {
     "totalFiles": 163,
     "apiFiles": 68,
@@ -2944,6 +2944,7 @@
         "AiValueEstimateResponse",
         "AnalyzeItemPhotoPayload",
         "EstimateItemValuePayload",
+        "ItemConditionLabel",
         "aiService",
         "toAiCondition"
       ],
@@ -3127,6 +3128,7 @@
         "ONBOARDING_STORAGE_PREFIX",
         "THEME_STORAGE_KEY",
         "ThemePreference",
+        "postRegisterRoute",
         "preferencesStorage"
       ],
       "imports": []
