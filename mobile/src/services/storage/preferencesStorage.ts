@@ -104,3 +104,7 @@ export const preferencesStorage = {
     write(`${ONBOARDING_STORAGE_PREFIX}${userId}`, '1');
   },
 };
+
+/** Where a freshly registered user lands: the introduction the first time, Home afterwards. */
+export const postRegisterRoute = (userId: string): '/welcome' | '/home' =>
+  preferencesStorage.isOnboardingDone(userId) ? '/home' : '/welcome';

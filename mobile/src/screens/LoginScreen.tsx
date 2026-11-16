@@ -11,7 +11,7 @@ import { DemoAccountSwitcher } from '@/components/DemoAccountSwitcher';
 import { LocationPicker } from '@/components/LocationPicker';
 import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
 import { useRevealOnError } from '@/hooks/useRevealOnError';
-import { preferencesStorage } from '@/services/storage/preferencesStorage';
+import { postRegisterRoute } from '@/services/storage/preferencesStorage';
 
 type AuthMode = 'login' | 'register';
 
@@ -116,9 +116,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ initialMode = 'login' 
           municipalityCode: municipalityCode as string,
         });
         // A new account starts with the short introduction, once per user
-        navigate(preferencesStorage.isOnboardingDone(user.id) ? '/home' : '/welcome', {
-          replace: true,
-        });
+        navigate(postRegisterRoute(user.id), { replace: true });
       }
     } catch (err) {
       if (err instanceof ApiError) {
