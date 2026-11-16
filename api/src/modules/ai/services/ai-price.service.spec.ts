@@ -58,8 +58,16 @@ describe('AiPriceService', () => {
     });
   });
 
+  it('reports a declined estimate as low confidence, not as a broken answer', async () => {
+    const { service } = buildService({ estimatedValue: null });
+    await expect(service.estimate(ps5Controller)).resolves.toEqual({
+      available: false,
+      reason: 'low_confidence',
+    });
+  });
+
   it.each([
-    ['a null estimate', { estimatedValue: null }],
+    ['an empty object', {}],
     ['a price written as text', { estimatedValue: '300.000', minValue: 1, maxValue: 2, reasoning: 'x' }],
     ['a missing reasoning', { estimatedValue: 300_000, minValue: 250_000, maxValue: 350_000 }],
   ])('gives no suggestion for %s', async (_label, answer) => {

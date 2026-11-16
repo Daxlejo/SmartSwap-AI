@@ -19,7 +19,11 @@ const modelPriceSchema = z.object({
   reasoning: z.string().trim().min(1).max(400),
 });
 
-export type PriceUnavailableReason = 'ai_unavailable' | 'invalid_response' | PriceRangeRejection;
+export type PriceUnavailableReason =
+  | 'ai_unavailable'
+  | 'low_confidence'
+  | 'invalid_response'
+  | PriceRangeRejection;
 
 export type PriceEstimate =
   | {
@@ -56,6 +60,12 @@ export class AiPriceService {
     const raw = await this.openAiClient.chatJsonOrNull(SYSTEM_PROMPT, this.buildUserPrompt(dto));
     if (raw === null) {
       return { available: false, reason: 'ai_unavailable' };
+    }
+
+    // The prompt lets the model decline with { "estimatedValue": null }: a refusal, not a defect
+    if (typeof raw === 'object' && raw !== null && 'estimatedValue' in raw && raw.estimatedValue === null) {
+      this.logger.debug(`No price estimate for "${dto.name}": the model was not confident`);
+      return { available: false, reason: 'low_confidence' };
     }
 
     const parsed = modelPriceSchema.safeParse(raw);

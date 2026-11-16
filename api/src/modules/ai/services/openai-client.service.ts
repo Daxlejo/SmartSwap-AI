@@ -37,7 +37,16 @@ export class OpenAiClientService {
   private readonly chatEndpoint = 'https://api.openai.com/v1/chat/completions';
   private readonly embeddingsEndpoint = 'https://api.openai.com/v1/embeddings';
 
+  /** Warn once per process: a missing key would otherwise disable AI with no trace in the logs. */
+  private missingKeyWarned = false;
+
   constructor(private readonly configService: ConfigService) {}
+
+  private warnMissingKeyOnce(): void {
+    if (this.missingKeyWarned) return;
+    this.missingKeyWarned = true;
+    this.logger.warn('OPENAI_API_KEY is not configured: AI calls are disabled and fall back');
+  }
 
   /**
    * Checks whether OPENAI_API_KEY is a real production key rather than a development placeholder.
@@ -97,6 +106,7 @@ export class OpenAiClientService {
     userContent: string | OpenAiContentPart[],
   ): Promise<unknown> {
     if (!this.isApiKeyConfigured()) {
+      this.warnMissingKeyOnce();
       return null;
     }
 
