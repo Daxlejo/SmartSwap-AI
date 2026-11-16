@@ -328,6 +328,7 @@ export const es = {
     photoHint: 'Usaremos tu foto en tu perfil y en tus canjes.',
     photoReadError: 'No pudimos leer esa foto. Prueba con otra.',
     photoUploadError: 'No pudimos subir tu foto. Revisa tu conexión e inténtalo de nuevo.',
+    photoSavedProfileFailed: 'Tu foto quedó guardada, pero no pudimos guardar el nombre o la ubicación. {{detail}}',
     logout: 'Cerrar sesión',
     fullName: 'Nombre completo',
     location: 'Tu ubicación',

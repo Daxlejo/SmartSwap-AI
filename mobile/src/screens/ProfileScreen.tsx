@@ -126,6 +126,7 @@ export const ProfileScreen = () => {
     setIsSavingProfile(true);
     setErrorBanner(null);
     setSheetError(null);
+    const uploadsPhoto = Boolean(pendingAvatar);
     if (pendingAvatar) {
       try {
         await uploadAvatarReal(pendingAvatar);
@@ -147,7 +148,9 @@ export const ProfileScreen = () => {
       });
       closeEditSheet();
     } catch (err) {
-      setSheetError(err instanceof ApiError && err.message ? err.message : t('profile.updateError'));
+      const detail = err instanceof ApiError && err.message ? err.message : t('profile.updateError');
+      // The photo is already saved: say so, so nobody thinks it was lost
+      setSheetError(uploadsPhoto ? t('profile.photoSavedProfileFailed', { detail }) : detail);
     } finally {
       setIsSavingProfile(false);
     }

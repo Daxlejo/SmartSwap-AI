@@ -330,6 +330,7 @@ export const en: TranslationSchema = {
     photoHint: 'We will use your photo on your profile and in your swaps.',
     photoReadError: 'We could not read that photo. Try another one.',
     photoUploadError: 'We could not upload your photo. Check your connection and try again.',
+    photoSavedProfileFailed: 'Your photo was saved, but we could not save your name or location. {{detail}}',
     logout: 'Sign out',
     fullName: 'Full name',
     location: 'Your location',
