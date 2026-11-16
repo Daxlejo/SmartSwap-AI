@@ -42,8 +42,9 @@ export const HomeScreen = () => {
   const activeRoute = activeRoutes[0];
   const activeRouteTarget = activeRoute?.chainItems[activeRoute.chainItems.length - 1];
   const activeUserItemsCount = myItems.length;
-  // Until the user has one active item there is nothing to offer, so publishing comes first
-  const hasActiveItem = myItems.some(isOfferableItem);
+  // Until the user has one active item there is nothing to offer, so publishing comes first.
+  // Only decided once the items loaded: while loading or after an error the usual layout stays.
+  const hasActiveItem = loadStates.items !== 'ready' || myItems.some(isOfferableItem);
   const activeRing = useMemo(() => toRingParticipants(activeRoute?.steps ?? []), [activeRoute]);
 
   const isLoading = isItemsLoading || loadStates.items === 'loading';
