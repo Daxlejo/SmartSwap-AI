@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand tokens (CLAUDE.md). The bars start on the light surface and ThemeBarsPlugin
+         switches them to the app theme the user chose. -->
+    <color name="smartswap_teal">#00685f</color>
+    <color name="smartswap_surface_light">#f8fafc</color>
+</resources>
