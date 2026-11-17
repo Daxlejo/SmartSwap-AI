@@ -2,7 +2,7 @@
 
 ```
 FASE: 4c — Flujo de propuesta, navegación y pulido de la 4a
-RAMA / PR: feat/proposal-flow — ver el PR de la rama (sin fusionar)
+RAMA / PR: feat/proposal-flow — https://github.com/Daxlejo/SmartSwap-AI/pull/24 (sin fusionar)
 COMMITS: commits atómicos, listados con git log --oneline fa6cf77..feat/proposal-flow
 ```
 
