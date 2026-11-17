@@ -12,6 +12,7 @@ import {
   CIRCULAR_MIN_STEPS,
   getNoRoutesReason,
   isOfferableItem,
+  VALUE_TOLERANCE_PCT,
 } from '@/utils/swapSearch';
 
 interface ResultsLocationState {
@@ -49,7 +50,7 @@ export const RouteResultsScreen: React.FC = () => {
   const minSteps = Number(searchParams.get('minSteps')) || locationState?.minSteps || CIRCULAR_MIN_STEPS;
   const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || CIRCULAR_MAX_STEPS;
   const valueTolerancePct =
-    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
+    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || VALUE_TOLERANCE_PCT;
 
   const [routes, setRoutes] = useState<SwapRoute[]>(() => locationState?.routes || []);
   const hasSearchAnswer =

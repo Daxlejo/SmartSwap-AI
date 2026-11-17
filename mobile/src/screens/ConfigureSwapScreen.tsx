@@ -13,7 +13,7 @@ import { ItemImage } from '@/components/ui/ItemImage';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 import { formatCop } from '@/utils/currency';
 import {
-  buildCircularSearch,
+  buildCircularSearchPath,
   findWantedCandidates,
   isOfferableItem,
   parseSwapDraft,
@@ -157,15 +157,33 @@ export const ConfigureSwapScreen = () => {
   const [searchParams] = useSearchParams();
   const { currentUser, myItems, items, isItemsLoading, loadStates, refreshItems } = useApp();
 
-  const draft = parseSwapDraft(searchParams);
+  const urlDraft = parseSwapDraft(searchParams);
+  const offerableItems = useMemo(() => myItems.filter(isOfferableItem), [myItems]);
+  // An offered item from the URL that is now reserved or deleted is dropped (back to step 1, with a notice)
+  const offerGone =
+    loadStates.items === 'ready' &&
+    Boolean(urlDraft.offeredItemId) &&
+    !offerableItems.some((item) => item.id === urlDraft.offeredItemId);
+  const draft: SwapDraft = offerGone ? { ...urlDraft, offeredItemId: undefined } : urlDraft;
   const step = reachableStep(draft);
 
-  const offerableItems = useMemo(() => myItems.filter(isOfferableItem), [myItems]);
   // With a single published item it comes chosen
   const offeredItemId =
     draft.offeredItemId ?? (offerableItems.length === 1 ? offerableItems[0].id : undefined);
   const offeredItem = offerableItems.find((item) => item.id === offeredItemId);
-  const { item: wantedItem, status: wantedStatus } = useItem(draft.wantedItemId);
+  const { item: wantedItem, status: wantedStatus, retry: retryWanted } = useItem(draft.wantedItemId);
+
+  // The wanted item could not be shown: deleted (missing) or not reachable right now (error)
+  const wantedProblem =
+    wantedStatus === 'error' ? (
+      <ErrorState onRetry={retryWanted} />
+    ) : wantedStatus === 'missing' && draft.wantedItemId ? (
+      <EmptyState
+        iconName="inventory_2"
+        title={t('itemDetail.missingTitle')}
+        description={t('itemDetail.missingDescription')}
+      />
+    ) : null;
 
   const [query, setQuery] = useState('');
   const mode: SwapMode = draft.mode ?? 'direct';
@@ -200,8 +218,7 @@ export const ConfigureSwapScreen = () => {
         const direct: DirectProposalDraft = { offeredItem, wantedItem };
         navigate('/swap/proposal/confirm', { state: { direct } });
       } else {
-        const search = buildCircularSearch(offeredItem, wantedItem);
-        navigate(search.path, { state: search.state });
+        navigate(buildCircularSearchPath(offeredItem, wantedItem));
       }
     }
   };
@@ -250,6 +267,15 @@ export const ConfigureSwapScreen = () => {
   } else if (step === 1) {
     body = (
       <div role="radiogroup" aria-label={titles[1]} className="flex flex-col gap-2.5">
+        {offerGone && (
+          <p
+            role="status"
+            data-testid="configure-offer-gone"
+            className="p-3 rounded-xl bg-surface-container-low border border-surface-container-high font-body-md text-body-md text-on-surface"
+          >
+            {t('configure.offerGone')}
+          </p>
+        )}
         <p className="font-body-md text-body-md text-on-surface-variant">{t('configure.offerHint')}</p>
         {offerableItems.map((item) => (
           <ItemOption
@@ -269,10 +295,8 @@ export const ConfigureSwapScreen = () => {
         <p className="font-body-md text-body-md text-on-surface-variant">{t('configure.receiveFixedHint')}</p>
         {wantedItem ? (
           <ChoiceSummary label={t('configure.youReceive')} item={wantedItem} />
-        ) : wantedStatus === 'loading' ? (
-          <div className="h-20 rounded-2xl bg-surface-container-low animate-pulse" />
         ) : (
-          <EmptyState iconName="inventory_2" title={t('itemDetail.missingTitle')} />
+          wantedProblem ?? <div className="h-20 rounded-2xl bg-surface-container-low animate-pulse" />
         )}
       </div>
     ) : (
@@ -344,7 +368,7 @@ export const ConfigureSwapScreen = () => {
     body = (
       <div className="flex flex-col gap-3">
         {offeredItem && <ChoiceSummary label={t('configure.youOffer')} item={offeredItem} />}
-        {wantedItem && <ChoiceSummary label={t('configure.youReceive')} item={wantedItem} />}
+        {wantedItem ? <ChoiceSummary label={t('configure.youReceive')} item={wantedItem} /> : wantedProblem}
         <div role="radiogroup" aria-label={titles[3]} className="flex flex-col gap-2.5 pt-2">
           <ModeOption
             mode="direct"

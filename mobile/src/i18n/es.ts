@@ -481,6 +481,8 @@ export const es = {
     emptyHint: 'Nadie cierra todavía un anillo con estos artículos. Puedes proponerle el cambio directo a su dueño.',
     proposeDirect: 'Proponer canje directo',
     back: 'Volver',
+    unavailableTitle: 'Este artículo ya no está disponible',
+    unavailableHint: 'Su dueño lo cambió, lo reservó en otro canje o lo eliminó. Vuelve y elige otro.',
     failedTitle: 'No pudimos buscar',
     failedHint: 'Revisa tu conexión e intenta de nuevo.',
   },
@@ -568,6 +570,7 @@ export const es = {
   configure: {
     stepOf: 'Paso {{step}} de {{total}}',
     offerTitle: 'Lo que ofreces',
+    offerGone: 'El artículo que habías elegido ya no está disponible. Elige otro.',
     offerHint: 'Elige cuál de tus artículos publicados vas a entregar.',
     receiveTitle: 'Lo que recibes',
     receiveHint: 'Busca el artículo que quieres o elige uno de tus deseados.',

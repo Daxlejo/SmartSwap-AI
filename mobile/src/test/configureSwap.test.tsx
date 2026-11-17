@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import '@/i18n';
 import type { Item, User } from '@/types';
 import {
-  buildCircularSearch,
+  buildCircularSearchPath,
   buildDirectPreviewRoute,
   findWantedCandidates,
   getNoRoutesReason,
@@ -143,21 +143,11 @@ describe('swap draft in the URL', () => {
   });
 });
 
-describe('buildCircularSearch', () => {
+describe('buildCircularSearchPath', () => {
   it('asks for rings of 3 or 4 that end with the chosen item', () => {
-    const search = buildCircularSearch(publishedItem, control);
-    expect(search.path).toBe(
+    expect(buildCircularSearchPath(publishedItem, control)).toBe(
       '/swap/searching?have=item-1&want=item-9&q=Control+PS5+DualSense&minSteps=3&maxSteps=4&tolerance=25',
     );
-    expect(search.state).toEqual({
-      offeredItemId: 'item-1',
-      wantItemId: 'item-9',
-      objectiveText: 'Control PS5 DualSense',
-      desiredCategory: 'Videojuegos',
-      minSteps: 3,
-      maxSteps: 4,
-      valueTolerancePct: 25,
-    });
   });
 });
 

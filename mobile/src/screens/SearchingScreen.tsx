@@ -6,6 +6,7 @@ import { useItem } from '@/hooks/useItem';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { ApiError } from '@/services/http/apiClient';
 import {
   CIRCULAR_MAX_STEPS,
   CIRCULAR_MIN_STEPS,
@@ -44,7 +45,12 @@ const searchOnce = (key: string, run: () => Promise<SwapRoute[]>): Promise<SwapR
 type SearchOutcome =
   | { status: 'pending' }
   | { status: 'done'; routes: SwapRoute[] }
+  /** One of the two items can no longer be swapped (deleted, reserved or the user's own). */
+  | { status: 'unavailable' }
   | { status: 'failed' };
+
+/** Answers of the engine that mean "this item cannot be part of a swap", not "try again". */
+const UNAVAILABLE_STATUS_CODES = [400, 403, 404, 409];
 
 /** Back one step inside the app, or to Home when the screen was opened directly. */
 const useGoBack = () => {
@@ -78,8 +84,8 @@ export const SearchingScreen: React.FC = () => {
   const valueTolerancePct = Number(searchParams.get('tolerance')) || VALUE_TOLERANCE_PCT;
   const hasSearchParams = haveId !== '' && wantId !== '' && objectiveText !== '';
 
-  const { item: offeredItem } = useItem(haveId || undefined);
-  const { item: wantedItem } = useItem(wantId || undefined);
+  const { item: offeredItem, status: offeredStatus } = useItem(haveId || undefined);
+  const { item: wantedItem, status: wantedStatus } = useItem(wantId || undefined);
 
   const [outcome, setOutcome] = useState<SearchOutcome>({ status: 'pending' });
   const [attempt, setAttempt] = useState(0);
@@ -105,7 +111,10 @@ export const SearchingScreen: React.FC = () => {
       })
       .catch((error: unknown) => {
         console.error('Route search failed', error);
-        if (active) setOutcome({ status: 'failed' });
+        if (!active) return;
+        const unavailable =
+          error instanceof ApiError && UNAVAILABLE_STATUS_CODES.includes(error.statusCode);
+        setOutcome({ status: unavailable ? 'unavailable' : 'failed' });
       });
     return () => {
       active = false;
@@ -144,7 +153,10 @@ export const SearchingScreen: React.FC = () => {
 
   const routes = outcome.status === 'done' ? outcome.routes : [];
   const found = routes.length > 0;
-  const finishedEmpty = outcome.status === 'done' && !found;
+  // Deleted meanwhile: the empty answer would otherwise offer a direct swap that cannot work
+  const itemGone =
+    outcome.status === 'unavailable' || offeredStatus === 'missing' || wantedStatus === 'missing';
+  const finishedEmpty = outcome.status === 'done' && !found && !itemGone;
 
   const openResults = () => {
     const query = new URLSearchParams({
@@ -186,9 +198,11 @@ export const SearchingScreen: React.FC = () => {
             ? t('searching.title')
             : found
               ? t('searching.foundTitle', { count: routes.length })
-              : finishedEmpty
-                ? t('searching.emptyTitle')
-                : t('searching.failedTitle')}
+              : itemGone
+                ? t('searching.unavailableTitle')
+                : finishedEmpty
+                  ? t('searching.emptyTitle')
+                  : t('searching.failedTitle')}
         </h1>
         {wantedItem && (
           <p className="font-body-md text-body-md text-on-surface-variant max-w-[300px]">
@@ -244,7 +258,7 @@ export const SearchingScreen: React.FC = () => {
           }`}
         >
           <Icon
-            name={found ? 'check' : outcome.status === 'pending' ? 'cycle' : finishedEmpty ? 'search_off' : 'cloud_off'}
+            name={found ? 'check' : outcome.status === 'pending' ? 'cycle' : finishedEmpty ? 'search_off' : itemGone ? 'inventory_2' : 'cloud_off'}
             size="lg"
             className={outcome.status === 'pending' ? 'searching-orbit' : undefined}
           />
@@ -266,6 +280,13 @@ export const SearchingScreen: React.FC = () => {
             <p className="font-body-md text-body-md text-on-surface-variant">{t('searching.foundHint')}</p>
             <Button data-testid="searching-view-routes" variant="primary" size="lg" fullWidth rightIcon="arrow_forward" onClick={openResults}>
               {t('searching.viewRoutes', { count: routes.length })}
+            </Button>
+          </>
+        ) : itemGone ? (
+          <>
+            <p className="font-body-md text-body-md text-on-surface-variant">{t('searching.unavailableHint')}</p>
+            <Button data-testid="searching-back" variant="primary" size="lg" fullWidth leftIcon="arrow_back" onClick={goBack}>
+              {t('searching.back')}
             </Button>
           </>
         ) : finishedEmpty ? (

@@ -84,48 +84,24 @@ export const reachableStep = (draft: SwapDraft): SwapDraftStep => {
   return draft.step;
 };
 
-/** Route state the Searching and Results screens read back. */
-export interface SwapSearchState {
-  offeredItemId: string;
-  wantItemId: string;
-  objectiveText: string;
-  desiredCategory?: string;
-  minSteps: number;
-  maxSteps: number;
-  valueTolerancePct: number;
-}
-
-export interface SwapSearchNavigation {
-  path: string;
-  state: SwapSearchState;
-}
-
-/** Search for rings of 3 or 4 people in which the user receives exactly `wanted`. */
-export const buildCircularSearch = (
+/**
+ * URL of the Searching screen for rings of 3 or 4 people in which the user receives
+ * exactly `wanted`. Everything travels in the URL, so Searching and Results read it
+ * back after a reload or a step back.
+ */
+export const buildCircularSearchPath = (
   offered: Pick<Item, 'id'>,
-  wanted: Pick<Item, 'id' | 'name' | 'category'>,
-): SwapSearchNavigation => {
-  const objectiveText = wanted.name.trim();
+  wanted: Pick<Item, 'id' | 'name'>,
+): string => {
   const params = new URLSearchParams({
     have: offered.id,
     want: wanted.id,
-    q: objectiveText,
+    q: wanted.name.trim(),
     minSteps: String(CIRCULAR_MIN_STEPS),
     maxSteps: String(CIRCULAR_MAX_STEPS),
     tolerance: String(VALUE_TOLERANCE_PCT),
   });
-  return {
-    path: `/swap/searching?${params.toString()}`,
-    state: {
-      offeredItemId: offered.id,
-      wantItemId: wanted.id,
-      objectiveText,
-      desiredCategory: wanted.category,
-      minSteps: CIRCULAR_MIN_STEPS,
-      maxSteps: CIRCULAR_MAX_STEPS,
-      valueTolerancePct: VALUE_TOLERANCE_PCT,
-    },
-  };
+  return `/swap/searching?${params.toString()}`;
 };
 
 /** Catalog items the user can ask for that match what they typed (name, category or description). */

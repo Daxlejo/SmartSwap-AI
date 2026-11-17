@@ -483,6 +483,8 @@ export const en: TranslationSchema = {
     emptyHint: 'Nobody closes a ring with these items yet. You can propose the swap directly to its owner.',
     proposeDirect: 'Propose a direct swap',
     back: 'Back',
+    unavailableTitle: 'This item is no longer available',
+    unavailableHint: 'Its owner swapped it, reserved it in another swap or deleted it. Go back and choose another one.',
     failedTitle: 'We could not search',
     failedHint: 'Check your connection and try again.',
   },
@@ -570,6 +572,7 @@ export const en: TranslationSchema = {
   configure: {
     stepOf: 'Step {{step}} of {{total}}',
     offerTitle: 'What you offer',
+    offerGone: 'The item you had chosen is no longer available. Choose another one.',
     offerHint: 'Choose which of your published items you will hand over.',
     receiveTitle: 'What you receive',
     receiveHint: 'Search for the item you want or pick one of your wishes.',
