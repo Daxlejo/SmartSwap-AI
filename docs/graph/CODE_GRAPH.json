@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-17T15:02:07.562Z",
+  "generatedAt": "2026-11-17T23:20:12.740Z",
   "stats": {
-    "totalFiles": 173,
+    "totalFiles": 175,
     "apiFiles": 69,
-    "mobileFiles": 104,
+    "mobileFiles": 106,
     "endpointsCount": 46
   },
   "endpoints": [
@@ -527,6 +527,7 @@
       "mobile/src/hooks/useAppResume.ts",
       "mobile/src/hooks/useExampleRingPeople.ts",
       "mobile/src/hooks/useItem.ts",
+      "mobile/src/hooks/useKeepFocusedFieldVisible.ts",
       "mobile/src/hooks/useRevealOnError.ts",
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
@@ -606,7 +607,8 @@
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
       "mobile/src/utils/swapRing.ts",
-      "mobile/src/utils/swapSearch.ts"
+      "mobile/src/utils/swapSearch.ts",
+      "mobile/src/utils/wantedItems.ts"
     ]
   },
   "files": {
@@ -1968,6 +1970,7 @@
         "App"
       ],
       "imports": [
+        "./hooks/useKeepFocusedFieldVisible",
         "./layouts/navigation",
         "./router",
         "@capacitor/app",
@@ -2522,6 +2525,17 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useKeepFocusedFieldVisible.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "KEYBOARD_SETTLE_MS",
+        "opensKeyboard",
+        "useKeepFocusedFieldVisible"
+      ],
+      "imports": [
+        "react"
+      ]
+    },
     "mobile/src/hooks/useRevealOnError.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2929,8 +2943,7 @@
     "mobile/src/screens/PublishScreen.tsx": {
       "module": "mobile/screens",
       "exports": [
-        "PublishScreen",
-        "mergeUniqueWants"
+        "PublishScreen"
       ],
       "imports": [
         "@/components/LocationPicker",
@@ -2952,6 +2965,7 @@
         "@/utils/currency",
         "@/utils/formAlert",
         "@/utils/imageCompressor",
+        "@/utils/wantedItems",
         "clsx",
         "react",
         "react-router-dom"
@@ -3528,6 +3542,13 @@
         "@/services/routes/routes.service",
         "@/types"
       ]
+    },
+    "mobile/src/utils/wantedItems.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "mergeUniqueWants"
+      ],
+      "imports": []
     }
   }
 }
