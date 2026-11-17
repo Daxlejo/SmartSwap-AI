@@ -231,7 +231,8 @@ export const respond = (method, path, scenario = 'default') => {
       description: 'Lámpara metálica con brazo articulado, funciona bien.',
       estimatedValue: 90000,
       suggestedValueRange: { min: 70000, max: 110000 },
-      suggestedWants: ['Libros'],
+      suggestedWants: ['Libros de diseño', 'Flexómetro láser'],
+      source: 'openai',
       aiTags: ['lámpara', 'escritorio'],
     }];
   }

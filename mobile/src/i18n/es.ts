@@ -740,7 +740,6 @@ export const es = {
       subtitle: 'Esto ayuda al sistema a encontrar rutas de canje para ti.',
       searchPlaceholder: 'Buscar artículos...',
       add: 'Agregar',
-      ideas: 'Ideas para empezar',
       aiIdeas: 'Ideas de la IA (toca para agregar)',
       accepted: 'Artículos aceptados ({{count}})',
       empty: 'Aún no agregas ninguno. Agrega al menos 1 para continuar.',

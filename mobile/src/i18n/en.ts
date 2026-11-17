@@ -742,7 +742,6 @@ export const en: TranslationSchema = {
       subtitle: 'This helps the system find swap routes for you.',
       searchPlaceholder: 'Search items...',
       add: 'Add',
-      ideas: 'Ideas to start with',
       aiIdeas: 'AI ideas (tap to add)',
       accepted: 'Accepted items ({{count}})',
       empty: 'Nothing added yet. Add at least 1 to continue.',

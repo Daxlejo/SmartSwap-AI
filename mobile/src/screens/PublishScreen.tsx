@@ -67,14 +67,6 @@ const CONDITIONS: ReadonlyArray<{ label: ItemConditionLabel; desc: string; icon:
   },
 ];
 
-const SUGGESTIONS = [
-  'Cámara',
-  'iPad',
-  'Laptop',
-  'Smartwatch',
-  'Nintendo Switch',
-  'Audífonos',
-];
 
 interface FormErrors {
   name?: string;
@@ -1342,28 +1334,6 @@ export const PublishScreen: React.FC = () => {
             >
               {t('publish.wants.add')}
             </Button>
-          </div>
-
-          {/* Suggestion Chips */}
-          <div className="space-y-2">
-            <span className="font-label-md text-label-md font-semibold text-on-surface">
-              {t('publish.wants.ideas')}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((item) => {
-                const isAdded = wantedItems.includes(item);
-                return (
-                  <Chip
-                    key={item}
-                    active={isAdded}
-                    icon={isAdded ? 'check' : 'add'}
-                    onClick={() => handleToggleSuggestion(item)}
-                  >
-                    {item}
-                  </Chip>
-                );
-              })}
-            </div>
           </div>
 
           {aiSuggestedWants.length > 0 && (
