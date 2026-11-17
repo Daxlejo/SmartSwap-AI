@@ -261,6 +261,8 @@ export const ProposalConfirmScreen: React.FC = () => {
   const { currentUser } = useApp();
   const state = location.state as { route?: SwapRoute; direct?: DirectProposalDraft } | null;
   const direct = state?.direct;
+  // The session may still be restoring: wait instead of dropping the draft
+  if (direct && !currentUser) return null;
   const route =
     direct && currentUser ? buildDirectPreviewRoute(direct, currentUser) : state?.route;
   if (!route || route.chainItems.length < 2) {
