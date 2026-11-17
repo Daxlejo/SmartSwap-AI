@@ -2,7 +2,7 @@
 
 ```
 FASE: 4b-N — Nativo Android (en paralelo con la 4c)
-RAMA / PR: feat/android-native — sin PR (no se fusiona hasta la aprobación)
+RAMA / PR: feat/android-native — https://github.com/Daxlejo/SmartSwap-AI/pull/25 (abierto, sin fusionar)
 COMMITS: git log --oneline main..feat/android-native (commits atómicos)
 ```
 
@@ -41,7 +41,7 @@ Enganche único en `main.tsx`: `initNative()` justo después de aplicar el tema 
 
 **No se aplicaron**, con la razón:
 - **Reintentar si falla la primera pintada:** queda el color guardado del arranque anterior y el siguiente cambio de tema reintenta.
-- **En Android ≤ 11 las barras teal del splash no se ven:** es solo estético.
+- **En Android 11 o anterior las barras no toman el color del tema (ni las teal del splash):** es solo estético; aceptado por el orquestador.
 - **Al abrir salen dos pings a `/health` (el del arranque y el del aviso de estado):** el primero es a propósito, antes de React.
 
 El revisor general no encontró bugs ni violaciones de `CLAUDE.md`.
