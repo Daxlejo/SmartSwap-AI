@@ -127,7 +127,7 @@ describe('NotificationsService', () => {
         type: 'SYSTEM_WELCOME',
         badge: 'Red Circular Activa',
         title: '¡Bienvenido a SmartSwap!',
-        body: 'Publica tu primer objeto o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
+        body: 'Publica tu primer artículo o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
         read: false,
         routeId: null,
         createdAt: fixedNow,
@@ -151,7 +151,7 @@ describe('NotificationsService', () => {
           type: 'SYSTEM_WELCOME',
           badge: 'Red Circular Activa',
           title: '¡Bienvenido a SmartSwap!',
-          body: 'Publica tu primer objeto o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
+          body: 'Publica tu primer artículo o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
           read: false,
         },
       });
@@ -160,7 +160,7 @@ describe('NotificationsService', () => {
       expect(result.items[0].type).toBe('SYSTEM_WELCOME');
       expect(result.items[0].badge).toBe('Red Circular Activa');
       expect(result.items[0].title).toBe('¡Bienvenido a SmartSwap!');
-      expect(result.items[0].body).toContain('Publica tu primer objeto');
+      expect(result.items[0].body).toContain('Publica tu primer artículo');
       expect(result.items[0].read).toBe(false);
     });
   });
