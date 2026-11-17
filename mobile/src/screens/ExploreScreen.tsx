@@ -116,8 +116,9 @@ export const ExploreScreen = () => {
         .then((list) =>
           setZonePreview((current) => (current?.zone === zone ? { zone, items: list } : current)),
         )
-        .catch(() => {
+        .catch((error: unknown) => {
           // Without the preview the button just says "Apply"; applying still loads the zone
+          console.error(`Could not preview the items of zone ${zone}`, error);
         });
     },
     [locationScope, municipalityCode, viewerId],
