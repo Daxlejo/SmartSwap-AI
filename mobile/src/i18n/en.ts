@@ -741,7 +741,7 @@ export const en: TranslationSchema = {
     wants: {
       title: 'Which items would you accept in exchange?',
       subtitle: 'This helps the system find swap routes for you.',
-      searchPlaceholder: 'Search items...',
+      searchPlaceholder: 'E.g. bike',
       add: 'Add',
       aiIdeas: 'AI ideas (tap to add)',
       accepted: 'Accepted items ({{count}})',

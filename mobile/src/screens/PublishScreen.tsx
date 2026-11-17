@@ -1302,8 +1302,9 @@ export const PublishScreen: React.FC = () => {
           </div>
 
           {/* Search / Add Input */}
-          <div className="flex gap-2 items-center">
-            <div className="flex-1">
+          {/* With large system text the button drops under the field instead of squeezing it */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex-1 min-w-[13.5rem]">
               <Input
                 placeholder={t('publish.wants.searchPlaceholder')}
                 leftIcon="search"

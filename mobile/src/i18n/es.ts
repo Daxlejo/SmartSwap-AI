@@ -739,7 +739,7 @@ export const es = {
     wants: {
       title: '¿Qué artículos aceptarías a cambio?',
       subtitle: 'Esto ayuda al sistema a encontrar rutas de canje para ti.',
-      searchPlaceholder: 'Buscar artículos...',
+      searchPlaceholder: 'Ej. bicicleta',
       add: 'Agregar',
       aiIdeas: 'Ideas de la IA (toca para agregar)',
       accepted: 'Artículos aceptados ({{count}})',
