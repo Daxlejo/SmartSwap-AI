@@ -1,4 +1,5 @@
-import { Outlet, ScrollRestoration, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ScrollManager } from './ScrollManager';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { ServerStatusBanner } from '@/components/ServerStatusBanner';
@@ -62,7 +63,7 @@ export const AppLayout = () => {
         </main>
         {showBottomNav && <BottomNav />}
       </div>
-      <ScrollRestoration />
+      <ScrollManager />
     </div>
   );
 };

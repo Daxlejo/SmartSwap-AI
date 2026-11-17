@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { Item } from '@/types';
 import { useApp } from '@/context/AppContext';
@@ -169,11 +169,6 @@ export const ConfigureSwapScreen = () => {
 
   const [query, setQuery] = useState('');
   const mode: SwapMode = draft.mode ?? 'direct';
-
-  // Every step opens at the top
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [step]);
 
   const goTo = (next: Partial<SwapDraft>, replace = false) =>
     navigate(swapDraftPath({ ...draft, offeredItemId, ...next }), { replace, state: location.state });
