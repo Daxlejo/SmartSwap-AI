@@ -102,6 +102,27 @@ const SCREENS = [
     },
   },
   {
+    // Step 3 without anything accepted: the notice says what is missing in words
+    id: 'publish-wants-error',
+    path: '/publish',
+    go: async (page) => {
+      await page.setInputFiles('input[type=file]', { name: 'foto.png', mimeType: 'image/png', buffer: TINY_PNG });
+      await page.waitForTimeout(800);
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('#description');
+      await page.fill('#publish-name', 'Lámpara de escritorio articulada');
+      await page.fill('#description', 'Lámpara metálica con brazo articulado, funciona bien.');
+      await page.getByRole('button', { name: /^hogar$/i }).click();
+      await page.fill('#estimated-value-input', '90000');
+      await page.locator('select').last().selectOption('52001');
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('[data-testid=accepted-wants-empty]');
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('[data-testid=publish-error-alert]');
+      await page.waitForTimeout(500);
+    },
+  },
+  {
     // Market-price estimate shown as an editable "Precio estimado" with its range
     id: 'publish-price',
     path: '/publish',
