@@ -62,6 +62,7 @@ const ItemOption = ({
       <ItemImage
         src={item.imageUrl}
         alt=""
+        itemName={item.name}
         category={item.category}
         className="w-16 h-16 rounded-xl bg-surface-container-high shrink-0"
       />
@@ -87,6 +88,7 @@ const ChoiceSummary = ({ label, item }: { label: string; item: Item }) => (
     <ItemImage
       src={item.imageUrl}
       alt=""
+      itemName={item.name}
       category={item.category}
       className="w-12 h-12 rounded-xl bg-surface-container-high shrink-0"
     />

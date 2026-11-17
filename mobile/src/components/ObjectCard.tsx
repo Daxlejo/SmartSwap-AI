@@ -39,6 +39,7 @@ export const ObjectCard = ({ item, owner, onOpen, className }: ObjectCardProps) 
       <ItemImage
         src={item.imageUrl}
         alt=""
+        itemName={item.name}
         category={item.category}
         className="w-20 h-20 rounded-xl bg-surface-container-high shrink-0"
       />
