@@ -32,5 +32,7 @@ export const createWarmup = (
 export const startServerWarmup = (warmup: () => void = createWarmup()): void => {
   warmup();
   if (Capacitor.getPlatform() !== 'android') return;
-  void App.addListener('resume', warmup);
+  App.addListener('resume', warmup).catch((error: unknown) => {
+    console.warn('[serverWarmup] resume listener not registered', error);
+  });
 };

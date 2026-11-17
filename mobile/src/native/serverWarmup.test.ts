@@ -29,16 +29,22 @@ describe('createWarmup', () => {
     expect(ping).toHaveBeenCalledTimes(2);
   });
 
-  it('swallows a failing ping', async () => {
-    const ping = vi.fn().mockRejectedValue(new Error('offline'));
-    expect(() => createWarmup(ping)()).not.toThrow();
-    await Promise.resolve();
+  it('leaves no unhandled rejection when the ping fails', async () => {
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      createWarmup(() => Promise.reject(new Error('offline')))();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
   });
 });
 
 describe('startServerWarmup', () => {
   beforeEach(() => {
-    mocks.addListener.mockReset();
+    mocks.addListener.mockReset().mockResolvedValue({ remove: vi.fn() });
     mocks.platform = 'android';
   });
 

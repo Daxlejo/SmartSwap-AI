@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 
@@ -62,8 +63,11 @@ public class ThemeBarsPlugin extends Plugin {
         dark = isDark;
         getContext().getSharedPreferences(PREFS, 0).edit().putInt(KEY_COLOR, color).putBoolean(KEY_DARK, dark).apply();
         getBridge().executeOnMainThread(() -> {
-            applyNow();
-            call.resolve();
+            if (applySafely()) {
+                call.resolve();
+            } else {
+                call.reject("Could not paint the system bars", "APPLY_FAILED");
+            }
         });
     }
 
@@ -82,7 +86,18 @@ public class ThemeBarsPlugin extends Plugin {
 
     private void applyLater() {
         View decor = getActivity().getWindow().getDecorView();
-        decor.post(this::applyNow);
+        decor.post(this::applySafely);
+    }
+
+    /** Bar colors are cosmetic: a failure is logged and must never crash the app. */
+    private boolean applySafely() {
+        try {
+            applyNow();
+            return true;
+        } catch (RuntimeException error) {
+            Log.w("ThemeBars", "Could not paint the system bars", error);
+            return false;
+        }
     }
 
     @SuppressWarnings("deprecation")

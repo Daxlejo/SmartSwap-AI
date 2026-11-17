@@ -57,8 +57,9 @@ export const startSystemBarsSync = (
     if (key === last) return;
     last = key;
     // A failed native call only leaves the previous bar colors; never break the app for it
-    apply(next).catch(() => {
+    apply(next).catch((error: unknown) => {
       last = '';
+      console.warn('[systemBars] ThemeBars.apply failed', next, error);
     });
   };
 
