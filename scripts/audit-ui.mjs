@@ -180,12 +180,40 @@ const SCREENS = [
     },
   },
   { id: 'notifications', path: '/notifications' },
+  { id: 'item-detail', path: '/item/i-laura-2' },
+  { id: 'item-detail-own', path: '/item/i-me-1' },
   { id: 'configure', path: '/swap/configure' },
+  { id: 'configure-receive', path: '/swap/configure?step=2&have=i-me-1' },
+  {
+    id: 'configure-receive-list',
+    path: '/swap/configure?step=2&have=i-me-1',
+    go: async (page) => {
+      await page.fill('[data-testid=configure-want-search]', 'a');
+      await page.fill('[data-testid=configure-want-search]', 'bi');
+      await page.waitForSelector('[data-testid^=want-option-]');
+    },
+  },
+  { id: 'configure-type', path: '/swap/configure?step=3&have=i-me-1&want=i-laura-2&fixed=1' },
+  { id: 'configure-type-ring', path: '/swap/configure?step=3&have=i-me-1&want=i-laura-1&mode=circular' },
   { id: 'configure-empty', path: '/swap/configure', scenario: 'empty' },
   { id: 'home-empty', path: '/home', scenario: 'empty' },
   { id: 'trades-empty', path: '/swaps', scenario: 'empty' },
-  { id: 'searching', path: '/swap/searching?have=i-me-1&q=Bicicleta', settleMs: 600 },
-  { id: 'results', path: '/swap/results?have=i-me-1&q=Bicicleta' },
+  { id: 'searching', path: '/swap/searching?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4' },
+  {
+    id: 'searching-empty',
+    path: '/swap/searching?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4',
+    scenario: 'noRings',
+  },
+  { id: 'results', path: '/swap/results?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4' },
+  {
+    id: 'proposal-confirm-direct',
+    expectPath: '/swap/proposal/confirm',
+    path: '/swap/configure?step=3&have=i-me-1&want=i-laura-2&fixed=1',
+    go: async (page) => {
+      await page.click('[data-testid=configure-continue-button]');
+      await page.waitForURL('**/swap/proposal/confirm');
+    },
+  },
   { id: 'route-detail', path: '/swap/route/r-active' },
   // The swap ring with 2 and 4 people, closed and declined (the 3-person waiting ring is route-detail)
   { id: 'ring-n2-broken', path: '/swap/route/r-n2-broken' },
