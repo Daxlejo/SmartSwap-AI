@@ -54,6 +54,10 @@ export interface SearchRoutesPayload {
   offeredItemId?: string;
   objectiveText: string;
   desiredCategory?: string;
+  /** Exact item the user wants to receive; every returned ring ends with it. */
+  wantedItemId?: string;
+  /** Shortest ring to return (3 leaves out the 1-to-1 swaps, which are proposed directly). */
+  minSteps?: number;
   maxSteps?: number;
   valueTolerancePct?: number;
   /** Language for AI route explanations; defaults to the user's app locale. */
@@ -68,6 +72,11 @@ export interface ProposeRouteStepInput {
   userId: string;
   givesItemId: string;
   receivesItemId: string;
+}
+
+export interface ProposeDirectPayload {
+  offeredItemId: string;
+  wantedItemId: string;
 }
 
 export interface ProposeRoutePayload {
@@ -455,6 +464,15 @@ export const routesService = {
   async proposeRoute(payload: ProposeRoutePayload): Promise<SwapRoute> {
     const response = await apiClient.post<SwapRouteDto | SingleRouteEnvelope>(
       '/routes/propose',
+      payload,
+    );
+    return extractSingleRoute(response);
+  },
+
+  /** Offers one of the user's items for another user's item, 1 to 1 (a 2-person ring). */
+  async proposeDirect(payload: ProposeDirectPayload): Promise<SwapRoute> {
+    const response = await apiClient.post<SwapRouteDto | SingleRouteEnvelope>(
+      '/routes/direct',
       payload,
     );
     return extractSingleRoute(response);

@@ -229,6 +229,26 @@ describe('routesService & mapApiRouteToUiRoute', () => {
     });
   });
 
+  describe('proposeDirect', () => {
+    it('calls POST /routes/direct with both items and returns the mapped route', async () => {
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        ...sampleApiRoute,
+        status: 'ACTIVE',
+      });
+
+      const result = await routesService.proposeDirect({
+        offeredItemId: 'item-bike',
+        wantedItemId: 'item-camera',
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('/routes/direct', {
+        offeredItemId: 'item-bike',
+        wantedItemId: 'item-camera',
+      });
+      expect(result.status).toBe('ACTIVE');
+    });
+  });
+
   describe('proposeRoute', () => {
     it('calls POST /routes/propose and returns the mapped SwapRoute', async () => {
       const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
