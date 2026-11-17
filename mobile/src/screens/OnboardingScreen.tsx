@@ -5,11 +5,10 @@ import { useApp } from '@/context/AppContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { preferencesStorage } from '@/services/storage/preferencesStorage';
 import { ApiError } from '@/services/http/apiClient';
-import { SwapRing } from '@/components/SwapRing';
+import { ExampleRing } from '@/components/ExampleRing';
 import { ProfilePhotoPicker } from '@/components/ProfilePhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { asRing, type RingParticipants } from '@/utils/swapRing';
 
 const STEP_COUNT = 4;
 type OnboardingStep = 0 | 1 | 2 | 3;
@@ -30,29 +29,18 @@ export const OnboardingScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const exampleRing = useMemo<RingParticipants | null>(
+  const examplePeople = useMemo(
     () =>
-      asRing([
+      [
         {
           id: currentUser?.id ?? 'example-you',
           name: currentUser?.name ?? t('onboarding.ring.you'),
           avatarUrl: currentUser?.avatarUrl,
           gives: { name: t('onboarding.ring.item1'), category: 'Deportes' },
-          acceptance: 'accepted',
         },
-        {
-          id: 'example-camilo',
-          name: 'Camilo',
-          gives: { name: t('onboarding.ring.item2'), category: 'Música' },
-          acceptance: 'accepted',
-        },
-        {
-          id: 'example-laura',
-          name: 'Laura',
-          gives: { name: t('onboarding.ring.item3'), category: 'Hogar' },
-          acceptance: 'accepted',
-        },
-      ]),
+        { id: 'example-camilo', name: 'Camilo', gives: { name: t('onboarding.ring.item2'), category: 'Música' } },
+        { id: 'example-laura', name: 'Laura', gives: { name: t('onboarding.ring.item3'), category: 'Hogar' } },
+      ] as const,
     [currentUser?.id, currentUser?.name, currentUser?.avatarUrl, t],
   );
 
@@ -119,21 +107,8 @@ export const OnboardingScreen = () => {
       <div className="flex flex-col flex-1 gap-5" aria-live="polite">
         {step !== PHOTO_STEP ? (
           <>
-            {step === 1 && exampleRing ? (
-              <div className="flex flex-col items-center gap-2">
-                <span
-                  data-testid="onboarding-example-badge"
-                  className="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold"
-                >
-                  {t('onboarding.ring.example')}
-                </span>
-                <SwapRing
-                  participants={exampleRing}
-                  currentUserId={currentUser.id}
-                  variant="compact"
-                  showList={false}
-                />
-              </div>
+            {step === 1 ? (
+              <ExampleRing people={examplePeople} viewerId={currentUser.id} />
             ) : (
               <div className="mx-auto w-28 h-28 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <Icon name={slides[step].icon} size="xl" />

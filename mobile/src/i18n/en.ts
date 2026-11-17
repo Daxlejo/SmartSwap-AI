@@ -21,6 +21,11 @@ export const en: TranslationSchema = {
     inputAction: 'Field action',
   },
   ring: {
+    example: {
+      you: 'You',
+      center: '3 people, 1 swap',
+      aria: 'Example ring: {{first}} gives {{item1}} to {{second}}, {{second}} gives {{item2}} to {{third}} and {{third}} gives {{item3}} to {{first}}. Everyone accepts and the swap closes.',
+    },
     you: {
       label: 'You',
       pending: 'Waiting for your answer',
@@ -276,7 +281,6 @@ export const en: TranslationSchema = {
     ring: {
       title: 'How the ring works',
       body: 'If nobody has exactly what you want, the app builds a circle of 2 to 4 people: each one hands their item to the next and everybody gets something.',
-      example: 'Example',
       you: 'You',
       item1: 'the bike',
       item2: 'the guitar',

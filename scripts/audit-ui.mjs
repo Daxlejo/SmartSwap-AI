@@ -188,7 +188,8 @@ const SCREENS = [
     scenario: 'empty',
     go: async (page) => {
       await page.click('[data-testid=onboarding-next]');
-      await page.waitForSelector('[data-testid=onboarding-example-badge]');
+      await page.waitForSelector('[data-testid=example-ring]');
+      await page.waitForTimeout(2600);
     },
   },
   {

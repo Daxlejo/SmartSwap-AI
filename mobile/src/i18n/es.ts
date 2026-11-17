@@ -19,6 +19,11 @@ export const es = {
     inputAction: 'Acción del campo',
   },
   ring: {
+    example: {
+      you: 'Tú',
+      center: '3 personas, 1 canje',
+      aria: 'Anillo de ejemplo: {{first}} entrega {{item1}} a {{second}}, {{second}} entrega {{item2}} a {{third}} y {{third}} entrega {{item3}} a {{first}}. Todos aceptan y el canje se cierra.',
+    },
     you: {
       label: 'Tú',
       pending: 'Falta que respondas',
@@ -274,7 +279,6 @@ export const es = {
     ring: {
       title: 'Así funciona el anillo',
       body: 'Si nadie tiene justo lo que buscas, la app arma un círculo de 2 a 4 personas: cada una entrega su objeto a la siguiente y todas reciben algo.',
-      example: 'Ejemplo',
       you: 'Tú',
       item1: 'la bicicleta',
       item2: 'la guitarra',
