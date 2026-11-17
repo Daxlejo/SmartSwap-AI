@@ -41,16 +41,14 @@
  * no screen failed to load and every counted metric is 0.
  */
 import { chromium } from 'playwright-core';
-import { spawn, execSync } from 'node:child_process';
-import { mkdirSync, openSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 import { respond } from './audit-ui-fixtures.mjs';
+import { API_PREFIX, isUp, startVite, stopVite, waitForServer } from './ui-harness.mjs';
 
 const require = createRequire(import.meta.url);
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const AXE_PATH = require.resolve('axe-core/axe.min.js');
 const PORT = 5199;
 const CHANNEL = process.env.AUDIT_BROWSER_CHANNEL ?? 'msedge';
@@ -62,7 +60,6 @@ if (FONT_SCALES.some((s) => !Number.isFinite(s) || s < 50 || s > 300)) {
 }
 const ONLY = process.env.AUDIT_ONLY ? process.env.AUDIT_ONLY.split(',').map((s) => s.trim()) : null;
 const VIEWPORT = { width: 360, height: 800 };
-const API_PREFIX = '/api/v1';
 
 /** A 1×1 PNG used as the item photo in the Publish flow. */
 const TINY_PNG = Buffer.from(
@@ -430,57 +427,6 @@ function scrollEndInPage() {
 // Runner
 // ---------------------------------------------------------------------------
 
-const isUp = async (url) => {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    return false;
-  }
-};
-
-/** Waits for Vite, failing at once if the process exits (e.g. the port is taken). */
-const waitForServer = async (url, child, timeoutMs) => {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (child && child.exitCode !== null) {
-      throw new Error(`Vite exited with code ${child.exitCode}; see ${join(OUT, 'vite.log')}`);
-    }
-    if (await isUp(url)) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`The mobile app did not start at ${url} (see ${join(OUT, 'vite.log')})`);
-};
-
-const startVite = () => {
-  const log = openSync(join(OUT, 'vite.log'), 'w');
-  return spawn('npm', ['--workspace=mobile', 'run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
-    cwd: ROOT,
-    shell: true,
-    detached: process.platform !== 'win32',
-    env: { ...process.env, VITE_API_URL: `http://audit.local${API_PREFIX}`, VITE_DEMO_PASSWORD: '' },
-    stdio: ['ignore', log, log],
-  });
-};
-
-const stopVite = (child) => {
-  if (!child || child.exitCode !== null) return;
-  if (process.platform === 'win32') {
-    try {
-      execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' });
-    } catch (error) {
-      // 128: the process tree is already gone
-      if (error.status !== 128) console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
-    }
-  } else {
-    // The shell wrapper leads its own group: kill the group so Vite goes too
-    try {
-      process.kill(-child.pid, 'SIGTERM');
-    } catch (error) {
-      console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
-    }
-  }
-};
-
 /** A browser context that answers the API from fixtures and records any call it cannot answer. */
 const newContext = async (browser, theme, withSession, fontScale, scenario) => {
   const context = await browser.newContext({
@@ -618,9 +564,9 @@ const main = async () => {
       base = `http://localhost:${PORT}`;
       // Something already on the port would be audited instead of the current code
       if (await isUp(base)) throw new Error(`Port ${PORT} is already in use; stop that server and run again.`);
-      vite = startVite();
+      vite = startVite(PORT, join(OUT, 'vite.log'));
       activeVite = vite;
-      await waitForServer(base, vite, 90000);
+      await waitForServer(base, vite, 90000, join(OUT, 'vite.log'));
     }
 
     browser = await chromium.launch({ channel: CHANNEL, headless: true });
