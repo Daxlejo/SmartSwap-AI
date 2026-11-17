@@ -211,7 +211,13 @@ export const SearchingScreen: React.FC = () => {
             cy="110"
             r="88"
             fill="none"
-            stroke={found ? 'rgb(var(--color-success))' : 'rgb(var(--color-primary))'}
+            stroke={
+              found
+                ? 'rgb(var(--color-success))'
+                : outcome.status === 'pending'
+                  ? 'rgb(var(--color-primary))'
+                  : 'rgb(var(--color-outline))'
+            }
             strokeOpacity={outcome.status === 'pending' ? 0.25 : 0.7}
             strokeWidth="3"
             strokeDasharray={outcome.status === 'pending' ? '8 6' : undefined}
