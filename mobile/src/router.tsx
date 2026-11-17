@@ -17,6 +17,7 @@ import { RouteResultsScreen } from '@/screens/RouteResultsScreen';
 import { RouteDetailScreen } from '@/screens/RouteDetailScreen';
 import { ProposalConfirmScreen } from '@/screens/ProposalConfirmScreen';
 import { ProposalSentScreen } from '@/screens/ProposalSentScreen';
+import { ItemDetailScreen } from '@/screens/ItemDetailScreen';
 
 export const router = createBrowserRouter(
   [
@@ -75,6 +76,10 @@ export const router = createBrowserRouter(
         {
           path: '/profile',
           element: <ProfileScreen />,
+        },
+        {
+          path: '/item/:itemId',
+          element: <ItemDetailScreen />,
         },
         {
           path: '/swap/configure',

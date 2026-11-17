@@ -337,11 +337,7 @@ export const HomeScreen = () => {
               <ObjectCard
                 key={item.id}
                 item={item}
-                onOfferSwap={() =>
-                  navigate('/swap/configure', {
-                    state: { wantItemId: item.id, wantItemName: item.name },
-                  })
-                }
+                onOpen={() => navigate(`/item/${item.id}`, { state: { item } })}
               />
             ))}
           </div>

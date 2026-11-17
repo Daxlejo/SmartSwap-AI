@@ -6,10 +6,7 @@ import { ObjectCard } from '@/components/ObjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
-import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Avatar } from '@/components/ui/Avatar';
 import { ApiError } from '@/services/http/apiClient';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
@@ -25,7 +22,6 @@ import {
   type ActiveFilterKey,
   type ExploreFilters,
 } from '@/utils/exploreFilters';
-import { ItemImage } from '@/components/ui/ItemImage';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 export const ExploreScreen = () => {
@@ -37,13 +33,11 @@ export const ExploreScreen = () => {
     isItemsLoading,
     loadStates,
     refreshItems,
-    deleteItemReal,
     locationScope,
     setLocationScope,
   } = useApp();
 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filters, setFilters] = useState<ExploreFilters>(DEFAULT_EXPLORE_FILTERS);
@@ -53,7 +47,6 @@ export const ExploreScreen = () => {
     zone: LocationScopePreference;
     items: Item[] | null;
   } | null>(null);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   useEffect(() => {
     void refreshItems();
@@ -71,26 +64,6 @@ export const ExploreScreen = () => {
       }
     } finally {
       setIsRefreshing(false);
-    }
-  };
-
-  const handleDeleteOwnItem = async (itemId: string) => {
-    if (isDeletingId) return;
-    setIsDeletingId(itemId);
-    setActionError(null);
-    try {
-      await deleteItemReal(itemId);
-      if (selectedItem?.id === itemId) {
-        setSelectedItem(null);
-      }
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setActionError(err.message);
-      } else {
-        setActionError(t('explore.deleteError'));
-      }
-    } finally {
-      setIsDeletingId(null);
     }
   };
 
@@ -197,9 +170,6 @@ export const ExploreScreen = () => {
 
   const hasActiveFilters = searchQuery.trim() !== '' || activeKeys.length > 0;
 
-  const selectedItemOwner = selectedItem ? resolveOwner(selectedItem) : undefined;
-  const isSelectedItemMine =
-    Boolean(selectedItem && currentUser && selectedItem.ownerId === currentUser.id);
   const showSkeleton = isItemsLoading && items.length === 0;
   const hasMunicipality = Boolean(currentUser?.municipalityCode);
   const widenTarget =
@@ -413,43 +383,14 @@ export const ExploreScreen = () => {
           </div>
         ) : (
           <div className="flex flex-col space-y-3">
-            {filteredItems.map((item) => {
-              const owner = resolveOwner(item);
-
-              return (
-                <div
-                  key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={t('explore.viewDetails', { name: item.name })}
-                  onClick={(e) => {
-                    // If user clicked the "Proponer" button inside ObjectCard, let onOfferSwap handle navigation
-                    if ((e.target as HTMLElement).closest('button')) {
-                      return;
-                    }
-                    setSelectedItem(item);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedItem(item);
-                    }
-                  }}
-                  className="relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
-                >
-                  <ObjectCard
-                    item={item}
-                    owner={owner}
-                    onOfferSwap={() =>
-                      navigate('/swap/configure', {
-                        state: { wantItemId: item.id, wantItemName: item.name },
-                      })
-                    }
-                  />
-
-                </div>
-              );
-            })}
+            {filteredItems.map((item) => (
+              <ObjectCard
+                key={item.id}
+                item={item}
+                owner={resolveOwner(item)}
+                onOpen={() => navigate(`/item/${item.id}`, { state: { item } })}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -468,102 +409,6 @@ export const ExploreScreen = () => {
         onApply={handleApplyFilters}
       />
 
-      {/* Section 5: Item Detail Bottom Sheet */}
-      <BottomSheet
-        isOpen={Boolean(selectedItem)}
-        onClose={() => setSelectedItem(null)}
-        title={t('explore.detailTitle')}
-      >
-        {selectedItem && (
-          <div className="flex flex-col space-y-4">
-            {/* Full Item Image */}
-            <div className="relative w-full h-56 rounded-2xl bg-surface-container-low border border-surface-container-high/60 overflow-hidden flex items-center justify-center">
-              <ItemImage src={selectedItem.imageUrl} alt={selectedItem.name} category={selectedItem.category} className="w-full h-full" />
-              <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
-                <Badge variant="primary" icon="category">
-                  {t(`catalog.categories.${selectedItem.category}`, { defaultValue: selectedItem.category })}
-                </Badge>
-                <Badge variant="surface">
-                  {t(`catalog.conditions.${selectedItem.condition}`, { defaultValue: selectedItem.condition })}
-                </Badge>
-              </div>
-              {selectedItem.estimatedValue !== undefined && (
-                <div className="absolute bottom-3 right-3 px-3 py-1 rounded-full bg-surface border border-surface-container-high shadow-xs">
-                  <span className="font-label-md text-label-md text-primary font-bold">
-                    {t('explore.estimatedValue', { value: formatCop(selectedItem.estimatedValue) })}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Item Title & Description */}
-            <div className="space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-headline-md text-headline-md font-bold text-on-surface">
-                  {selectedItem.name}
-                </h3>
-              </div>
-              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                {selectedItem.description ||
-                  t('explore.defaultDescription')}
-              </p>
-            </div>
-
-            {/* Owner Profile Card */}
-            {selectedItemOwner && (
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-surface-container-high/60">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar
-                    src={selectedItemOwner.avatarUrl}
-                    alt={selectedItemOwner.name}
-                    size="md"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-headline-sm text-headline-sm text-on-surface break-words">
-                      {selectedItemOwner.name}
-                    </span>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 break-words">
-                      <Icon name="location_on" size="xs" />
-                      <span className="break-words">{selectedItemOwner.location}</span>
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* Primary CTA or Own Item Delete */}
-            {isSelectedItemMine ? (
-              <Button
-                variant="outline"
-                size="lg"
-                fullWidth
-                leftIcon="delete"
-                isLoading={isDeletingId === selectedItem.id}
-                onClick={() => handleDeleteOwnItem(selectedItem.id)}
-                className="text-error border-error/40 hover:bg-error-container/20"
-              >
-                {t('explore.deleteMine')}
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="lg"
-                fullWidth
-                rightIcon="send"
-                onClick={() => {
-                  navigate('/swap/configure', {
-                    state: { wantItemId: selectedItem.id, wantItemName: selectedItem.name },
-                  });
-                  setSelectedItem(null);
-                }}
-              >
-                {t('explore.proposeSwap')}
-              </Button>
-            )}
-          </div>
-        )}
-      </BottomSheet>
     </div>
   );
 };
