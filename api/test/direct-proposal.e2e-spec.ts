@@ -53,8 +53,8 @@ describe('Direct proposal and rings toward a chosen item (e2e)', () => {
     }
   });
 
-  it('finds no ring when the chosen item is Alex own', async () => {
-    const response = await testApp
+  it('refuses a ring toward Alex own item instead of answering "no rings"', async () => {
+    await testApp
       .http()
       .post('/api/v1/routes/search')
       .set(authed(alex.token))
@@ -63,8 +63,7 @@ describe('Direct proposal and rings toward a chosen item (e2e)', () => {
         offeredItemId: itemIds.bikeId,
         wantedItemId: itemIds.bikeId,
       })
-      .expect(200);
-    expect(response.body).toEqual([]);
+      .expect(400);
   });
 
   it('rejects a direct proposal for your own item or with an item that is not yours', async () => {
@@ -119,6 +118,21 @@ describe('Direct proposal and rings toward a chosen item (e2e)', () => {
         }),
       ]),
     );
+  });
+
+  it('reserves the camera too: nobody else can ask for it or search rings toward it', async () => {
+    await testApp
+      .http()
+      .post('/api/v1/routes/direct')
+      .set(authed(mateo.token))
+      .send({ offeredItemId: itemIds.guitarId, wantedItemId: itemIds.cameraId })
+      .expect(409);
+    await testApp
+      .http()
+      .post('/api/v1/routes/search')
+      .set(authed(mateo.token))
+      .send({ objectiveText: 'Cámara', offeredItemId: itemIds.guitarId, wantedItemId: itemIds.cameraId })
+      .expect(409);
   });
 
   it('refuses a second direct proposal over the locked bike', async () => {
