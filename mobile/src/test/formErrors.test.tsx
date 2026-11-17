@@ -1,3 +1,4 @@
+import { formAlertFor } from '@/utils/formAlert';
 import { describe, it, expect } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import '@/i18n';
@@ -26,5 +27,22 @@ describe('form errors', () => {
     expect(html).toContain('aria-live="assertive"');
     expect(html).toContain('tabindex="-1"');
     expect(html).toContain('Revisa los campos marcados.');
+  });
+});
+
+describe('formAlertFor', () => {
+  const heading = (count: number) => `Corrige estos ${count} datos:`;
+
+  it('says the only error itself, never "Revisa: <field>"', () => {
+    expect(
+      formAlertFor(['Debes agregar al menos 1 artículo que aceptarías a cambio.'], heading),
+    ).toEqual({ message: 'Debes agregar al menos 1 artículo que aceptarías a cambio.', details: [] });
+  });
+
+  it('lists every error in words when there are several', () => {
+    expect(formAlertFor(['El nombre es obligatorio.', ' ', 'Selecciona una categoría.'], heading)).toEqual({
+      message: 'Corrige estos 2 datos:',
+      details: ['El nombre es obligatorio.', 'Selecciona una categoría.'],
+    });
   });
 });
