@@ -974,8 +974,9 @@ export class RoutesService {
   }
 
   /**
-   * What a participant reads about a new proposal: a 1-to-1 offer names both items
-   * ("your X for their Y"); a ring names its size and objective.
+   * What a participant reads about a new proposal: any 2-person ring (a direct offer
+   * or a 2-step route the engine found) is a 1-to-1 swap and names both items
+   * ("your X for their Y"); a bigger ring names its size and objective.
    */
   private proposalNotice(
     code: string,

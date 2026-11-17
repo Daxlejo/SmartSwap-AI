@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * A 1-to-1 proposal: the initiator offers one of their items for one item of another
- * user. Their wants are not checked; it is an offer and the owner decides.
+ * user. The owner's wants are not checked; it is an offer and the owner decides.
  */
 export const proposeDirectSchema = z
   .object({
