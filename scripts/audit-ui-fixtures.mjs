@@ -159,7 +159,7 @@ export const notifications = [
     id: 'n-2',
     type: 'SYSTEM_WELCOME',
     title: 'Bienvenida a SmartSwap',
-    body: 'Publica un objeto para empezar a recibir propuestas.',
+    body: 'Publica un artículo para empezar a recibir propuestas.',
     isRead: true,
     createdAt: '2026-11-01T12:00:00.000Z',
   },

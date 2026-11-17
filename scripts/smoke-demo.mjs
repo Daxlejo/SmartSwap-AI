@@ -139,7 +139,7 @@ try {
     await page.getByRole('button', { name: /Iniciar sesión|Entrar|Ingresar/i }).first().click();
     await page.waitForURL('**/home', { timeout: 30000 });
     await page.waitForTimeout(SETTLE_MS + 500);
-    check('new user Home invites to publish', (await bodyText()).includes('Publica tu primer objeto'));
+    check('new user Home invites to publish', (await bodyText()).includes('Publica tu primer artículo'));
     await shot('06-new-user-home');
     await page.goto(`${BASE}/swaps`);
     await page.waitForTimeout(SETTLE_MS);
@@ -155,7 +155,7 @@ try {
     await page.goto(`${BASE}/explore`);
     await page.waitForTimeout(SETTLE_MS);
     await page.getByPlaceholder(/Buscar/).first().fill('zzzzzz');
-    check('Explorar is empty with filters', (await bodyText()).includes('No encontramos objetos con estos filtros'));
+    check('Explorar is empty with filters', (await bodyText()).includes('No encontramos artículos con estos filtros'));
   }
 
   // 7. A failed load shows an error with retry, never made-up data

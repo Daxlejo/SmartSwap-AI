@@ -10,7 +10,7 @@
  *      the user) → results, then back: step 3, 2 and 1, never a second search.
  *   3. No ring found: "Propose a direct swap" replaces Searching, so back from the
  *      confirmation returns to step 3.
- *   4. Own item opened from Profile: only "Delete my listing".
+ *   4. Own item opened from Profile: only "Delete my item".
  *   5. Explore asks the API without the user's own items and shows none of them.
  *
  * Back is the browser history back, the same `history.back()` Android's back button
