@@ -565,7 +565,7 @@ export const en: TranslationSchema = {
     estimatedValue: 'Est. value {{value}}',
     defaultDescription: 'The owner did not add a description.',
     cashFree: '100% cash-free swap',
-    deleteMine: 'Delete my listing',
+    deleteMine: 'Delete my item',
     backToTop: 'Back to top',
     proposeSwap: 'Propose swap',
   },
@@ -700,7 +700,7 @@ export const en: TranslationSchema = {
     success: {
       title: 'Item published!',
       description: 'Your {{name}} is now visible to the SmartSwap network.',
-      summaryAria: 'Active listing summary',
+      summaryAria: 'Published item summary',
       active: 'Active',
       readyForRoutes: 'Ready for swap routes',
       findSwap: 'Find a circular swap',
@@ -754,7 +754,7 @@ export const en: TranslationSchema = {
       helper: 'Enter the price or ask the AI for an estimate.',
     },
     preview: {
-      title: 'Preview of your listing',
+      title: 'Preview of your item',
       subtitle: 'This is how other users will see your item.',
       acceptsInExchange: 'Accepts in exchange:',
     },
