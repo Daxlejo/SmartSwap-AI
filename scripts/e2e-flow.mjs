@@ -179,6 +179,22 @@ const main = async () => {
       assert(after === 1, `going back searched again (${after} searches)`);
     });
 
+    await run('a ring found is sent as a ring, not as a direct offer', browser, 'default', async ({ page, calls }) => {
+      await page.goto(`${BASE}/swap/configure?step=3&have=i-me-1&want=i-laura-1&mode=circular`, { waitUntil: 'networkidle' });
+      await continueStep(page);
+      await page.click('[data-testid=searching-view-routes]');
+      await waitPath(page, /^\/swap\/results\?/);
+      await page.getByRole('button', { name: 'Ver ruta' }).first().click();
+      await waitPath(page, /^\/swap\/route\//);
+      await page.locator('main button').filter({ hasText: /propon|propos/i }).last().click();
+      await waitPath(page, /^\/swap\/proposal\/confirm$/);
+      await page.locator('main label:has(input[type=checkbox])').click();
+      await page.locator('main button').filter({ hasText: /enviar/i }).last().click();
+      await waitPath(page, /^\/swap\/proposal\/sent$/);
+      assert(calls.filter((call) => call.path === '/routes/propose').length === 1, 'the ring was not sent once');
+      assert(!calls.some((call) => call.path === '/routes/direct'), 'a ring was sent as a direct offer');
+    });
+
     await run('no ring: propose direct, and back returns to step 3', browser, 'noRings', async ({ page, calls }) => {
       await page.goto(`${BASE}/swap/configure?step=3&have=i-me-1&want=i-laura-1&mode=circular`, { waitUntil: 'networkidle' });
       await continueStep(page);
@@ -188,9 +204,38 @@ const main = async () => {
       await waitPath(page, /^\/swap\/proposal\/confirm$/);
       await page.goBack();
       await waitPath(page, /^\/swap\/configure\?step=3/);
+      // And forward again to send it: the direct offer carries both chosen items
+      await continueStep(page);
+      await page.click('[data-testid=searching-propose-direct]');
+      await waitPath(page, /^\/swap\/proposal\/confirm$/);
+      await page.locator('main label:has(input[type=checkbox])').click();
+      await page.locator('main button').filter({ hasText: /enviar/i }).last().click();
+      await waitPath(page, /^\/swap\/proposal\/sent$/);
+      const direct = calls.filter((call) => call.path === '/routes/direct');
+      assert(
+        direct.length === 1 && direct[0].body?.offeredItemId === 'i-me-1' && direct[0].body?.wantedItemId === 'i-laura-1',
+        `wrong direct proposal: ${JSON.stringify(direct.map((call) => call.body))}`,
+      );
+      await page.goBack();
+      await waitPath(page, /^\/swap\/configure\?step=3/);
       await page.waitForTimeout(800);
       const searches = calls.filter((call) => call.path === '/routes/search').length;
-      assert(searches === 1, `expected 1 search, got ${searches}`);
+      assert(searches === 2, `expected 2 searches (one per visit), got ${searches}`);
+    });
+
+    await run('a reserved item says so, without offering a direct swap', browser, 'wantReserved', async ({ page }) => {
+      await page.goto(`${BASE}/swap/configure?step=3&have=i-me-1&want=i-laura-1&mode=circular`, { waitUntil: 'networkidle' });
+      await continueStep(page);
+      await page.getByText('Este artículo ya no está disponible').waitFor();
+      assert((await page.locator('[data-testid=searching-propose-direct]').count()) === 0, 'offers a direct swap for a reserved item');
+      await page.click('[data-testid=searching-back]');
+      await waitPath(page, /^\/swap\/configure\?step=3/);
+    });
+
+    await run('an offered item that is gone sends the user back to step 1 with a notice', browser, 'default', async ({ page }) => {
+      await page.goto(`${BASE}/swap/configure?step=3&have=i-gone&want=i-laura-1&mode=direct`, { waitUntil: 'networkidle' });
+      await page.getByTestId('configure-offer-gone').waitFor();
+      assert(await page.getByText('Paso 1 de 3').isVisible(), 'did not go back to step 1');
     });
 
     await run('no ring: Back returns to step 3', browser, 'noRings', async ({ page }) => {

@@ -183,11 +183,15 @@ export const directRoute = {
 /**
  * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
  * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
- * Scenario `noRings` finds no ring for any search.
+ * Scenario `noRings` finds no ring for any search; `wantReserved` answers a ring search
+ * as the API does when the wanted item is already reserved in another swap.
  */
 export const respond = (method, path, scenario = 'default') => {
   const p = path.replace(/\?.*$/, '');
   if (scenario === 'noRings' && p === '/routes/search') return [200, []];
+  if (scenario === 'wantReserved' && p === '/routes/search') {
+    return [409, { statusCode: 409, message: 'The item you want is already reserved in another swap' }];
+  }
   if (scenario === 'empty') {
     if (p === '/items/me' || p === '/items/mine') return [200, []];
     if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, []];
