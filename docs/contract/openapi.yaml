@@ -315,6 +315,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: excludeOwnerId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
         - name: status
           in: query
           required: false

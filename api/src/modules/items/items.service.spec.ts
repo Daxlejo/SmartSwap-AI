@@ -351,6 +351,24 @@ describe('ItemsService', () => {
       expect(mockPrismaService.item.findMany.mock.calls[0][0].where.estimatedValue).toBeUndefined();
     });
 
+    it('leaves out the viewer own items with excludeOwnerId', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+
+      await itemsService.findAll({ excludeOwnerId: 'user-1' });
+
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where.ownerId).toEqual({
+        not: 'user-1',
+      });
+    });
+
+    it('lets an explicit ownerId win over excludeOwnerId', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+
+      await itemsService.findAll({ ownerId: 'user-2', excludeOwnerId: 'user-1' });
+
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where.ownerId).toBe('user-2');
+    });
+
     it('requires the viewer municipality for the nearby and department scopes', async () => {
       await expect(itemsService.findAll({ scope: 'nearby' })).rejects.toThrow(
         'municipalityCode is required',
