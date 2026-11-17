@@ -23,6 +23,7 @@ import {
   type ExploreFilters,
 } from '@/utils/exploreFilters';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { BackToTopButton } from '@/components/BackToTopButton';
 
 export const ExploreScreen = () => {
   const navigate = useNavigate();
@@ -394,6 +395,8 @@ export const ExploreScreen = () => {
           </div>
         )}
       </div>
+
+      <BackToTopButton />
 
       <ExploreFiltersSheet
         isOpen={isFiltersOpen}

@@ -570,6 +570,7 @@ export const en: TranslationSchema = {
     defaultDescription: 'The owner did not add a description.',
     cashFree: '100% cash-free swap',
     deleteMine: 'Delete my listing',
+    backToTop: 'Back to top',
     proposeSwap: 'Propose swap',
   },
   configure: {

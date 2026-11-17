@@ -568,6 +568,7 @@ export const es = {
     defaultDescription: 'El dueño no agregó una descripción.',
     cashFree: 'Canje 100% libre de efectivo',
     deleteMine: 'Eliminar mi publicación',
+    backToTop: 'Volver arriba',
     proposeSwap: 'Proponer canje',
   },
   configure: {
