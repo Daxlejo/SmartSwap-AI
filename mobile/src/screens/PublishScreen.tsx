@@ -21,6 +21,7 @@ import { formAlertFor, type FormAlertContent } from '@/utils/formAlert';
 import { useRevealOnError } from '@/hooks/useRevealOnError';
 
 import { ItemImage } from '@/components/ui/ItemImage';
+import { mergeUniqueWants } from '@/utils/wantedItems';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -173,26 +174,6 @@ const mapAiConditionToUi = (rawCondition: string): ItemConditionLabel => {
     return 'Para repuesto';
   }
   return 'Excelente estado';
-};
-
-export const mergeUniqueWants = (
-  existingWants: string[],
-  suggestedWants: string[],
-): string[] => {
-  const seen = new Set(existingWants.map((w) => w.trim().toLowerCase()));
-  const merged = [...existingWants];
-
-  for (const rawSuggestion of suggestedWants) {
-    const trimmed = rawSuggestion.trim();
-    if (!trimmed) continue;
-    const key = trimmed.toLowerCase();
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(trimmed);
-    }
-  }
-
-  return merged.slice(0, 10);
 };
 
 export const PublishScreen: React.FC = () => {
