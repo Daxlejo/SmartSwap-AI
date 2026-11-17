@@ -3,7 +3,7 @@
 ```
 FASE: 4b-N — Nativo Android (en paralelo con la 4c)
 RAMA / PR: feat/android-native — sin PR (no se fusiona hasta la aprobación)
-COMMITS: git log --oneline main..feat/android-native (16 commits atómicos)
+COMMITS: git log --oneline main..feat/android-native (commits atómicos)
 ```
 
 ## Qué se hizo
