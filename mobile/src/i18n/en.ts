@@ -89,8 +89,6 @@ export const en: TranslationSchema = {
     retry: 'Try again',
     homeRoutes: "You don't have any routes yet. Look for a swap with one of your items.",
     homeRoutesCta: 'Find a route',
-    homeCatalog: 'There are no items in your area yet. Widen the search to see more.',
-    homeCatalogCta: 'Widen the area',
     tradesReceived: 'You have no proposals to answer.',
     tradesReceivedCta: 'Explore items',
     tradesSent: "You haven't sent any proposals yet. Find a route and propose your first swap.",
@@ -239,9 +237,9 @@ export const en: TranslationSchema = {
       searchReason: 'Available once you have at least 1 published item: it is what you hand over in the swap.',
     },
     engine: {
-      title: 'Find a swap',
-      description: 'We show you routes of 2 to 4 people that complete your swap.',
-      cta: 'Find a swap',
+      title: 'New swap',
+      description: 'Choose what you offer and what you want. Propose it to the owner or let the AI build a ring.',
+      cta: 'Start a swap',
     },
     publish: {
       title: 'Publish',
@@ -259,14 +257,6 @@ export const en: TranslationSchema = {
       receives: 'You receive',
       people: '{{count}} people, no money',
       view: 'View route',
-    },
-    recommended: {
-      aria: 'Items near you',
-      title: 'Near you',
-      filterAria: 'Which items to show',
-      nearby: 'All',
-      wishlist: 'What I want',
-      emptyDescription: 'No nearby item matches what you want. See all items.',
     },
   },
   onboarding: {

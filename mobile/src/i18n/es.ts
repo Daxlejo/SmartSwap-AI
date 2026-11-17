@@ -87,8 +87,6 @@ export const es = {
     retry: 'Reintentar',
     homeRoutes: 'Aún no tienes rutas. Busca un trueque con uno de tus objetos.',
     homeRoutesCta: 'Buscar una ruta',
-    homeCatalog: 'Todavía no hay objetos en tu zona. Amplía la búsqueda para ver más.',
-    homeCatalogCta: 'Ampliar la zona',
     tradesReceived: 'No tienes propuestas por responder.',
     tradesReceivedCta: 'Explorar objetos',
     tradesSent: 'Aún no has enviado propuestas. Busca una ruta y propón tu primer trueque.',
@@ -237,9 +235,9 @@ export const es = {
       searchReason: 'Se activa cuando tengas al menos 1 objeto publicado: es lo que entregas en el canje.',
     },
     engine: {
-      title: 'Buscar un canje',
-      description: 'Te mostramos rutas de 2 a 4 personas que cierran tu canje.',
-      cta: 'Buscar canje',
+      title: 'Nuevo canje',
+      description: 'Elige qué ofreces y qué quieres. Se lo propones a su dueño o la IA arma un anillo.',
+      cta: 'Empezar un canje',
     },
     publish: {
       title: 'Publicar',
@@ -257,14 +255,6 @@ export const es = {
       receives: 'Recibes',
       people: '{{count}} personas, sin dinero',
       view: 'Ver ruta',
-    },
-    recommended: {
-      aria: 'Objetos cerca de ti',
-      title: 'Cerca de ti',
-      filterAria: 'Qué objetos mostrar',
-      nearby: 'Todos',
-      wishlist: 'Lo que busco',
-      emptyDescription: 'Ningún objeto cercano coincide con lo que buscas. Mira todos los objetos.',
     },
   },
   onboarding: {
