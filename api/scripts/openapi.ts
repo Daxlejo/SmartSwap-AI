@@ -23,6 +23,7 @@ import { createItemSchema } from '../src/modules/items/dto/create-item.dto';
 import { queryItemsSchema } from '../src/modules/items/dto/query-items.dto';
 import { updateItemSchema } from '../src/modules/items/dto/update-item.dto';
 import { uploadImageSchema } from '../src/modules/items/dto/upload-image.dto';
+import { proposeDirectSchema } from '../src/modules/routes/dto/propose-direct.dto';
 import { proposeRouteSchema } from '../src/modules/routes/dto/propose-route.dto';
 import { respondRouteSchema } from '../src/modules/routes/dto/respond-route.dto';
 import { searchRoutesSchema } from '../src/modules/routes/dto/search-routes.dto';
@@ -55,6 +56,7 @@ const BODY_SCHEMAS: Record<string, ZodTypeAny> = {
   'POST /routes/search': searchRoutesSchema,
   'POST /routes/find': searchRoutesSchema,
   'POST /routes/propose': proposeRouteSchema,
+  'POST /routes/direct': proposeDirectSchema,
   'POST /routes/{id}/propose': proposeRouteSchema,
   'POST /proposals': proposeRouteSchema,
   'POST /routes/{id}/respond': respondRouteSchema,

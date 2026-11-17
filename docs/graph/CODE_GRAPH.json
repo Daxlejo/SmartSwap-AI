@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-17T06:08:26.601Z",
+  "generatedAt": "2026-11-17T15:41:02.915Z",
   "stats": {
-    "totalFiles": 154,
-    "apiFiles": 66,
-    "mobileFiles": 88,
-    "endpointsCount": 45
+    "totalFiles": 176,
+    "apiFiles": 69,
+    "mobileFiles": 107,
+    "endpointsCount": 46
   },
   "endpoints": [
     {
@@ -20,7 +20,7 @@
       "path": "/ai/estimate-value",
       "controller": "AiController",
       "handler": "estimateValue",
-      "summary": "Estimate fair circular swap value (COP) for an item",
+      "summary": "Estimate the Colombian market price (COP) of an item",
       "file": "api/src/modules/ai/ai.controller.ts"
     },
     {
@@ -313,6 +313,14 @@
     },
     {
       "method": "POST",
+      "path": "/routes/direct",
+      "controller": "RoutesController",
+      "handler": "proposeDirect",
+      "summary": "Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not required to match)",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
       "path": "/routes/find",
       "controller": "RoutesController",
       "handler": "findRoutesAlias",
@@ -394,8 +402,10 @@
       "api/src/modules/ai/dto/explain-route.dto.ts",
       "api/src/modules/ai/services/ai-embedding.service.ts",
       "api/src/modules/ai/services/ai-explainer.service.ts",
+      "api/src/modules/ai/services/ai-price.service.ts",
       "api/src/modules/ai/services/ai-vision.service.ts",
-      "api/src/modules/ai/services/openai-client.service.ts"
+      "api/src/modules/ai/services/openai-client.service.ts",
+      "api/src/modules/ai/services/price-bounds.ts"
     ],
     "api/auth": [
       "api/src/modules/auth/auth.controller.ts",
@@ -435,6 +445,7 @@
       "api/src/modules/notifications/notifications.service.ts"
     ],
     "api/routes": [
+      "api/src/modules/routes/dto/propose-direct.dto.ts",
       "api/src/modules/routes/dto/propose-route.dto.ts",
       "api/src/modules/routes/dto/respond-route.dto.ts",
       "api/src/modules/routes/dto/search-routes.dto.ts",
@@ -469,14 +480,19 @@
       "mobile/src/App.tsx"
     ],
     "mobile/components": [
+      "mobile/src/components/BackToTopButton.tsx",
       "mobile/src/components/BottomNav.tsx",
       "mobile/src/components/DemoAccountSwitcher.tsx",
+      "mobile/src/components/ExampleRing.tsx",
+      "mobile/src/components/ExploreFiltersSheet.tsx",
+      "mobile/src/components/LanguageSelector.tsx",
       "mobile/src/components/LocationPicker.tsx",
       "mobile/src/components/LocationPrompt.tsx",
       "mobile/src/components/LocationScopeSelector.tsx",
       "mobile/src/components/NotificationBell.tsx",
       "mobile/src/components/ObjectCard.tsx",
       "mobile/src/components/PhotoSourceSheet.tsx",
+      "mobile/src/components/ProfilePhotoPicker.tsx",
       "mobile/src/components/ProposalCard.tsx",
       "mobile/src/components/RouteCard.tsx",
       "mobile/src/components/RouteStep.tsx",
@@ -492,6 +508,7 @@
       "mobile/src/components/ui/EmptyIllustration.tsx",
       "mobile/src/components/ui/EmptyState.tsx",
       "mobile/src/components/ui/ErrorState.tsx",
+      "mobile/src/components/ui/FormErrorAlert.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
       "mobile/src/components/ui/ItemImage.tsx",
@@ -508,6 +525,9 @@
     ],
     "mobile/hooks": [
       "mobile/src/hooks/useAppResume.ts",
+      "mobile/src/hooks/useExampleRingPeople.ts",
+      "mobile/src/hooks/useItem.ts",
+      "mobile/src/hooks/useRevealOnError.ts",
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
       "mobile/src/hooks/useTranslation.ts"
@@ -520,7 +540,8 @@
     "mobile/layouts": [
       "mobile/src/layouts/AppLayout.tsx",
       "mobile/src/layouts/AuthLayout.tsx",
-      "mobile/src/layouts/navigation.ts"
+      "mobile/src/layouts/navigation.ts",
+      "mobile/src/layouts/ScrollManager.tsx"
     ],
     "mobile/main.tsx": [
       "mobile/src/main.tsx"
@@ -538,8 +559,10 @@
       "mobile/src/screens/ExchangesScreen.tsx",
       "mobile/src/screens/ExploreScreen.tsx",
       "mobile/src/screens/HomeScreen.tsx",
+      "mobile/src/screens/ItemDetailScreen.tsx",
       "mobile/src/screens/LoginScreen.tsx",
       "mobile/src/screens/NotificationsScreen.tsx",
+      "mobile/src/screens/OnboardingScreen.tsx",
       "mobile/src/screens/ProfileScreen.tsx",
       "mobile/src/screens/ProposalConfirmScreen.tsx",
       "mobile/src/screens/ProposalSentScreen.tsx",
@@ -567,16 +590,23 @@
       "mobile/src/services/storage/tokenStorage.ts"
     ],
     "mobile/test": [
+      "mobile/src/test/avatarIdentity.test.tsx",
       "mobile/src/test/configureSwap.test.tsx",
+      "mobile/src/test/exampleRing.test.tsx",
+      "mobile/src/test/formErrors.test.tsx",
+      "mobile/src/test/languageSelector.test.tsx",
       "mobile/src/test/swapRing.test.tsx"
     ],
     "mobile/types": [
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
-      "mobile/src/utils/avatarArt.ts",
+      "mobile/src/utils/avatarIdentity.ts",
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
+      "mobile/src/utils/exampleRing.ts",
+      "mobile/src/utils/exploreFilters.ts",
+      "mobile/src/utils/formAlert.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
@@ -700,6 +730,7 @@
         "./dto/estimate-value.dto",
         "./dto/explain-route.dto",
         "./services/ai-explainer.service",
+        "./services/ai-price.service",
         "./services/ai-vision.service",
         "@nestjs/common",
         "@nestjs/swagger"
@@ -718,7 +749,7 @@
           "path": "/ai/estimate-value",
           "controller": "AiController",
           "handler": "estimateValue",
-          "summary": "Estimate fair circular swap value (COP) for an item",
+          "summary": "Estimate the Colombian market price (COP) of an item",
           "file": "api/src/modules/ai/ai.controller.ts"
         },
         {
@@ -740,6 +771,7 @@
         "./ai.controller",
         "./services/ai-embedding.service",
         "./services/ai-explainer.service",
+        "./services/ai-price.service",
         "./services/ai-vision.service",
         "./services/openai-client.service",
         "@nestjs/common"
@@ -818,12 +850,26 @@
         "@nestjs/common"
       ]
     },
+    "api/src/modules/ai/services/ai-price.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiPriceService",
+        "PriceEstimate",
+        "PriceUnavailableReason"
+      ],
+      "imports": [
+        "../dto/estimate-value.dto",
+        "./openai-client.service",
+        "./price-bounds",
+        "@nestjs/common",
+        "zod"
+      ]
+    },
     "api/src/modules/ai/services/ai-vision.service.ts": {
       "module": "api/ai",
       "exports": [
         "AiVisionService",
         "ConditionLabelEs",
-        "ValueEstimationResult",
         "VisionAnalysisResult"
       ],
       "imports": [
@@ -846,6 +892,21 @@
         "@nestjs/common",
         "@nestjs/config"
       ]
+    },
+    "api/src/modules/ai/services/price-bounds.ts": {
+      "module": "api/ai",
+      "exports": [
+        "CATEGORY_PRICE_BOUNDS",
+        "CategoryPriceBounds",
+        "MAX_RANGE_RATIO",
+        "PriceCategoryKey",
+        "PriceRange",
+        "PriceRangeRejection",
+        "checkPriceRange",
+        "resolvePriceCategory",
+        "roundCop"
+      ],
+      "imports": []
     },
     "api/src/modules/auth/auth.controller.ts": {
       "module": "api/auth",
@@ -1083,6 +1144,8 @@
       "exports": [
         "CreateItemDto",
         "ITEM_CONDITIONS",
+        "ITEM_DESCRIPTION_MAX_LENGTH",
+        "ITEM_NAME_MAX_LENGTH",
         "NormalizedItemCondition",
         "createItemSchema",
         "itemConditionSchema",
@@ -1404,6 +1467,16 @@
         "Notification"
       ]
     },
+    "api/src/modules/routes/dto/propose-direct.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ProposeDirectDto",
+        "proposeDirectSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
     "api/src/modules/routes/dto/propose-route.dto.ts": {
       "module": "api/routes",
       "exports": [
@@ -1579,6 +1652,7 @@
         "../../common/decorators/current-user.decorator",
         "../../common/guards/jwt-auth.guard",
         "../../common/pipes/zod-validation.pipe",
+        "./dto/propose-direct.dto",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1610,6 +1684,14 @@
           "controller": "RoutesController",
           "handler": "proposeRoute",
           "summary": "Propose a circular swap route, lock involved items, and notify participants",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/direct",
+          "controller": "RoutesController",
+          "handler": "proposeDirect",
+          "summary": "Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not required to match)",
           "file": "api/src/modules/routes/routes.controller.ts"
         },
         {
@@ -1692,6 +1774,7 @@
         "../ai/services/ai-explainer.service",
         "../geo/geo.service",
         "../geo/geo.types",
+        "./dto/propose-direct.dto",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1897,6 +1980,17 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/components/BackToTopButton.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "BackToTopButton"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/hooks/useTranslation",
+        "react"
+      ]
+    },
     "mobile/src/components/BottomNav.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -1925,6 +2019,52 @@
         "clsx",
         "react",
         "react-router-dom"
+      ]
+    },
+    "mobile/src/components/ExampleRing.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ExampleRing",
+        "ExampleRingPerson",
+        "ExampleRingProps"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/hooks/useTranslation",
+        "@/utils/avatarIdentity",
+        "@/utils/categoryIcon",
+        "@/utils/exampleRing",
+        "clsx",
+        "react"
+      ]
+    },
+    "mobile/src/components/ExploreFiltersSheet.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "DEFAULT_ZONE",
+        "ExploreFiltersSheet",
+        "ExploreFiltersSheetProps"
+      ],
+      "imports": [
+        "./ui/BottomSheet",
+        "./ui/Button",
+        "./ui/Chip",
+        "@/hooks/useTranslation",
+        "@/services/storage/preferencesStorage",
+        "@/utils/currency",
+        "@/utils/exploreFilters",
+        "react"
+      ]
+    },
+    "mobile/src/components/LanguageSelector.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LanguageSelector",
+        "LanguageSelectorProps"
+      ],
+      "imports": [
+        "@/hooks/useTranslation",
+        "clsx"
       ]
     },
     "mobile/src/components/LocationPicker.tsx": {
@@ -1993,7 +2133,7 @@
         "ObjectCardProps"
       ],
       "imports": [
-        "./ui/Button",
+        "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types"
@@ -2013,6 +2153,21 @@
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
         "@/services/media/photoPicker",
+        "react"
+      ]
+    },
+    "mobile/src/components/ProfilePhotoPicker.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ProfilePhotoPicker",
+        "ProfilePhotoPickerProps"
+      ],
+      "imports": [
+        "./PhotoSourceSheet",
+        "./ui/Avatar",
+        "./ui/Button",
+        "@/hooks/useTranslation",
+        "@/utils/imageCompressor",
         "react"
       ]
     },
@@ -2123,7 +2278,7 @@
       "imports": [
         "./Icon",
         "@/hooks/useTranslation",
-        "@/utils/avatarArt",
+        "@/utils/avatarIdentity",
         "clsx",
         "react"
       ]
@@ -2208,6 +2363,17 @@
         "./Button",
         "./Icon",
         "@/hooks/useTranslation",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/FormErrorAlert.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "FormErrorAlert",
+        "FormErrorAlertProps"
+      ],
+      "imports": [
+        "./Icon",
         "react"
       ]
     },
@@ -2335,6 +2501,41 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useExampleRingPeople.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useExampleRingPeople"
+      ],
+      "imports": [
+        "@/components/ExampleRing",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useItem.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "ItemLookup",
+        "useItem"
+      ],
+      "imports": [
+        "@/context/AppContext",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/types",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useRevealOnError.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useRevealOnError"
+      ],
+      "imports": [
+        "react"
+      ]
+    },
     "mobile/src/hooks/useServerStatus.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2406,6 +2607,7 @@
         "AppLayout"
       ],
       "imports": [
+        "./ScrollManager",
         "./navigation",
         "@/components/BottomNav",
         "@/components/ServerStatusBanner",
@@ -2430,9 +2632,20 @@
         "BackAction",
         "MAIN_TABS",
         "backActionFor",
+        "isFlowEnd",
         "isMainTab"
       ],
       "imports": []
+    },
+    "mobile/src/layouts/ScrollManager.tsx": {
+      "module": "mobile/layouts",
+      "exports": [
+        "ScrollManager"
+      ],
+      "imports": [
+        "react",
+        "react-router-dom"
+      ]
     },
     "mobile/src/main.tsx": {
       "module": "mobile/main.tsx",
@@ -2496,8 +2709,10 @@
         "@/screens/ConfigureSwapScreen",
         "@/screens/ExploreScreen",
         "@/screens/HomeScreen",
+        "@/screens/ItemDetailScreen",
         "@/screens/LoginScreen",
         "@/screens/NotificationsScreen",
+        "@/screens/OnboardingScreen",
         "@/screens/ProfileScreen",
         "@/screens/ProposalConfirmScreen",
         "@/screens/ProposalSentScreen",
@@ -2517,7 +2732,6 @@
         "ConfigureSwapScreen"
       ],
       "imports": [
-        "@/components/LocationPrompt",
         "@/components/LocationScopeSelector",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2526,6 +2740,7 @@
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useItem",
         "@/hooks/useTranslation",
         "@/types",
         "@/utils/currency",
@@ -2550,24 +2765,23 @@
         "ExploreScreen"
       ],
       "imports": [
+        "@/components/BackToTopButton",
+        "@/components/ExploreFiltersSheet",
         "@/components/LocationPrompt",
-        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ScreenHeader",
-        "@/components/ui/Avatar",
-        "@/components/ui/Badge",
-        "@/components/ui/BottomSheet",
         "@/components/ui/Button",
-        "@/components/ui/Chip",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/services/storage/preferencesStorage",
         "@/types",
         "@/utils/currency",
+        "@/utils/exploreFilters",
         "react",
         "react-router-dom"
       ]
@@ -2578,21 +2792,45 @@
         "HomeScreen"
       ],
       "imports": [
+        "@/components/ExampleRing",
         "@/components/LocationPrompt",
-        "@/components/LocationScopeSelector",
         "@/components/NotificationBell",
-        "@/components/ObjectCard",
         "@/components/ScreenHeader",
         "@/components/SwapRing",
         "@/components/ui/Button",
-        "@/components/ui/Chip",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useExampleRingPeople",
         "@/hooks/useTranslation",
         "@/utils/swapRing",
+        "@/utils/swapSearch",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ItemDetailScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ItemDetailScreen"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
+        "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
+        "@/context/AppContext",
+        "@/hooks/useItem",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/types",
+        "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2608,11 +2846,14 @@
         "@/components/DemoAccountSwitcher",
         "@/components/LocationPicker",
         "@/components/ui/Button",
+        "@/components/ui/FormErrorAlert",
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/context/AppContext",
+        "@/hooks/useRevealOnError",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
         "react",
         "react-router-dom"
       ]
@@ -2637,6 +2878,26 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/screens/OnboardingScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "OnboardingScreen"
+      ],
+      "imports": [
+        "@/components/ExampleRing",
+        "@/components/ProfilePhotoPicker",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useExampleRingPeople",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
+        "clsx",
+        "react",
+        "react-router-dom"
+      ]
+    },
     "mobile/src/screens/ProfileScreen.tsx": {
       "module": "mobile/screens",
       "exports": [
@@ -2644,7 +2905,9 @@
       ],
       "imports": [
         "@/components/DemoAccountSwitcher",
+        "@/components/LanguageSelector",
         "@/components/LocationPicker",
+        "@/components/ProfilePhotoPicker",
         "@/components/ScreenHeader",
         "@/components/ui/Avatar",
         "@/components/ui/BottomSheet",
@@ -2656,14 +2919,11 @@
         "@/components/ui/ItemImage",
         "@/components/ui/ThemeToggle",
         "@/context/AppContext",
-        "@/hooks/useAppResume",
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
-        "@/services/device/appSettings",
         "@/services/http/apiClient",
-        "@/services/media/photoPicker",
         "@/utils/currency",
-        "@/utils/imageCompressor",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2686,6 +2946,7 @@
         "@/types",
         "@/utils/currency",
         "@/utils/swapRing",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2720,15 +2981,18 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
+        "@/components/ui/FormErrorAlert",
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useRevealOnError",
         "@/hooks/useTranslation",
         "@/services/ai/ai.service",
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/utils/currency",
+        "@/utils/formAlert",
         "@/utils/imageCompressor",
         "clsx",
         "react",
@@ -2795,11 +3059,12 @@
       "imports": [
         "@/components/ui/Button",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useItem",
         "@/hooks/useTranslation",
-        "@/services/routes/routes.service",
+        "@/services/http/apiClient",
         "@/types",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2845,11 +3110,14 @@
     "mobile/src/services/ai/ai.service.ts": {
       "module": "mobile/services",
       "exports": [
+        "AiItemCondition",
         "AiPhotoAnalysisResponse",
         "AiValueEstimateResponse",
         "AnalyzeItemPhotoPayload",
         "EstimateItemValuePayload",
-        "aiService"
+        "ItemConditionLabel",
+        "aiService",
+        "toAiCondition"
       ],
       "imports": [
         "@/services/http/apiClient"
@@ -2997,6 +3265,7 @@
       "module": "mobile/services",
       "exports": [
         "NormalizedRouteStep",
+        "ProposeDirectPayload",
         "ProposeRoutePayload",
         "ProposeRouteStepInput",
         "RouteDecision",
@@ -3028,8 +3297,10 @@
         "LOCATION_SCOPE_STORAGE_KEY",
         "LocalePreference",
         "LocationScopePreference",
+        "ONBOARDING_STORAGE_PREFIX",
         "THEME_STORAGE_KEY",
         "ThemePreference",
+        "postRegisterRoute",
         "preferencesStorage"
       ],
       "imports": []
@@ -3045,6 +3316,19 @@
       ],
       "imports": []
     },
+    "mobile/src/test/avatarIdentity.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/ItemImage",
+        "@/i18n",
+        "@/utils/avatarIdentity",
+        "@/utils/categoryIcon",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
     "mobile/src/test/configureSwap.test.tsx": {
       "module": "mobile/test",
       "exports": [],
@@ -3054,6 +3338,40 @@
         "@/utils/swapSearch",
         "react-dom/server",
         "react-router-dom",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/exampleRing.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ExampleRing",
+        "@/i18n",
+        "@/utils/avatarIdentity",
+        "@/utils/exampleRing",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/formErrors.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ui/FormErrorAlert",
+        "@/components/ui/Input",
+        "@/i18n",
+        "@/utils/formAlert",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/languageSelector.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/LanguageSelector",
+        "@/i18n",
+        "react-dom/server",
         "vitest"
       ]
     },
@@ -3083,21 +3401,21 @@
       ],
       "imports": []
     },
-    "mobile/src/utils/avatarArt.ts": {
+    "mobile/src/utils/avatarIdentity.ts": {
       "module": "mobile/utils",
       "exports": [
-        "AvatarTraits",
-        "avatarDataUri",
-        "avatarTraitsFor",
-        "buildAvatarSvg",
-        "hashName"
+        "avatarColorFor",
+        "distinctAvatarColors",
+        "hashSeed",
+        "initialsFor"
       ],
       "imports": []
     },
     "mobile/src/utils/categoryIcon.ts": {
       "module": "mobile/utils",
       "exports": [
-        "categoryIcon"
+        "categoryIcon",
+        "itemIcon"
       ],
       "imports": []
     },
@@ -3107,6 +3425,53 @@
         "formatCop",
         "formatCopDigits",
         "sanitizeCopDigits"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/exampleRing.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "EXAMPLE_BADGE_PX",
+        "EXAMPLE_NODE_PX",
+        "EXAMPLE_RING_CENTER",
+        "EXAMPLE_RING_HEIGHT",
+        "EXAMPLE_RING_RADIUS",
+        "EXAMPLE_RING_WIDTH",
+        "ExampleArc",
+        "ExampleRingGeometry",
+        "RingPoint",
+        "exampleRingGeometry",
+        "nodeClearanceDeg",
+        "pointAt"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/exploreFilters.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "ActiveFilterKey",
+        "DEFAULT_EXPLORE_FILTERS",
+        "EXPLORE_CATEGORIES",
+        "EXPLORE_CONDITIONS",
+        "EXPLORE_SORTS",
+        "ExploreCategory",
+        "ExploreCondition",
+        "ExploreFilters",
+        "ExploreSort",
+        "activeFilterKeys",
+        "applyExploreFilters",
+        "clearFilter",
+        "isPriceRangeValid"
+      ],
+      "imports": [
+        "@/types"
+      ]
+    },
+    "mobile/src/utils/formAlert.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "FormAlertContent",
+        "formAlertFor"
       ],
       "imports": []
     },
@@ -3181,20 +3546,30 @@
     "mobile/src/utils/swapSearch.ts": {
       "module": "mobile/utils",
       "exports": [
+        "CIRCULAR_MAX_STEPS",
+        "CIRCULAR_MIN_STEPS",
+        "DirectProposalDraft",
         "InventorySnapshot",
-        "MIN_OBJECTIVE_LENGTH",
         "NoRoutesReason",
-        "SwapSearchBlocker",
-        "SwapSearchInput",
-        "SwapSearchNavigation",
-        "SwapSearchState",
+        "SwapDraft",
+        "SwapDraftStep",
+        "SwapMode",
         "VALUE_TOLERANCE_PCT",
-        "buildSwapSearchNavigation",
+        "buildCircularSearchPath",
+        "buildDirectPreviewRoute",
+        "findWantedCandidates",
         "getNoRoutesReason",
-        "getSwapSearchBlocker",
-        "isOfferableItem"
+        "isOfferableItem",
+        "itemOwnerAsUser",
+        "parseSwapDraft",
+        "reachableStep",
+        "swapDraftForItem",
+        "swapDraftPath"
       ],
-      "imports": []
+      "imports": [
+        "@/services/routes/routes.service",
+        "@/types"
+      ]
     }
   }
 }

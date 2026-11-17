@@ -1,6 +1,10 @@
 import { ItemCondition } from '@prisma/client';
 import { z } from 'zod';
 
+/** Limits shared with the publish form (title counter and description length). */
+export const ITEM_NAME_MAX_LENGTH = 60;
+export const ITEM_DESCRIPTION_MAX_LENGTH = 500;
+
 export const ITEM_CONDITIONS = [
   'LIKE_NEW',
   'EXCELLENT',
@@ -73,7 +77,7 @@ export const createItemSchema = z
       .string()
       .trim()
       .min(2, 'Name must be at least 2 characters long')
-      .max(100, 'Name must be at most 100 characters long'),
+      .max(ITEM_NAME_MAX_LENGTH, `Name must be at most ${ITEM_NAME_MAX_LENGTH} characters long`),
     category: z
       .string()
       .trim()
@@ -84,7 +88,10 @@ export const createItemSchema = z
       .string()
       .trim()
       .min(5, 'Description must be at least 5 characters long')
-      .max(1000, 'Description must be at most 1000 characters long'),
+      .max(
+        ITEM_DESCRIPTION_MAX_LENGTH,
+        `Description must be at most ${ITEM_DESCRIPTION_MAX_LENGTH} characters long`,
+      ),
     estimatedValue: z.coerce
       .number()
       .positive('estimatedValue must be a positive number'),

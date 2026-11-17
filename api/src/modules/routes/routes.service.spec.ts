@@ -335,6 +335,7 @@ describe('RoutesService', () => {
   const mockPrismaService = {
     item: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     swapRoute: {
       findMany: jest.fn().mockResolvedValue([]),
@@ -396,6 +397,7 @@ describe('RoutesService', () => {
 
       const results = await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -435,6 +437,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -457,6 +460,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -475,6 +479,7 @@ describe('RoutesService', () => {
       await expect(
         routesService.searchRoutes(userAId, {
           objectiveText: 'Monitor',
+          minSteps: 2,
           maxSteps: 4,
           valueTolerancePct: 45,
           locale: 'es',
@@ -489,6 +494,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'en',
@@ -498,6 +504,42 @@ describe('RoutesService', () => {
       expect(aiExplainerService.explainSwapRoute).toHaveBeenCalledWith(
         expect.objectContaining({ locale: 'en' }),
       );
+    });
+  });
+
+  describe('1b. searchRoutes toward an exact item', () => {
+    const search = (wantedItemId: string) =>
+      routesService.searchRoutes(userAId, {
+        objectiveText: 'Cámara',
+        wantedItemId,
+        minSteps: 3,
+        maxSteps: 4,
+        valueTolerancePct: 25,
+        locale: 'es',
+        scope: 'country',
+      });
+
+    it('says the chosen item is gone instead of answering "no rings"', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue(null);
+      await expect(search(itemBId)).rejects.toThrow(NotFoundException);
+      expect(mockPrismaService.item.findMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses the searcher own item and an item already reserved', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValueOnce({ ownerId: userAId, status: ItemStatus.AVAILABLE });
+      await expect(search(itemAId)).rejects.toThrow(BadRequestException);
+      mockPrismaService.item.findUnique.mockResolvedValueOnce({ ownerId: userBId, status: ItemStatus.PENDING_SWAP });
+      await expect(search(itemBId)).rejects.toThrow(ConflictException);
+    });
+
+    it('keeps the chosen item in the catalog even outside the search area', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({ ownerId: userBId, status: ItemStatus.AVAILABLE });
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+      await search(itemBId);
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where).toEqual({
+        status: ItemStatus.AVAILABLE,
+        OR: [{}, { id: itemBId }],
+      });
     });
   });
 
@@ -641,6 +683,86 @@ describe('RoutesService', () => {
         routesService.proposeRoute(userAId, brokenDto),
       ).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('2b. proposeDirect', () => {
+    it('proposes a 2-person ring even when the owner does not list the offered item, and names both items in the notice', async () => {
+      const rows = buildCatalogRows();
+      // Offer the MacBook for the camera: Valeria (camera) wants a MacBook, but the swap does not depend on it
+      const offeredAndWanted = [rows[0], { ...rows[1], wants: [] }];
+      mockPrismaService.item.findMany.mockResolvedValue(offeredAndWanted);
+      mockTx.item.findMany.mockResolvedValue(offeredAndWanted);
+      mockTx.swapRoute.findUnique.mockResolvedValue(null);
+      mockTx.swapRoute.create.mockResolvedValue(buildPersisted3HopRoute());
+      mockTx.item.updateMany.mockResolvedValue({ count: 2 });
+      mockTx.notification.createMany.mockResolvedValue({ count: 1 });
+
+      await routesService.proposeDirect(userAId, {
+        offeredItemId: itemAId,
+        wantedItemId: itemBId,
+      });
+
+      expect(mockTx.swapRoute.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            initiatorId: userAId,
+            objectiveText: 'Cámara Sony Alpha a6400',
+            matchScore: expect.any(Number),
+            steps: {
+              create: [
+                expect.objectContaining({
+                  userId: userAId,
+                  givesItemId: itemAId,
+                  receivesItemId: itemBId,
+                  acceptance: StepAcceptance.ACCEPTED,
+                }),
+                expect.objectContaining({
+                  userId: userBId,
+                  givesItemId: itemBId,
+                  receivesItemId: itemAId,
+                  acceptance: StepAcceptance.PENDING,
+                }),
+              ],
+            },
+          }),
+        }),
+      );
+      expect(mockTx.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            userId: userBId,
+            badge: 'Propuesta directa',
+            body: expect.stringContaining('"Cámara Sony Alpha a6400" por "MacBook Air M1 256GB"'),
+          }),
+        ],
+      });
+    });
+
+    it('rejects offering an item of another user', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue(buildCatalogRows().slice(0, 2));
+
+      await expect(
+        routesService.proposeDirect(userBId, { offeredItemId: itemAId, wantedItemId: itemBId }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects asking for your own item', async () => {
+      const rows = buildCatalogRows();
+      mockPrismaService.item.findMany.mockResolvedValue([rows[0], { ...rows[1], ownerId: userAId }]);
+
+      await expect(
+        routesService.proposeDirect(userAId, { offeredItemId: itemAId, wantedItemId: itemBId }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('answers 404 when an item does not exist', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([buildCatalogRows()[0]]);
+
+      await expect(
+        routesService.proposeDirect(userAId, { offeredItemId: itemAId, wantedItemId: 'missing' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

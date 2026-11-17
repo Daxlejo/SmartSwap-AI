@@ -15,11 +15,16 @@ import {
 } from '@/services/storage/preferencesStorage';
 import { ApiError, setOnUnauthorizedHandler } from '@/services/http/apiClient';
 import { authService, type RegisterPayload, type UpdateProfilePayload } from '@/services/auth/auth.service';
-import { itemsService, type CreateItemPayload } from '@/services/items/items.service';
+import {
+  itemsService,
+  type CreateItemPayload,
+  type ListItemsParams,
+} from '@/services/items/items.service';
 import {
   routesService,
   mapRouteToProposal,
   type SearchRoutesPayload,
+  type ProposeDirectPayload,
   type ProposeRoutePayload,
   type RouteDecision,
 } from '@/services/routes/routes.service';
@@ -59,6 +64,8 @@ export interface AppContextValue {
   uploadAvatarReal: (imageDataUrl: string) => Promise<User>;
   searchRoutesReal: (params: SearchRoutesPayload) => Promise<SwapRoute[]>;
   proposeRouteReal: (route: SwapRoute | ProposeRoutePayload) => Promise<SwapRoute>;
+  /** Offers one of the user's items for another user's item, 1 to 1. */
+  proposeDirectReal: (payload: ProposeDirectPayload) => Promise<SwapRoute>;
   respondToProposalReal: (
     routeId: string,
     decision: RouteDecision,
@@ -161,15 +168,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sessionEpochRef = useRef(0);
 
   // Latest viewer location for callbacks that must stay stable (kept in sync after every render)
-  const viewerRef = useRef<{ scope: LocationScopePreference; municipalityCode?: string }>({
+  const viewerRef = useRef<{
+    scope: LocationScopePreference;
+    municipalityCode?: string;
+    /** The signed-in user, whose own items the marketplace leaves out. */
+    userId?: string;
+  }>({
     scope: locationScope,
   });
   useEffect(() => {
     viewerRef.current = {
       scope: locationScope,
       municipalityCode: isAuthenticated ? currentUser?.municipalityCode : undefined,
+      userId: isAuthenticated ? currentUser?.id : undefined,
     };
-  }, [locationScope, currentUser?.municipalityCode, isAuthenticated]);
+  }, [locationScope, currentUser?.municipalityCode, currentUser?.id, isAuthenticated]);
+
+  /** Marketplace query for the current viewer: their search area, without their own items. */
+  const marketplaceQuery = useCallback(
+    (viewer?: Pick<User, 'id' | 'municipalityCode'>): ListItemsParams | undefined => {
+      const municipalityCode = viewer ? viewer.municipalityCode : viewerRef.current.municipalityCode;
+      const excludeOwnerId = viewer?.id ?? viewerRef.current.userId;
+      if (!municipalityCode && !excludeOwnerId) return undefined;
+      return {
+        ...(municipalityCode ? { scope: viewerRef.current.scope, municipalityCode } : {}),
+        ...(excludeOwnerId ? { excludeOwnerId } : {}),
+      };
+    },
+    [],
+  );
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter((n) => n.unread).length;
@@ -256,7 +283,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notifications]);
 
   const loadMarketplaceAndUserItems = useCallback(
-    async (hasActiveToken: boolean, viewerMunicipalityCode?: string) => {
+    async (hasActiveToken: boolean, viewer?: Pick<User, 'id' | 'municipalityCode'>) => {
       const epoch = sessionEpochRef.current;
       setIsItemsLoading(true);
       setLoadStates((prev) => ({
@@ -265,13 +292,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         routes: hasActiveToken ? 'loading' : prev.routes,
       }));
       try {
-        const municipalityCode = viewerMunicipalityCode ?? viewerRef.current.municipalityCode;
         const [allItemsResult, myItemsResult, myRoutesResult] = await Promise.allSettled([
-          itemsService.listItems(
-            municipalityCode
-              ? { scope: viewerRef.current.scope, municipalityCode }
-              : undefined,
-          ),
+          itemsService.listItems(marketplaceQuery(hasActiveToken ? viewer : undefined)),
           hasActiveToken ? itemsService.listMyItems() : Promise.resolve<Item[]>([]),
           hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
         ]);
@@ -307,25 +329,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     },
-    [],
+    [marketplaceQuery],
   );
 
   // Reloads only the marketplace (e.g. after the user widens the search area)
   const reloadMarketplace = useCallback(async () => {
-    const { scope, municipalityCode } = viewerRef.current;
     setIsItemsLoading(true);
     setLoadState('items', 'loading');
     try {
-      setItems(
-        await itemsService.listItems(municipalityCode ? { scope, municipalityCode } : undefined),
-      );
+      setItems(await itemsService.listItems(marketplaceQuery()));
       setLoadState('items', 'ready');
     } catch {
       setLoadState('items', 'error');
     } finally {
       setIsItemsLoading(false);
     }
-  }, [setLoadState]);
+  }, [setLoadState, marketplaceQuery]);
 
   const setLocationScope = useCallback(
     (scope: LocationScopePreference) => {
@@ -379,7 +398,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAuthenticated(true);
 
         await Promise.all([
-          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          loadMarketplaceAndUserItems(true, user),
           notificationsService
             .listNotifications()
             .then((list) => {
@@ -500,7 +519,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentUser(user);
         setIsAuthenticated(true);
         await Promise.all([
-          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          loadMarketplaceAndUserItems(true, user),
           refreshNotificationsReal(),
         ]);
       } catch (error) {
@@ -510,7 +529,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return;
     }
-    await loadMarketplaceAndUserItems(hasActiveToken);
+    // Pass the user: a screen's effect can run before the one that refreshes `viewerRef`
+    await loadMarketplaceAndUserItems(hasActiveToken, currentUser ?? undefined);
   }, [currentUser, loadMarketplaceAndUserItems, refreshNotificationsReal]);
 
   const startSession = useCallback(
@@ -519,7 +539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(user);
       setIsAuthenticated(true);
       await Promise.all([
-        loadMarketplaceAndUserItems(true, user.municipalityCode),
+        loadMarketplaceAndUserItems(true, user),
         refreshNotificationsReal(),
       ]);
     },
@@ -606,9 +626,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async (routeOrPayload: SwapRoute | ProposeRoutePayload): Promise<SwapRoute> => {
       const proposedRoute = await routesService.proposeRoute(toProposePayload(routeOrPayload));
       upsertRoute(proposedRoute);
+      // The proposal reserves the items: refresh the user's inventory and the marketplace
+      void loadMarketplaceAndUserItems(true);
       return proposedRoute;
     },
-    [upsertRoute],
+    [upsertRoute, loadMarketplaceAndUserItems],
+  );
+
+  const proposeDirectReal = useCallback(
+    async (payload: ProposeDirectPayload): Promise<SwapRoute> => {
+      const proposedRoute = await routesService.proposeDirect(payload);
+      upsertRoute(proposedRoute);
+      void loadMarketplaceAndUserItems(true);
+      return proposedRoute;
+    },
+    [upsertRoute, loadMarketplaceAndUserItems],
   );
 
   const respondToProposalReal = useCallback(
@@ -661,6 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       uploadAvatarReal,
       searchRoutesReal,
       proposeRouteReal,
+      proposeDirectReal,
       respondToProposalReal,
       completeSwapReal,
       cancelRouteReal,
@@ -693,6 +726,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       uploadAvatarReal,
       searchRoutesReal,
       proposeRouteReal,
+      proposeDirectReal,
       respondToProposalReal,
       completeSwapReal,
       cancelRouteReal,
@@ -740,6 +774,7 @@ const fallbackContextValue: AppContextValue = {
   searchRoutesReal: async (params) => routesService.searchRoutes(params),
   proposeRouteReal: async (routeOrPayload) =>
     routesService.proposeRoute(toProposePayload(routeOrPayload)),
+  proposeDirectReal: async (payload) => routesService.proposeDirect(payload),
   respondToProposalReal: async (routeId, decision, comment) =>
     routesService.respondToRoute(routeId, decision, comment),
   completeSwapReal: async (routeId) => routesService.completeRoute(routeId),

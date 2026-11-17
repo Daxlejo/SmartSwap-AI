@@ -19,6 +19,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "openapi": "ts-node scripts/openapi.ts",
     "openapi:check": "ts-node scripts/openapi.ts --check",
+    "price:cases": "ts-node scripts/price-cases.ts",
     "geo:generate": "ts-node scripts/generate-geo-data.ts"
   },
   "dependencies": {

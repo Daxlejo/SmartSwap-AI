@@ -1,17 +1,20 @@
-import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ScrollManager } from './ScrollManager';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { ServerStatusBanner } from '@/components/ServerStatusBanner';
 import { useTranslation } from '@/hooks/useTranslation';
-import { isMainTab } from './navigation';
+import { isFlowEnd, isMainTab } from './navigation';
 
 export const AppLayout = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
   // Title of the secondary screens; they keep the fixed bar with the back arrow
   const getTitle = (): string => {
     if (pathname.startsWith('/swap/route/')) return t('headers.routeDetail.title');
+    if (pathname.startsWith('/item/')) return t('headers.itemDetail.title');
     switch (pathname) {
       case '/publish':
         return t('headers.publish.title');
@@ -37,7 +40,8 @@ export const AppLayout = () => {
   const isTab = isMainTab(pathname);
   // Screens with their own action bar (sticky at the bottom of the flow, so it needs no
   // reserved space and handles the safe area itself)
-  const hasActionBar = pathname === '/publish' || pathname === '/swap/configure';
+  const hasActionBar =
+    pathname === '/publish' || pathname === '/swap/configure' || pathname.startsWith('/item/');
   const showBottomNav = isTab;
 
   // The document is the only scroll container (see `index.css`). The bottom padding keeps
@@ -47,14 +51,19 @@ export const AppLayout = () => {
   return (
     <div className="min-h-[100dvh] w-full bg-surface sm:bg-surface-container-low flex justify-center">
       <div className="w-full max-w-[390px] min-h-[100dvh] bg-surface flex flex-col sm:shadow-2xl sm:ring-1 sm:ring-surface-container-high/20 relative overflow-x-clip">
-        {!isTab && <TopBar title={getTitle()} />}
+        {!isTab && (
+          <TopBar
+            title={getTitle()}
+            onBack={isFlowEnd(pathname) ? () => navigate('/home', { replace: true }) : undefined}
+          />
+        )}
         <ServerStatusBanner />
         <main className={`flex-1 flex flex-col w-full ${isTab ? 'pt-safe' : ''} ${bottomSpace}`}>
           <Outlet />
         </main>
         {showBottomNav && <BottomNav />}
       </div>
-      <ScrollRestoration />
+      <ScrollManager />
     </div>
   );
 };

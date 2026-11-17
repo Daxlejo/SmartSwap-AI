@@ -41,16 +41,14 @@
  * no screen failed to load and every counted metric is 0.
  */
 import { chromium } from 'playwright-core';
-import { spawn, execSync } from 'node:child_process';
-import { mkdirSync, openSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 import { respond } from './audit-ui-fixtures.mjs';
+import { API_PREFIX, isUp, startVite, stopVite, waitForServer } from './ui-harness.mjs';
 
 const require = createRequire(import.meta.url);
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const AXE_PATH = require.resolve('axe-core/axe.min.js');
 const PORT = 5199;
 const CHANNEL = process.env.AUDIT_BROWSER_CHANNEL ?? 'msedge';
@@ -62,7 +60,6 @@ if (FONT_SCALES.some((s) => !Number.isFinite(s) || s < 50 || s > 300)) {
 }
 const ONLY = process.env.AUDIT_ONLY ? process.env.AUDIT_ONLY.split(',').map((s) => s.trim()) : null;
 const VIEWPORT = { width: 360, height: 800 };
-const API_PREFIX = '/api/v1';
 
 /** A 1×1 PNG used as the item photo in the Publish flow. */
 const TINY_PNG = Buffer.from(
@@ -76,6 +73,7 @@ const METRICS = ['texto<14', 'tactil<44', 'elipsis', 'contraste', 'scroll', 'bar
  * Screens in visiting order. `auth: false` runs without a session.
  * `go` drives the page to the screen; the default is a plain navigation.
  * `scenario: 'empty'` answers as a brand-new user (no items, no swaps).
+ * `modal: true` audits an open bottom sheet: scroll is measured inside the sheet.
  */
 const SCREENS = [
   { id: 'login', path: '/login', auth: false },
@@ -94,15 +92,150 @@ const SCREENS = [
       await page.waitForSelector('#description');
     },
   },
+  {
+    // Continue without a photo: the error notice scrolls into view and the field repeats it
+    id: 'publish-error',
+    path: '/publish',
+    go: async (page) => {
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('[data-testid=publish-error-alert]');
+    },
+  },
+  {
+    // Step 3 without anything accepted: the notice says what is missing in words
+    id: 'publish-wants-error',
+    path: '/publish',
+    go: async (page) => {
+      await page.setInputFiles('input[type=file]', { name: 'foto.png', mimeType: 'image/png', buffer: TINY_PNG });
+      await page.waitForTimeout(800);
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('#description');
+      await page.fill('#publish-name', 'Lámpara de escritorio articulada');
+      await page.fill('#description', 'Lámpara metálica con brazo articulado, funciona bien.');
+      await page.getByRole('button', { name: /^hogar$/i }).click();
+      await page.fill('#estimated-value-input', '90000');
+      await page.locator('select').last().selectOption('52001');
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('[data-testid=accepted-wants-empty]');
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('[data-testid=publish-error-alert]');
+      await page.waitForTimeout(500);
+    },
+  },
+  {
+    // Market-price estimate shown as an editable "Precio estimado" with its range
+    id: 'publish-price',
+    path: '/publish',
+    go: async (page) => {
+      await page.setInputFiles('input[type=file]', { name: 'foto.png', mimeType: 'image/png', buffer: TINY_PNG });
+      await page.waitForTimeout(800);
+      await page.getByRole('button', { name: /continuar|continue/i }).click();
+      await page.waitForSelector('#description');
+      await page.fill('#publish-name', 'Control PS5 nuevo');
+      await page.getByRole('button', { name: /^videojuegos$|^video games$/i }).click();
+      await page.click('[data-testid=estimate-price-btn]');
+      await page.waitForSelector('[data-testid=ai-value-range]');
+      await page.locator('#estimated-value-input').scrollIntoViewIfNeeded();
+    },
+  },
   { id: 'trades', path: '/swaps' },
   { id: 'profile', path: '/profile' },
+  {
+    id: 'profile-edit',
+    modal: true,
+    path: '/profile',
+    go: async (page) => {
+      await page.click('[data-testid=profile-edit-badge]');
+      await page.waitForSelector('[data-testid=profile-photo-button]');
+    },
+  },
+  {
+    id: 'explore-filters',
+    modal: true,
+    path: '/explore',
+    go: async (page) => {
+      await page.click('[data-testid=explore-filters-button]');
+      await page.waitForSelector('[data-testid=explore-filters-sheet]');
+    },
+  },
+  {
+    // Applied filters become removable chips under the search bar
+    id: 'explore-chips',
+    path: '/explore',
+    go: async (page) => {
+      await page.click('[data-testid=explore-filters-button]');
+      await page.getByRole('radio', { name: /^hogar$/i }).click();
+      await page.fill('[data-testid=explore-price-max]', '400000');
+      await page.click('[data-testid=explore-filters-apply]');
+      await page.waitForSelector('[data-testid=explore-chip-price]');
+    },
+  },
+  {
+    // Create account with a missing name: notice scrolled to and focused, error under the field
+    id: 'register-error',
+    path: '/register',
+    auth: false,
+    go: async (page) => {
+      await page.locator('form button[type=submit]').click();
+      await page.waitForSelector('[data-testid=auth-error-alert]');
+      await page.waitForTimeout(500);
+    },
+  },
+  { id: 'onboarding', path: '/welcome', scenario: 'empty' },
+  {
+    id: 'onboarding-ring',
+    path: '/welcome',
+    scenario: 'empty',
+    go: async (page) => {
+      await page.click('[data-testid=onboarding-next]');
+      await page.waitForSelector('[data-testid=example-ring]');
+      await page.waitForTimeout(2600);
+    },
+  },
+  {
+    id: 'onboarding-photo',
+    path: '/welcome',
+    scenario: 'empty',
+    go: async (page) => {
+      for (let i = 0; i < 3; i++) await page.click('[data-testid=onboarding-next]');
+      await page.waitForSelector('[data-testid=onboarding-not-now]');
+    },
+  },
   { id: 'notifications', path: '/notifications' },
+  { id: 'item-detail', path: '/item/i-laura-2' },
+  { id: 'item-detail-own', path: '/item/i-me-1' },
   { id: 'configure', path: '/swap/configure' },
+  { id: 'configure-receive', path: '/swap/configure?step=2&have=i-me-1' },
+  {
+    id: 'configure-receive-list',
+    path: '/swap/configure?step=2&have=i-me-1',
+    go: async (page) => {
+      await page.fill('[data-testid=configure-want-search]', 'a');
+      await page.fill('[data-testid=configure-want-search]', 'bi');
+      await page.waitForSelector('[data-testid^=want-option-]');
+    },
+  },
+  { id: 'configure-type', path: '/swap/configure?step=3&have=i-me-1&want=i-laura-2&fixed=1' },
+  { id: 'configure-type-ring', path: '/swap/configure?step=3&have=i-me-1&want=i-laura-1&mode=circular' },
   { id: 'configure-empty', path: '/swap/configure', scenario: 'empty' },
   { id: 'home-empty', path: '/home', scenario: 'empty' },
   { id: 'trades-empty', path: '/swaps', scenario: 'empty' },
-  { id: 'searching', path: '/swap/searching?have=i-me-1&q=Bicicleta', settleMs: 600 },
-  { id: 'results', path: '/swap/results?have=i-me-1&q=Bicicleta' },
+  { id: 'searching', path: '/swap/searching?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4' },
+  {
+    id: 'searching-empty',
+    path: '/swap/searching?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4',
+    scenario: 'noRings',
+  },
+  { id: 'results', path: '/swap/results?have=i-me-1&want=i-laura-1&q=Bicicleta&minSteps=3&maxSteps=4' },
+  {
+    id: 'proposal-confirm-direct',
+    expectPath: '/swap/proposal/confirm',
+    path: '/swap/configure?step=3&have=i-me-1&want=i-laura-2&fixed=1',
+    go: async (page) => {
+      await page.click('[data-testid=configure-continue-button]');
+      await page.waitForURL('**/swap/proposal/confirm');
+    },
+  },
   { id: 'route-detail', path: '/swap/route/r-active' },
   // The swap ring with 2 and 4 people, closed and declined (the 3-person waiting ring is route-detail)
   { id: 'ring-n2-broken', path: '/swap/route/r-n2-broken' },
@@ -344,57 +477,6 @@ function scrollEndInPage() {
 // Runner
 // ---------------------------------------------------------------------------
 
-const isUp = async (url) => {
-  try {
-    return (await fetch(url)).ok;
-  } catch {
-    return false;
-  }
-};
-
-/** Waits for Vite, failing at once if the process exits (e.g. the port is taken). */
-const waitForServer = async (url, child, timeoutMs) => {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (child && child.exitCode !== null) {
-      throw new Error(`Vite exited with code ${child.exitCode}; see ${join(OUT, 'vite.log')}`);
-    }
-    if (await isUp(url)) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`The mobile app did not start at ${url} (see ${join(OUT, 'vite.log')})`);
-};
-
-const startVite = () => {
-  const log = openSync(join(OUT, 'vite.log'), 'w');
-  return spawn('npm', ['--workspace=mobile', 'run', 'dev', '--', '--port', String(PORT), '--strictPort'], {
-    cwd: ROOT,
-    shell: true,
-    detached: process.platform !== 'win32',
-    env: { ...process.env, VITE_API_URL: `http://audit.local${API_PREFIX}`, VITE_DEMO_PASSWORD: '' },
-    stdio: ['ignore', log, log],
-  });
-};
-
-const stopVite = (child) => {
-  if (!child || child.exitCode !== null) return;
-  if (process.platform === 'win32') {
-    try {
-      execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' });
-    } catch (error) {
-      // 128: the process tree is already gone
-      if (error.status !== 128) console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
-    }
-  } else {
-    // The shell wrapper leads its own group: kill the group so Vite goes too
-    try {
-      process.kill(-child.pid, 'SIGTERM');
-    } catch (error) {
-      console.error(`Could not stop Vite (pid ${child.pid}): ${error.message}`);
-    }
-  }
-};
-
 /** A browser context that answers the API from fixtures and records any call it cannot answer. */
 const newContext = async (browser, theme, withSession, fontScale, scenario) => {
   const context = await browser.newContext({
@@ -480,7 +562,16 @@ const auditScreen = async ({ context, unanswered }, base, screen, theme, fontSca
       }
       await page.waitForTimeout(600);
     }
-    const end = await page.evaluate(scrollEndInPage);
+    // A bottom sheet locks the page behind it on purpose: measure the sheet's own scroll instead,
+    // and nothing can be covered by the BottomNav because the sheet sits above it
+    const end = screen.modal
+      ? await page.evaluate(() => {
+          const body = document.querySelector('[data-sheet-body]');
+          if (!body) return { ok: false, bottom: 0, limit: 0, last: 'no open sheet', covered: [] };
+          const ok = body.scrollTop + body.clientHeight >= body.scrollHeight - 2;
+          return { ok, bottom: body.scrollHeight, limit: body.scrollTop + body.clientHeight, last: 'sheet', covered: [] };
+        })
+      : await page.evaluate(scrollEndInPage);
     await page.screenshot({ path: join(OUT, `${shot}-end.png`) });
 
     return {
@@ -523,9 +614,9 @@ const main = async () => {
       base = `http://localhost:${PORT}`;
       // Something already on the port would be audited instead of the current code
       if (await isUp(base)) throw new Error(`Port ${PORT} is already in use; stop that server and run again.`);
-      vite = startVite();
+      vite = startVite(PORT, join(OUT, 'vite.log'));
       activeVite = vite;
-      await waitForServer(base, vite, 90000);
+      await waitForServer(base, vite, 90000, join(OUT, 'vite.log'));
     }
 
     browser = await chromium.launch({ channel: CHANNEL, headless: true });

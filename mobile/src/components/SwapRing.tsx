@@ -196,7 +196,13 @@ export const SwapRing = ({
                   )}
                   style={{ position: 'absolute', left: badge.left, top: badge.top, width: badgePx, height: badgePx }}
                 >
-                  <ItemImage src={giver.gives.imageUrl} alt="" category={giver.gives.category} className="w-full h-full" />
+                  <ItemImage
+                    src={giver.gives.imageUrl}
+                    alt=""
+                    itemName={giver.gives.name}
+                    category={giver.gives.category}
+                    className="w-full h-full"
+                  />
                 </span>
               </div>
             );
@@ -251,6 +257,8 @@ export const SwapRing = ({
                 <Avatar
                   src={person.avatarUrl}
                   alt=""
+                  name={person.name}
+                  seed={person.id}
                   size="lg"
                   className={clsx(
                     'rounded-full',

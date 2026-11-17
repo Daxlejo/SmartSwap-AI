@@ -11,6 +11,8 @@ export interface ListItemsParams {
   category?: string;
   condition?: string;
   ownerId?: string;
+  /** Leaves out this user's items (the viewer's own). */
+  excludeOwnerId?: string;
   limit?: number;
   offset?: number;
   /** Where to look, relative to `municipalityCode` (the viewer). */
@@ -209,6 +211,7 @@ export const itemsService = {
       queryParams.condition = params.condition;
     }
     if (params?.ownerId) queryParams.ownerId = params.ownerId;
+    if (params?.excludeOwnerId) queryParams.excludeOwnerId = params.excludeOwnerId;
     if (params?.limit !== undefined) queryParams.limit = params.limit;
     if (params?.offset !== undefined) queryParams.offset = params.offset;
     if (params?.municipalityCode) {

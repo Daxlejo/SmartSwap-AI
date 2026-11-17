@@ -125,8 +125,8 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.maxValue).toBeGreaterThanOrEqual(result.estimatedValue);
       expect(Array.isArray(result.aiTags)).toBe(true);
       expect(result.aiTags.length).toBeGreaterThan(0);
-      expect(Array.isArray(result.suggestedWants)).toBe(true);
-      expect(result.suggestedWants.length).toBeGreaterThan(0);
+      // The fallback's fixed ideas have nothing to do with the photo: none are sent
+      expect(result.suggestedWants).toEqual([]);
     });
 
     it('writes the fallback name, description and wants in English while keeping Spanish categories', async () => {
@@ -138,46 +138,31 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.source).toBe('fallback');
       expect(result.category).toBe('Música');
       expect(result.description).toContain('Musical instrument');
-      expect(result.suggestedWants).toContain('USB audio interface');
+      expect(result.suggestedWants).toEqual([]);
     });
 
-    it('prices items in whole Colombian pesos rounded to the nearest 10,000', async () => {
-      const estimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'LIKE_NEW',
-        description: 'Portátil de 13 pulgadas',
-      });
+    it('keeps the wants the model wrote for the item, and only those', async () => {
+      const client = {
+        chatJson: jest.fn().mockResolvedValue({
+          source: 'openai',
+          name: 'Control PS5 DualSense',
+          category: 'Gaming',
+          condition: 'LIKE_NEW',
+          conditionLabel: 'Como nuevo',
+          description: 'Control inalámbrico original.',
+          estimatedValue: 300000,
+          minValue: 250000,
+          maxValue: 350000,
+          aiTags: ['control', 'ps5'],
+          suggestedWants: ['Juego de PS5', ' Audífonos gamer ', ''],
+          confidence: 0.9,
+        }),
+      } as unknown as OpenAiClientService;
 
-      expect(estimate.estimatedValue).toBeGreaterThanOrEqual(1_000_000);
-      expect(estimate.estimatedValue % 10_000).toBe(0);
-      expect(estimate.minValue % 10_000).toBe(0);
-      expect(estimate.maxValue % 10_000).toBe(0);
-      expect(estimate.minValue).toBeLessThan(estimate.estimatedValue);
-      expect(estimate.maxValue).toBeGreaterThan(estimate.estimatedValue);
-    });
+      const result = await new AiVisionService(client).analyzePhoto({ hintText: 'Control PS5', locale: 'es' });
 
-    it('estimates item value based on condition multiplier', async () => {
-      const likeNewEstimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'LIKE_NEW',
-        description: 'Portátil de 13 pulgadas con 8GB RAM y 256GB SSD',
-      });
-
-      const forPartsEstimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'FOR_PARTS',
-        description: 'Portátil para repuestos',
-      });
-
-      expect(likeNewEstimate.source).toBe('fallback');
-      expect(likeNewEstimate.conditionLabel).toBe('Como nuevo');
-      expect(forPartsEstimate.conditionLabel).toBe('Para piezas');
-      expect(likeNewEstimate.estimatedValue).toBeGreaterThan(
-        forPartsEstimate.estimatedValue,
-      );
+      expect(result.source).toBe('openai');
+      expect(result.suggestedWants).toEqual(['Juego de PS5', 'Audífonos gamer']);
     });
   });
 

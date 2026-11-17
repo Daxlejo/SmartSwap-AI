@@ -4,6 +4,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { SplashScreen } from '@/screens/SplashScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
 import { RegisterScreen } from '@/screens/RegisterScreen';
+import { OnboardingScreen } from '@/screens/OnboardingScreen';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { ConfigureSwapScreen } from '@/screens/ConfigureSwapScreen';
 import { SearchingScreen } from '@/screens/SearchingScreen';
@@ -16,6 +17,7 @@ import { RouteResultsScreen } from '@/screens/RouteResultsScreen';
 import { RouteDetailScreen } from '@/screens/RouteDetailScreen';
 import { ProposalConfirmScreen } from '@/screens/ProposalConfirmScreen';
 import { ProposalSentScreen } from '@/screens/ProposalSentScreen';
+import { ItemDetailScreen } from '@/screens/ItemDetailScreen';
 
 export const router = createBrowserRouter(
   [
@@ -41,6 +43,10 @@ export const router = createBrowserRouter(
         {
           path: '/register',
           element: <RegisterScreen />,
+        },
+        {
+          path: '/welcome',
+          element: <OnboardingScreen />,
         },
       ],
     },
@@ -70,6 +76,10 @@ export const router = createBrowserRouter(
         {
           path: '/profile',
           element: <ProfileScreen />,
+        },
+        {
+          path: '/item/:itemId',
+          element: <ItemDetailScreen />,
         },
         {
           path: '/swap/configure',

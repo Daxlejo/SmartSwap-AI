@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Avatar } from '@/components/ui/Avatar';
@@ -15,50 +15,17 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
+import { swapDraftPath } from '@/utils/swapSearch';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
-import { compressImageToDataUrl } from '@/utils/imageCompressor';
-import {
-  PhotoPickError,
-  isPermissionFailure,
-  pickPhotos,
-  usesNativePicker,
-  type PhotoSource,
-} from '@/services/media/photoPicker';
-import { canOpenSettings, openSettings } from '@/services/device/appSettings';
-import { useAppResume } from '@/hooks/useAppResume';
+import { ProfilePhotoPicker } from '@/components/ProfilePhotoPicker';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
-const ToggleSwitch = ({
-  enabled,
-  onToggle,
-  label,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-  label: string;
-}) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={enabled}
-    aria-label={label}
-    onClick={onToggle}
-    className={`relative inline-flex h-11 w-[4.5rem] shrink-0 items-center rounded-full p-1.5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-      enabled ? 'bg-primary' : 'bg-surface-container-highest'
-    }`}
-  >
-    <span
-      className={`h-8 w-8 rounded-full bg-surface-container-lowest shadow transition-transform duration-200 ${
-        enabled ? 'translate-x-7' : 'translate-x-0'
-      }`}
-    />
-  </button>
-);
 export const ProfileScreen = () => {
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const { isDark } = useTheme();
-  const { t, language, changeLanguage } = useTranslation();
+  const { t } = useTranslation();
   const {
     currentUser: appUser,
     myItems,
@@ -88,11 +55,8 @@ export const ProfileScreen = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   // Profile photo picked in the sheet but not uploaded yet (compressed square JPEG data URL)
   const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
-  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
-  // The camera permission was refused: the error offers a shortcut to Android's settings
-  const [cameraDenied, setCameraDenied] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [nameError, setNameError] = useState<string | undefined>();
 
   useEffect(() => {
     refreshItems().catch(() => {});
@@ -101,8 +65,7 @@ export const ProfileScreen = () => {
   // Opened from the "add your location" prompt: jump straight to the edit sheet
   useEffect(() => {
     if ((routerLocation.state as { editLocation?: boolean } | null)?.editLocation) {
-      setEditMunicipalityCode(currentUser?.municipalityCode ?? null);
-      setIsEditOpen(true);
+      openEditSheet();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routerLocation.state]);
@@ -140,72 +103,31 @@ export const ProfileScreen = () => {
     }
   };
 
+  const openEditSheet = () => {
+    setEditName(currentUser?.name ?? '');
+    setEditMunicipalityCode(currentUser?.municipalityCode ?? null);
+    setNameError(undefined);
+    setIsEditOpen(true);
+  };
+
   const closeEditSheet = () => {
     setIsEditOpen(false);
     setPendingAvatar(null);
     setSheetError(null);
+    setNameError(undefined);
   };
-
-  const applyPhotoFile = async (file: File) => {
-    setIsProcessingPhoto(true);
-    setSheetError(null);
-    try {
-      setPendingAvatar(
-        await compressImageToDataUrl(file, { maxDimension: 512, quality: 0.85, square: true }),
-      );
-    } catch {
-      setSheetError(t('profile.photoReadError'));
-    } finally {
-      setIsProcessingPhoto(false);
-    }
-  };
-
-  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (file) void applyPhotoFile(file);
-  };
-
-  /** Android app: native camera or system photo picker. Browser: a plain file input. */
-  const pickAvatar = async (source: PhotoSource) => {
-    if (isProcessingPhoto) return;
-    setSheetError(null);
-    setCameraDenied(false);
-    if (!usesNativePicker()) {
-      photoInputRef.current?.click();
-      return;
-    }
-    // Busy while the camera or the picker is open, so a second tap cannot open another one
-    setIsProcessingPhoto(true);
-    let file: File | undefined;
-    try {
-      [file] = await pickPhotos(source, 1);
-    } catch (error) {
-      const reason = error instanceof PhotoPickError ? error.reason : 'failed';
-      if (reason !== 'cancelled') {
-        setCameraDenied(isPermissionFailure(reason));
-        setSheetError(t(`photoSource.errors.${reason}`));
-      }
-    } finally {
-      setIsProcessingPhoto(false);
-    }
-    if (file) await applyPhotoFile(file);
-  };
-
-  // Back from Settings: the old "no permission" message no longer applies
-  useAppResume(() => {
-    if (cameraDenied) {
-      setCameraDenied(false);
-      setSheetError(null);
-    }
-  });
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSavingProfile || !editName.trim()) return;
+    if (isSavingProfile) return;
+    if (editName.trim().length < 2) {
+      setNameError(t('auth.errors.nameTooShort'));
+      return;
+    }
     setIsSavingProfile(true);
     setErrorBanner(null);
     setSheetError(null);
+    const uploadsPhoto = Boolean(pendingAvatar);
     if (pendingAvatar) {
       try {
         await uploadAvatarReal(pendingAvatar);
@@ -227,7 +149,9 @@ export const ProfileScreen = () => {
       });
       closeEditSheet();
     } catch (err) {
-      setSheetError(err instanceof ApiError && err.message ? err.message : t('profile.updateError'));
+      const detail = err instanceof ApiError && err.message ? err.message : t('profile.updateError');
+      // The photo is already saved: say so, so nobody thinks it was lost
+      setSheetError(uploadsPhoto ? t('profile.photoSavedProfileFailed', { detail }) : detail);
     } finally {
       setIsSavingProfile(false);
     }
@@ -245,12 +169,23 @@ export const ProfileScreen = () => {
       <ScreenHeader title={t('headers.profile.title')} />
       {/* Section 1: Profile hero */}
       <section className="flex flex-col items-center text-center pt-2">
-        <Avatar
-          src={currentUser?.avatarUrl}
-          alt={currentUser?.name ?? ''}
-          size="xl"
-          className="mb-3"
-        />
+        <div className="relative mb-6">
+          <Avatar
+            src={currentUser?.avatarUrl}
+            alt={currentUser?.name ?? ''}
+            seed={currentUser?.id}
+            size="xl"
+          />
+          <button
+            type="button"
+            onClick={openEditSheet}
+            aria-label={t('profile.editProfile')}
+            data-testid="profile-edit-badge"
+            className="absolute -bottom-4 -right-7 w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md ring-4 ring-surface active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-primary/40"
+          >
+            <Icon name="edit" size="sm" />
+          </button>
+        </div>
         <h2 className="font-headline-md text-headline-md font-bold text-on-surface">
           {currentUser?.name ?? ''}
         </h2>
@@ -366,9 +301,16 @@ export const ProfileScreen = () => {
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface break-words">
-                      {item.name}
-                    </h3>
+                    <button
+                      type="button"
+                      data-testid={`profile-item-${item.id}`}
+                      onClick={() => navigate(`/item/${item.id}`, { state: { item } })}
+                      className="min-w-0 min-h-11 -my-1 text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface break-words hover:underline">
+                        {item.name}
+                      </h3>
+                    </button>
                     <button
                       type="button"
                       aria-label={t('profile.itemOptions', { name: item.name })}
@@ -398,7 +340,7 @@ export const ProfileScreen = () => {
                         type="button"
                         onClick={() => {
                           setActiveMenuId(null);
-                          navigate('/swap/configure');
+                          navigate(swapDraftPath({ step: 2, offeredItemId: item.id, wantFixed: false }));
                         }}
                         className="min-h-11 px-3 font-label-md text-label-md text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors font-bold"
                       >
@@ -470,106 +412,24 @@ export const ProfileScreen = () => {
           </div>
 
           {/* Row 2: Idioma */}
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col gap-3 py-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
                 <Icon name="language" size="sm" />
               </div>
-              <div className="flex flex-col">
-                <span className="font-body-md text-body-md font-medium text-on-surface">
-                  {t('profile.language')}
-                </span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {language === 'es' ? 'Español' : 'English'}
-                </span>
-              </div>
+              <span
+                id="profile-language-label"
+                className="font-body-md text-body-md font-medium text-on-surface"
+              >
+                {t('profile.language')}
+              </span>
             </div>
-            <ToggleSwitch
-              label={t('profile.languageSwitch')}
-              enabled={language === 'en'}
-              onToggle={() => void changeLanguage(language === 'es' ? 'en' : 'es')}
-            />
+            <LanguageSelector labelledBy="profile-language-label" />
           </div>
-
         </div>
       </section>
 
       <DemoAccountSwitcher />
-
-      {/* Section 4: Cuenta */}
-      <section className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md">
-        <h2 className="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-sm">
-          {t('profile.account')}
-        </h2>
-        <div className="divide-y divide-surface-container-high/40">
-          {/* Editar perfil */}
-          <button
-            type="button"
-            onClick={() => {
-              setEditName(currentUser?.name ?? '');
-              setEditMunicipalityCode(currentUser?.municipalityCode ?? null);
-              setIsEditOpen(true);
-            }}
-            className="w-full flex justify-between items-center py-3 text-left group transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                <Icon name="person" size="sm" />
-              </div>
-              <span className="font-body-md text-body-md font-medium text-on-surface">
-                {t('profile.editProfile')}
-              </span>
-            </div>
-            <Icon
-              name="chevron_right"
-              size="sm"
-              className="text-on-surface-variant group-hover:translate-x-0.5 transition-transform"
-            />
-          </button>
-
-          {/* Historial de canjes */}
-          <button
-            type="button"
-            onClick={() => navigate('/swaps')}
-            className="w-full flex justify-between items-center py-3 text-left group transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                <Icon name="swap_horiz" size="sm" />
-              </div>
-              <span className="font-body-md text-body-md font-medium text-on-surface">
-                {t('profile.swapHistory')}
-              </span>
-            </div>
-            <Icon
-              name="chevron_right"
-              size="sm"
-              className="text-on-surface-variant group-hover:translate-x-0.5 transition-transform"
-            />
-          </button>
-
-          {/* Publicar nuevo artículo */}
-          <button
-            type="button"
-            onClick={() => navigate('/publish')}
-            className="w-full flex justify-between items-center py-3 text-left group transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary">
-                <Icon name="add_a_photo" size="sm" />
-              </div>
-              <span className="font-body-md text-body-md font-medium text-on-surface">
-                {t('profile.publishNewItem')}
-              </span>
-            </div>
-            <Icon
-              name="chevron_right"
-              size="sm"
-              className="text-on-surface-variant group-hover:translate-x-0.5 transition-transform"
-            />
-          </button>
-        </div>
-      </section>
 
       {/* Section 5: Zona de peligro / Logout */}
       <section className="pt-2">
@@ -591,49 +451,22 @@ export const ProfileScreen = () => {
         title={t('profile.editProfile')}
       >
         <form onSubmit={handleSaveProfile} className="flex flex-col space-y-4">
-          <div className="flex flex-col items-center gap-3">
-            <Avatar
-              src={pendingAvatar ?? currentUser?.avatarUrl}
-              alt={editName || currentUser?.name || ''}
-              size="xl"
-            />
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                isLoading={isProcessingPhoto}
-                onClick={() => void pickAvatar('camera')}
-              >
-                {t('profile.takePhoto')}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                isLoading={isProcessingPhoto}
-                onClick={() => void pickAvatar('gallery')}
-              >
-                {t('profile.chooseFromGallery')}
-              </Button>
-            </div>
-            <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
-              {t('profile.photoHint')}
-            </p>
-            {/* Browser only; without `capture`, which forced the camera on Android */}
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handlePhotoSelected}
-              data-testid="avatar-gallery-input"
-            />
-          </div>
+          <ProfilePhotoPicker
+            savedSrc={currentUser?.avatarUrl}
+            pendingSrc={pendingAvatar}
+            onPicked={setPendingAvatar}
+            name={editName || currentUser?.name || ''}
+            seed={currentUser?.id}
+          />
           <Input
+            id="profile-name"
             label={t('profile.fullName')}
             value={editName}
-            onChange={(e) => setEditName(e.target.value)}
+            onChange={(e) => {
+              setEditName(e.target.value);
+              setNameError(undefined);
+            }}
+            error={nameError}
             leftIcon="person"
             required
           />
@@ -646,26 +479,9 @@ export const ProfileScreen = () => {
             />
           </div>
           {sheetError && (
-            <div role="alert" className="flex flex-col gap-2">
-              <p className="font-body-sm text-body-sm text-error">{sheetError}</p>
-              {cameraDenied && canOpenSettings() && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="md"
-                  leftIcon="settings"
-                  onClick={() => {
-                    openSettings('app').catch((error: unknown) => {
-                      console.warn('[profile] could not open settings', error);
-                      setCameraDenied(false);
-                      setSheetError(t('device.settingsUnavailable'));
-                    });
-                  }}
-                >
-                  {t('photoSource.openSettings')}
-                </Button>
-              )}
-            </div>
+            <p role="alert" className="font-body-sm text-body-sm text-error">
+              {sheetError}
+            </p>
           )}
           <div className="flex items-center gap-3 pt-2">
             <Button

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { aiService } from '@/services/ai/ai.service';
+import { aiService, toAiCondition } from '@/services/ai/ai.service';
 import { apiClient } from '@/services/http/apiClient';
 import { mergeUniqueWants } from '@/screens/PublishScreen';
 
@@ -21,6 +21,7 @@ describe('aiService', () => {
         suggestedWants: ['MacBook Air', 'iPad Pro', 'Bicicleta'],
         aiTags: ['sony', 'mirrorless', '4k', 'fotografia'],
         confidence: 0.94,
+        source: 'openai',
       });
 
       const payload = {
@@ -56,6 +57,7 @@ describe('aiService', () => {
         estimatedValue: 300,
         wants: ['PlayStation 5'],
         tags: ['nintendo', 'oled'],
+        source: 'openai',
       });
 
       const result = await aiService.analyzeItemPhoto({
@@ -71,32 +73,84 @@ describe('aiService', () => {
     });
   });
 
-  describe('estimateItemValue', () => {
-    it('calls POST /ai/estimate-value and returns the normalized valuation contract', async () => {
-      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
-        estimatedValue: 780,
-        minValue: 700,
-        maxValue: 860,
-        reasoning: 'Basado en el mercado secundario para Trek Marlin 7 en excelente estado.',
+  describe('suggested wants', () => {
+    it('drops the ideas of a fallback answer, which do not come from the item', async () => {
+      vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        name: 'Guitarra',
+        estimatedValue: 300000,
+        suggestedWants: ['Tablet', 'Smartphone', 'Auriculares'],
+        source: 'fallback',
       });
 
-      const payload = {
+      const result = await aiService.analyzeItemPhoto({ hintText: 'Guitarra', locale: 'es' });
+
+      expect(result.suggestedWants).toEqual([]);
+    });
+  });
+
+  describe('estimateItemValue', () => {
+    it('sends the condition code the API expects and returns the price range', async () => {
+      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        available: true,
+        estimatedValue: 780000,
+        minValue: 700000,
+        maxValue: 860000,
+        reasoning: 'Una Trek Marlin 7 usada se vende entre 700 y 860 mil pesos.',
+        source: 'openai',
+      });
+
+      const result = await aiService.estimateItemValue({
         name: 'Bicicleta Trek Marlin 7',
         category: 'Deportes',
         condition: 'Excelente estado',
         description: 'Rodado 29 talle M frenos hidráulicos Shimano.',
-      };
-
-      const result = await aiService.estimateItemValue(payload);
-
-      expect(postSpy).toHaveBeenCalledTimes(1);
-      expect(postSpy).toHaveBeenCalledWith('/ai/estimate-value', payload);
-      expect(result).toEqual({
-        estimatedValue: 780,
-        minValue: 700,
-        maxValue: 860,
-        reasoning: 'Basado en el mercado secundario para Trek Marlin 7 en excelente estado.',
       });
+
+      expect(postSpy).toHaveBeenCalledWith('/ai/estimate-value', {
+        name: 'Bicicleta Trek Marlin 7',
+        category: 'Deportes',
+        condition: 'EXCELLENT',
+        description: 'Rodado 29 talle M frenos hidráulicos Shimano.',
+      });
+      expect(result).toEqual({
+        estimatedValue: 780000,
+        minValue: 700000,
+        maxValue: 860000,
+        reasoning: 'Una Trek Marlin 7 usada se vende entre 700 y 860 mil pesos.',
+      });
+    });
+
+    it('returns no suggestion when the API has no trustworthy estimate', async () => {
+      vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        available: false,
+        reason: 'ai_unavailable',
+      });
+
+      await expect(
+        aiService.estimateItemValue({ name: 'Control PS5', category: 'Videojuegos', condition: 'Como nuevo' }),
+      ).resolves.toBeNull();
+    });
+
+    it('returns no suggestion when the range is incoherent', async () => {
+      vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        available: true,
+        estimatedValue: 900000,
+        minValue: 200000,
+        maxValue: 400000,
+      });
+
+      await expect(
+        aiService.estimateItemValue({ name: 'Control PS5', category: 'Videojuegos', condition: 'Como nuevo' }),
+      ).resolves.toBeNull();
+    });
+
+    it('maps every publish condition label to its API code', () => {
+      expect(toAiCondition('Como nuevo')).toBe('LIKE_NEW');
+      expect(toAiCondition('Excelente estado')).toBe('EXCELLENT');
+      expect(toAiCondition('Buen estado')).toBe('GOOD');
+      expect(toAiCondition('Para repuesto')).toBe('FOR_PARTS');
+      expect(toAiCondition('LIKE_NEW')).toBe('LIKE_NEW');
+      expect(toAiCondition('FOR_PARTS')).toBe('FOR_PARTS');
     });
   });
 

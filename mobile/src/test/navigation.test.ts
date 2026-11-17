@@ -23,7 +23,11 @@ describe('Android back button', () => {
     expect(backActionFor(path)).toBe('home');
   });
 
-  it.each(['/publish', '/notifications', '/swap/results'])('goes back one step from %s', (path) => {
+  it('goes to Home after a proposal was sent, never back to the sent form', () => {
+    expect(backActionFor('/swap/proposal/sent')).toBe('home');
+  });
+
+  it.each(['/publish', '/notifications', '/swap/results', '/swap/configure', '/item/i-1'])('goes back one step from %s', (path) => {
     expect(backActionFor(path)).toBe('back');
   });
 });

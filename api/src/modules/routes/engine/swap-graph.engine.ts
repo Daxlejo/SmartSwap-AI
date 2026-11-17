@@ -25,6 +25,13 @@ export interface SwapGraphSearchParams {
   objectiveEmbedding?: number[];
   offeredItemId?: string;
   desiredCategory?: string;
+  /**
+   * The exact item the initiator wants to receive. When set, every cycle closes with
+   * this item (the user chose it, so no want match is needed) and nothing else.
+   */
+  targetItemId?: string;
+  /** Shortest cycle to return; 3 keeps only rings that need a third person. */
+  minSteps?: number;
   maxSteps?: number;
   valueTolerancePct?: number;
   catalog: GraphItemNode[];
@@ -114,6 +121,11 @@ export class SwapGraphEngine {
       MIN_CYCLE_STEPS,
       MAX_CYCLE_STEPS,
     );
+    const minSteps = this.clampInt(
+      params.minSteps ?? MIN_CYCLE_STEPS,
+      MIN_CYCLE_STEPS,
+      maxSteps,
+    );
     const valueTolerancePct = this.clampNumber(
       params.valueTolerancePct ?? DEFAULT_VALUE_TOLERANCE_PCT,
       10,
@@ -160,6 +172,13 @@ export class SwapGraphEngine {
       initiatorUserId,
     );
 
+    const targetItemId = params.targetItemId?.trim();
+    const targetItem = targetItemId ? itemById.get(targetItemId) : undefined;
+    if (targetItemId && (!targetItem || targetItem.ownerId === initiatorUserId)) {
+      // The chosen item is gone, reserved or the initiator's own: no ring can deliver it
+      return [];
+    }
+
     const deduplicatedCycles = new Map<string, SwapCycleCandidate>();
 
     for (const offeredItem of offeredItems) {
@@ -176,31 +195,15 @@ export class SwapGraphEngine {
             ]
           : [];
 
-      const closingEdgeByItemId = this.evaluateClosingEdges(
-        nonInitiatorItems,
-        offeredItem,
-        explicitObjectiveWants,
-        valueTolerancePct,
-        params.desiredCategory,
-      );
-
-      // Fallback to `offeredItem.wants` if no item matched explicit objectiveText (or if objectiveText was omitted)
-      if (
-        closingEdgeByItemId.size === 0 &&
-        Array.isArray(offeredItem.wants) &&
-        offeredItem.wants.length > 0
-      ) {
-        const fallbackClosing = this.evaluateClosingEdges(
-          nonInitiatorItems,
-          offeredItem,
-          offeredItem.wants,
-          valueTolerancePct,
-          params.desiredCategory,
-        );
-        for (const [itemId, evalRes] of fallbackClosing.entries()) {
-          closingEdgeByItemId.set(itemId, evalRes);
-        }
-      }
+      const closingEdgeByItemId = targetItem
+        ? this.evaluateTargetClosingEdge(targetItem, offeredItem, valueTolerancePct)
+        : this.evaluateObjectiveClosingEdges(
+            nonInitiatorItems,
+            offeredItem,
+            explicitObjectiveWants,
+            valueTolerancePct,
+            params.desiredCategory,
+          );
 
       if (closingEdgeByItemId.size === 0) {
         continue;
@@ -213,6 +216,7 @@ export class SwapGraphEngine {
       this.dfsExploreCycles(
         offeredItem,
         objectiveText,
+        minSteps,
         maxSteps,
         adjacency,
         itemById,
@@ -304,6 +308,7 @@ export class SwapGraphEngine {
   private dfsExploreCycles(
     offeredItem: GraphItemNode,
     objectiveText: string,
+    minSteps: number,
     maxSteps: number,
     adjacency: Map<string, DirectedGraphEdge[]>,
     itemById: Map<string, GraphItemNode>,
@@ -317,7 +322,7 @@ export class SwapGraphEngine {
     const currentItem = pathItems[currentDepth - 1];
 
     // Check if we can close the cycle back to `offeredItem` (cycle length k in {2..maxSteps})
-    if (currentDepth >= MIN_CYCLE_STEPS && currentDepth <= maxSteps) {
+    if (currentDepth >= minSteps && currentDepth <= maxSteps) {
       const closingEvaluation = closingEdgeByItemId.get(currentItem.id);
       if (closingEvaluation) {
         const cycleEdges = [...pathEdges, closingEvaluation];
@@ -356,6 +361,7 @@ export class SwapGraphEngine {
       this.dfsExploreCycles(
         offeredItem,
         objectiveText,
+        minSteps,
         maxSteps,
         adjacency,
         itemById,
@@ -485,6 +491,70 @@ export class SwapGraphEngine {
       return '';
     }
     return cycleItems.map((item) => `${item.ownerId}:${item.id}`).join('->');
+  }
+
+  /**
+   * Closing edges toward the objective text, falling back to the offered item's own
+   * wants when the text matches nothing.
+   */
+  private evaluateObjectiveClosingEdges(
+    nonInitiatorItems: GraphItemNode[],
+    offeredItem: GraphItemNode,
+    objectiveWants: GraphWantNode[],
+    valueTolerancePct: number,
+    desiredCategory?: string,
+  ): Map<string, EdgeEvaluationResult> {
+    const closing = this.evaluateClosingEdges(
+      nonInitiatorItems,
+      offeredItem,
+      objectiveWants,
+      valueTolerancePct,
+      desiredCategory,
+    );
+    if (closing.size > 0 || !Array.isArray(offeredItem.wants) || offeredItem.wants.length === 0) {
+      return closing;
+    }
+    return this.evaluateClosingEdges(
+      nonInitiatorItems,
+      offeredItem,
+      offeredItem.wants,
+      valueTolerancePct,
+      desiredCategory,
+    );
+  }
+
+  /**
+   * The only closing edge when the initiator picked an exact item: they want it by
+   * definition, so only the value band can rule it out.
+   */
+  private evaluateTargetClosingEdge(
+    targetItem: GraphItemNode,
+    offeredItem: GraphItemNode,
+    valueTolerancePct: number,
+  ): Map<string, EdgeEvaluationResult> {
+    const closing = new Map<string, EdgeEvaluationResult>();
+    if (
+      !this.scoringStrategy.isValueWithinTolerance(
+        targetItem.estimatedValue,
+        offeredItem.estimatedValue,
+        valueTolerancePct,
+      )
+    ) {
+      return closing;
+    }
+    closing.set(targetItem.id, {
+      matches: true,
+      matchScore: 1,
+      lexicalScore: 1,
+      semanticScore: 0,
+      valueParityScore: this.scoringStrategy.computeValueParity(
+        targetItem.estimatedValue,
+        offeredItem.estimatedValue,
+      ),
+      matchedWantText: targetItem.name,
+      reason: 'MATCHED',
+    });
+    return closing;
   }
 
   private evaluateClosingEdges(

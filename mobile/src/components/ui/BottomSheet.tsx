@@ -61,17 +61,18 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         {title && (
           <div className="px-6 pb-4 pt-2 flex justify-between items-center border-b border-surface-container-high/40">
             <h2 className="font-headline-sm text-headline-sm font-semibold text-on-surface">{title}</h2>
-            <button 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               aria-label={t('nav.close')}
-              className="p-2 -mr-2 text-on-surface-variant hover:text-on-surface transition-colors bg-surface-container-high rounded-full active:scale-95"
+              className="w-11 h-11 -mr-2 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors bg-surface-container-high rounded-full active:scale-95"
             >
               <Icon name="close" size="sm" />
             </button>
           </div>
         )}
         
-        <div className="overflow-y-auto px-6 pb-8 overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div data-sheet-body className="overflow-y-auto px-6 pb-8 overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {children}
         </div>
       </div>
