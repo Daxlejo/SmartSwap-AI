@@ -12,15 +12,18 @@ import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { SwapRing } from '@/components/SwapRing';
 import { toRingParticipants } from '@/utils/swapRing';
+import { buildDirectPreviewRoute, type DirectProposalDraft } from '@/utils/swapSearch';
 
 interface ProposalConfirmContentProps {
   route: SwapRoute;
+  /** Set for a 1-to-1 proposal: `route` is then only its preview. */
+  direct?: DirectProposalDraft;
 }
 
-const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }) => {
+const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route, direct }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { proposeRouteReal, currentUser } = useApp();
+  const { proposeRouteReal, proposeDirectReal, currentUser } = useApp();
   const ring = useMemo(() => toRingParticipants(route.steps ?? []), [route]);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -38,8 +41,14 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const proposedRoute = await proposeRouteReal(route);
-      navigate('/swap/proposal/sent', { state: { route: proposedRoute } });
+      const proposedRoute = direct
+        ? await proposeDirectReal({
+            offeredItemId: direct.offeredItem.id,
+            wantedItemId: direct.wantedItem.id,
+          })
+        : await proposeRouteReal(route);
+      // "Proposal sent" takes this screen's place: back from it never resends
+      navigate('/swap/proposal/sent', { replace: true, state: { route: proposedRoute } });
     } catch (error) {
       setSubmitError(
         error instanceof ApiError && error.message
@@ -242,12 +251,20 @@ const ProposalConfirmContent: React.FC<ProposalConfirmContentProps> = ({ route }
   );
 };
 
-/** The route to confirm travels in the navigation state; without it there is nothing to show. */
+/**
+ * What to confirm travels in the navigation state: a ring found by the engine
+ * (`route`) or a 1-to-1 proposal (`direct`, previewed as a 2-person ring).
+ * Without either there is nothing to show.
+ */
 export const ProposalConfirmScreen: React.FC = () => {
   const location = useLocation();
-  const route = location.state?.route as SwapRoute | undefined;
+  const { currentUser } = useApp();
+  const state = location.state as { route?: SwapRoute; direct?: DirectProposalDraft } | null;
+  const direct = state?.direct;
+  const route =
+    direct && currentUser ? buildDirectPreviewRoute(direct, currentUser) : state?.route;
   if (!route || route.chainItems.length < 2) {
     return <Navigate to="/swap/configure" replace />;
   }
-  return <ProposalConfirmContent route={route} />;
+  return <ProposalConfirmContent route={route} direct={direct} />;
 };

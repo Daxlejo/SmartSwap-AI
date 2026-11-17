@@ -1,15 +1,12 @@
-/**
- * Why the route search cannot start yet; `null` means the engine can be called.
- * `inventoryPending` covers an inventory that is still loading or failed to load:
- * an empty list then proves nothing, so the user is not told to publish.
- */
-export type SwapSearchBlocker = 'inventoryPending' | 'noItems' | 'noWant' | null;
-
-/** Shortest objective text the engine accepts. */
-export const MIN_OBJECTIVE_LENGTH = 2;
+import type { Item, SwapRoute, User } from '@/types';
+import type { NormalizedRouteStep } from '@/services/routes/routes.service';
 
 /** Fair-value band, in percent, the engine allows between consecutive items. */
 export const VALUE_TOLERANCE_PCT = 25;
+
+/** A circular swap needs a third person: 1-to-1 swaps are proposed directly. */
+export const CIRCULAR_MIN_STEPS = 3;
+export const CIRCULAR_MAX_STEPS = 4;
 
 /** Statuses that keep an item on offer (the API answers ACTIVE; older payloads AVAILABLE). */
 const OFFERABLE_STATUSES = ['ACTIVE', 'AVAILABLE'];
@@ -29,28 +26,63 @@ export interface InventorySnapshot {
   publishedCount: number;
 }
 
-/**
- * Decides whether Configure swap may call the route engine. The user needs a
- * published item to offer and a chosen objective; otherwise the search (and the
- * AI explanation that follows it) must not run.
- */
-export const getSwapSearchBlocker = (
-  inventory: InventorySnapshot,
-  objectiveText: string,
-): SwapSearchBlocker => {
-  if (inventory.publishedCount === 0) return inventory.loaded ? 'noItems' : 'inventoryPending';
-  if (objectiveText.trim().length < MIN_OBJECTIVE_LENGTH) return 'noWant';
-  return null;
+// ---------------------------------------------------------------------------
+// New swap: three steps whose choices live in the URL, so Android's back button
+// walks back through the steps and a step reopens with what was chosen.
+// ---------------------------------------------------------------------------
+
+export type SwapMode = 'direct' | 'circular';
+export type SwapDraftStep = 1 | 2 | 3;
+
+export interface SwapDraft {
+  step: SwapDraftStep;
+  /** The user's item they offer. */
+  offeredItemId?: string;
+  /** The item they want to receive. */
+  wantedItemId?: string;
+  /** True when the flow started on an item's detail: the wanted item cannot change. */
+  wantFixed: boolean;
+  mode?: SwapMode;
+}
+
+const STEPS: readonly SwapDraftStep[] = [1, 2, 3];
+
+/** Reads the draft from the URL of the New swap screen; unknown values fall back to step 1. */
+export const parseSwapDraft = (params: URLSearchParams): SwapDraft => {
+  const step = Number(params.get('step'));
+  const mode = params.get('mode');
+  return {
+    step: STEPS.includes(step as SwapDraftStep) ? (step as SwapDraftStep) : 1,
+    offeredItemId: params.get('have') || undefined,
+    wantedItemId: params.get('want') || undefined,
+    wantFixed: params.get('fixed') === '1' && Boolean(params.get('want')),
+    mode: mode === 'direct' || mode === 'circular' ? mode : undefined,
+  };
 };
 
-export interface SwapSearchInput {
-  blocker: SwapSearchBlocker;
-  offeredItemId: string | undefined;
-  objectiveText: string;
-  mode: 'circular' | 'direct';
-  /** Catalog item the objective points at, when one matched. */
-  target?: { id: string; category: string };
-}
+/** URL of the New swap screen for a draft (the inverse of {@link parseSwapDraft}). */
+export const swapDraftPath = (draft: SwapDraft): string => {
+  const params = new URLSearchParams({ step: String(draft.step) });
+  if (draft.offeredItemId) params.set('have', draft.offeredItemId);
+  if (draft.wantedItemId) params.set('want', draft.wantedItemId);
+  if (draft.wantFixed && draft.wantedItemId) params.set('fixed', '1');
+  if (draft.mode) params.set('mode', draft.mode);
+  return `/swap/configure?${params.toString()}`;
+};
+
+/** Entry from an item's detail: that item is what the user receives, fixed. */
+export const swapDraftForItem = (wantedItemId: string): string =>
+  swapDraftPath({ step: 1, wantedItemId, wantFixed: true });
+
+/**
+ * The step a draft may actually show: a later step needs the earlier choices
+ * (opening step 3 without an offered item goes back to step 1).
+ */
+export const reachableStep = (draft: SwapDraft): SwapDraftStep => {
+  if (!draft.offeredItemId) return 1;
+  if (draft.step === 3 && !draft.wantedItemId) return 2;
+  return draft.step;
+};
 
 /** Route state the Searching and Results screens read back. */
 export interface SwapSearchState {
@@ -58,6 +90,7 @@ export interface SwapSearchState {
   wantItemId: string;
   objectiveText: string;
   desiredCategory?: string;
+  minSteps: number;
   maxSteps: number;
   valueTolerancePct: number;
 }
@@ -67,33 +100,139 @@ export interface SwapSearchNavigation {
   state: SwapSearchState;
 }
 
-/**
- * Builds the navigation to the Searching screen, which is what calls the engine.
- * Returns `null` while the search is blocked, so a blocked tap never reaches it.
- */
-export const buildSwapSearchNavigation = (input: SwapSearchInput): SwapSearchNavigation | null => {
-  if (input.blocker !== null || !input.offeredItemId) return null;
-  const objectiveText = input.objectiveText.trim();
-  const maxSteps = input.mode === 'direct' ? 2 : 4;
-  const wantItemId = input.target?.id ?? '';
+/** Search for rings of 3 or 4 people in which the user receives exactly `wanted`. */
+export const buildCircularSearch = (
+  offered: Pick<Item, 'id'>,
+  wanted: Pick<Item, 'id' | 'name' | 'category'>,
+): SwapSearchNavigation => {
+  const objectiveText = wanted.name.trim();
   const params = new URLSearchParams({
-    have: input.offeredItemId,
+    have: offered.id,
+    want: wanted.id,
     q: objectiveText,
-    maxSteps: String(maxSteps),
+    minSteps: String(CIRCULAR_MIN_STEPS),
+    maxSteps: String(CIRCULAR_MAX_STEPS),
     tolerance: String(VALUE_TOLERANCE_PCT),
   });
-  if (wantItemId) params.set('want', wantItemId);
-
   return {
     path: `/swap/searching?${params.toString()}`,
     state: {
-      offeredItemId: input.offeredItemId,
-      wantItemId,
+      offeredItemId: offered.id,
+      wantItemId: wanted.id,
       objectiveText,
-      desiredCategory: input.target?.category,
-      maxSteps,
+      desiredCategory: wanted.category,
+      minSteps: CIRCULAR_MIN_STEPS,
+      maxSteps: CIRCULAR_MAX_STEPS,
       valueTolerancePct: VALUE_TOLERANCE_PCT,
     },
+  };
+};
+
+/** Catalog items the user can ask for that match what they typed (name, category or description). */
+export const findWantedCandidates = (
+  catalog: readonly Item[],
+  query: string,
+  viewerId: string | undefined,
+  limit = 8,
+): Item[] => {
+  const needle = normalize(query);
+  if (needle.length < 2) return [];
+  return catalog
+    .filter((item) => item.ownerId !== viewerId && isOfferableItem(item))
+    .filter((item) =>
+      [item.name, item.category, item.description ?? ''].some((text) =>
+        normalize(text).includes(needle),
+      ),
+    )
+    .slice(0, limit);
+};
+
+const normalize = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+
+// ---------------------------------------------------------------------------
+// Direct (1-to-1) proposal
+// ---------------------------------------------------------------------------
+
+/** What Confirm receives for a direct proposal: both items, with the wanted item's owner. */
+export interface DirectProposalDraft {
+  offeredItem: Item;
+  wantedItem: Item;
+}
+
+/** The owner of an item as a user, when the item came with its owner. */
+export const itemOwnerAsUser = (item: Item): User | undefined =>
+  item.owner
+    ? {
+        id: item.owner.id,
+        name: item.owner.name,
+        email: item.owner.email ?? '',
+        avatarUrl: item.owner.avatarUrl,
+        rating: item.owner.rating,
+        location: item.owner.location,
+        verified: item.owner.verified ?? false,
+        co2SavedKg: item.owner.co2SavedKg ?? 0,
+      }
+    : undefined;
+
+/**
+ * The 2-person ring a direct proposal will create, to preview it before sending:
+ * the viewer gives their item (already accepted by proposing) and the owner gives
+ * theirs (pending). Returns `null` without the owner's name.
+ */
+export const buildDirectPreviewRoute = (
+  draft: DirectProposalDraft,
+  viewer: User,
+): SwapRoute | null => {
+  const owner = itemOwnerAsUser(draft.wantedItem);
+  if (!owner?.name) return null;
+  const { offeredItem, wantedItem } = draft;
+  const steps: NormalizedRouteStep[] = [
+    {
+      id: 'direct-preview-0',
+      stepOrder: 0,
+      userId: viewer.id,
+      user: viewer,
+      toUserId: owner.id,
+      toUser: owner,
+      givesItemId: offeredItem.id,
+      givesItem: offeredItem,
+      receivesItemId: wantedItem.id,
+      receivesItem: wantedItem,
+      acceptance: 'ACCEPTED',
+      deliveryConfirmed: false,
+    },
+    {
+      id: 'direct-preview-1',
+      stepOrder: 1,
+      userId: owner.id,
+      user: owner,
+      toUserId: viewer.id,
+      toUser: viewer,
+      givesItemId: wantedItem.id,
+      givesItem: wantedItem,
+      receivesItemId: offeredItem.id,
+      receivesItem: offeredItem,
+      acceptance: 'PENDING',
+      deliveryConfirmed: false,
+    },
+  ];
+  return {
+    id: 'direct-preview',
+    title: wantedItem.name,
+    stepsCount: 2,
+    offeredItemId: offeredItem.id,
+    targetItemId: wantedItem.id,
+    participants: [viewer, owner],
+    chainItems: [offeredItem, wantedItem],
+    co2SavedKg: 0,
+    isLoop: true,
+    objectiveText: wantedItem.name,
+    steps,
   };
 };
 
