@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const platform = vi.hoisted(() => ({ current: 'android' }));
+const platform = vi.hoisted(() => ({
+  current: 'android',
+  pluginName: '',
+  nativeApply: vi.fn(),
+}));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => platform.current },
-  registerPlugin: () => ({ apply: vi.fn() }),
+  registerPlugin: (name: string) => {
+    platform.pluginName = name;
+    return { apply: platform.nativeApply };
+  },
 }));
 
 import { FALLBACK_SURFACE, startSystemBarsSync, surfaceTokenToHex } from './systemBars';
@@ -18,11 +25,13 @@ const makeRoot = (dark: boolean, tokens = { light: '248 250 252', dark: '15 23 4
 };
 
 let observers: Array<() => void> = [];
+let observed: Array<{ target: unknown; options: unknown }> = [];
 let disconnected = 0;
 
 class FakeMutationObserver {
   constructor(private readonly callback: () => void) {}
-  observe() {
+  observe(target: unknown, options: unknown) {
+    observed.push({ target, options });
     observers.push(this.callback);
   }
   disconnect() {
@@ -53,7 +62,9 @@ describe('startSystemBarsSync', () => {
   beforeEach(() => {
     platform.current = 'android';
     observers = [];
+    observed = [];
     disconnected = 0;
+    platform.nativeApply.mockReset().mockResolvedValue(undefined);
     current = makeRoot(false);
     vi.stubGlobal('MutationObserver', FakeMutationObserver);
     vi.stubGlobal('getComputedStyle', () => ({
@@ -102,11 +113,38 @@ describe('startSystemBarsSync', () => {
     expect(apply).toHaveBeenCalledTimes(2);
   });
 
-  it('stops listening when the returned function is called', () => {
+  it('watches only the class attribute of the given root', () => {
+    startSystemBarsSync(current.root, vi.fn().mockResolvedValue(undefined));
+    expect(observed).toEqual([
+      { target: current.root, options: { attributes: true, attributeFilter: ['class'] } },
+    ]);
+  });
+
+  it('ignores theme changes after it is stopped', () => {
     const apply = vi.fn().mockResolvedValue(undefined);
     const stop = startSystemBarsSync(current.root, apply);
     stop();
+    current.state.dark = true;
+    mutate();
     expect(disconnected).toBe(1);
+    expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls the native ThemeBars plugin by default', () => {
+    startSystemBarsSync(current.root);
+    expect(platform.pluginName).toBe('ThemeBars');
+    expect(platform.nativeApply).toHaveBeenCalledWith({ color: '#f8fafc', dark: false });
+  });
+
+  it.each([
+    ['an empty light token', false, '', FALLBACK_SURFACE.light],
+    ['a malformed light token', false, 'rgb(1,2,3)', FALLBACK_SURFACE.light],
+    ['a malformed dark token', true, 'rgb(1,2,3)', FALLBACK_SURFACE.dark],
+  ])('falls back to the brand color for %s', (_label, dark, token, expected) => {
+    current = makeRoot(dark, { light: token, dark: token });
+    const apply = vi.fn().mockResolvedValue(undefined);
+    startSystemBarsSync(current.root, apply);
+    expect(apply).toHaveBeenCalledWith({ color: expected, dark });
   });
 
   it('does nothing outside the Android app', () => {
