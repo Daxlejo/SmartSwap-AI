@@ -20,6 +20,7 @@ import { AiLocale } from '../ai/dto/ai-locale.dto';
 import { AiExplainerService } from '../ai/services/ai-explainer.service';
 import { GeoService } from '../geo/geo.service';
 import { NEARBY_RADIUS_KM } from '../geo/geo.types';
+import { ProposeDirectDto } from './dto/propose-direct.dto';
 import { ProposeRouteDto } from './dto/propose-route.dto';
 import { RespondRouteDto } from './dto/respond-route.dto';
 import { SearchRoutesDto } from './dto/search-routes.dto';
@@ -35,6 +36,25 @@ import {
   SwapRouteDto,
   SwapRouteWithRelations,
 } from './mappers/route.mapper';
+
+/** Owner fields and wants the swap graph needs for every catalog item. */
+const CATALOG_ITEM_INCLUDE = {
+  owner: {
+    select: {
+      id: true,
+      name: true,
+      initials: true,
+      avatarUrl: true,
+      location: true,
+      level: true,
+      rating: true,
+      tradesCompleted: true,
+      co2SavedKg: true,
+      wants: true,
+    },
+  },
+  wants: true,
+} satisfies Prisma.ItemInclude;
 
 const PROPOSAL_TTL_MS = 48 * 60 * 60 * 1000;
 const TOP_EXPLAINED_CYCLES = 3;
@@ -123,30 +143,20 @@ export class RoutesService {
     userId: string,
     dto: SearchRoutesDto,
   ): Promise<SwapRouteDto[]> {
+    if (dto.wantedItemId) {
+      await this.assertWantedItemAvailable(userId, dto.wantedItemId);
+    }
     const locationFilter = await this.buildLocationFilter(userId, dto);
 
     const activeItems = (await this.prisma.item.findMany({
       where: {
         status: ItemStatus.AVAILABLE,
-        ...locationFilter,
+        // The chosen item takes part even when it lies outside the search area
+        ...(dto.wantedItemId
+          ? { OR: [locationFilter, { id: dto.wantedItemId }] }
+          : locationFilter),
       },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            initials: true,
-            avatarUrl: true,
-            location: true,
-            level: true,
-            rating: true,
-            tradesCompleted: true,
-            co2SavedKg: true,
-            wants: true,
-          },
-        },
-        wants: true,
-      },
+      include: CATALOG_ITEM_INCLUDE,
     })) as CatalogItemRow[];
 
     const catalog = activeItems.map((item) => this.toGraphItemNode(item));
@@ -161,6 +171,8 @@ export class RoutesService {
       objectiveEmbedding,
       offeredItemId: dto.offeredItemId,
       desiredCategory: dto.desiredCategory,
+      targetItemId: dto.wantedItemId,
+      minSteps: dto.minSteps,
       maxSteps: dto.maxSteps,
       valueTolerancePct: dto.valueTolerancePct,
       catalog,
@@ -181,6 +193,27 @@ export class RoutesService {
       const explanation = idx < explanations.length ? explanations[idx] : null;
       return this.routeMapper.fromDiscoveredCycle(cycle, userId, explanation);
     });
+  }
+
+  /**
+   * A ring toward an exact item only makes sense while that item can still be swapped:
+   * say why not (deleted, the searcher's own, already reserved) instead of answering
+   * "no rings", which would invite a direct proposal that cannot work either.
+   */
+  private async assertWantedItemAvailable(userId: string, wantedItemId: string): Promise<void> {
+    const wanted = await this.prisma.item.findUnique({
+      where: { id: wantedItemId },
+      select: { ownerId: true, status: true },
+    });
+    if (!wanted) {
+      throw new NotFoundException('The item you want is no longer published');
+    }
+    if (wanted.ownerId === userId) {
+      throw new BadRequestException('The item you want is already yours');
+    }
+    if (!this.isItemAvailableForProposal(wanted.status)) {
+      throw new ConflictException('The item you want is already reserved in another swap');
+    }
   }
 
   /**
@@ -337,10 +370,8 @@ export class RoutesService {
           data: nonInitiatorUserIds.map((participantId) => ({
             userId: participantId,
             type: 'ROUTE_PROPOSAL',
-            badge: 'Nueva ruta circular',
-            title: `Propuesta de trueque ${code}`,
-            body: `Has sido invitado a una ruta circular de ${normalizedSteps.length} pasos (${code}) para "${dto.objectiveText.trim()}". Revisa y responde antes de 48 horas.`,
             routeId: route.id,
+            ...this.proposalNotice(code, normalizedSteps, participantId, itemById, dto),
           })),
         });
       }
@@ -349,6 +380,70 @@ export class RoutesService {
     });
 
     return this.routeMapper.toDto(createdRoute as SwapRouteWithRelations);
+  }
+
+  /**
+   * Proposes a 1-to-1 swap as a 2-person ring: the initiator gives `offeredItemId` and
+   * receives `wantedItemId`. The owner's wants are not required to match (it is an
+   * offer they can reject); ownership and availability are checked like any proposal.
+   */
+  async proposeDirect(
+    initiatorId: string,
+    dto: ProposeDirectDto,
+  ): Promise<SwapRouteDto> {
+    const items = (await this.prisma.item.findMany({
+      where: { id: { in: [dto.offeredItemId, dto.wantedItemId] } },
+      include: CATALOG_ITEM_INCLUDE,
+    })) as CatalogItemRow[];
+    const offered = items.find((item) => item.id === dto.offeredItemId);
+    const wanted = items.find((item) => item.id === dto.wantedItemId);
+
+    if (!offered || !wanted) {
+      throw new NotFoundException('One or both items of the direct proposal do not exist');
+    }
+    if (offered.ownerId !== initiatorId) {
+      throw new ForbiddenException('You can only offer your own items');
+    }
+    if (!wanted.ownerId || wanted.ownerId === initiatorId) {
+      throw new BadRequestException('A direct proposal needs an item of another user');
+    }
+
+    const offeredNode = this.toGraphItemNode(offered);
+    const wantedNode = this.toGraphItemNode(wanted);
+    // The owner's side scores only if their wants match the offer; any value gap is allowed
+    const ownerSide = this.scoringStrategy.evaluateDirectedEdge(offeredNode, wantedNode, {
+      valueTolerancePct: 100,
+    });
+    const parity = this.scoringStrategy.computeValueParity(
+      offeredNode.estimatedValue,
+      wantedNode.estimatedValue,
+    );
+    const matchScore = this.scoringStrategy.computeCycleMatchScore({
+      // The initiator picked the item themselves, so their side is a full match
+      edgeMatchScores: [ownerSide.matches ? ownerSide.matchScore : 0, 1],
+      stepValueParities: [parity, parity],
+      participantRatings: [offeredNode.owner.rating ?? 5, wantedNode.owner.rating ?? 5],
+      stepsCount: 2,
+    });
+
+    return this.proposeRoute(initiatorId, {
+      objectiveText: wanted.name.trim().slice(0, 200),
+      matchScore,
+      steps: [
+        {
+          stepOrder: 0,
+          userId: initiatorId,
+          givesItemId: offered.id,
+          receivesItemId: wanted.id,
+        },
+        {
+          stepOrder: 1,
+          userId: wanted.ownerId,
+          givesItemId: wanted.id,
+          receivesItemId: offered.id,
+        },
+      ],
+    });
   }
 
   /**
@@ -876,6 +971,36 @@ export class RoutesService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * What a participant reads about a new proposal: any 2-person ring (a direct offer
+   * or a 2-step route the engine found) is a 1-to-1 swap and names both items
+   * ("your X for their Y"); a bigger ring names its size and objective.
+   */
+  private proposalNotice(
+    code: string,
+    steps: ProposeRouteDto['steps'],
+    participantId: string,
+    itemById: Map<string, Item>,
+    dto: ProposeRouteDto,
+  ): { badge: string; title: string; body: string } {
+    const ownStep = steps.find((step) => step.userId === participantId);
+    const givesName = ownStep ? itemById.get(ownStep.givesItemId)?.name : undefined;
+    const receivesName = ownStep ? itemById.get(ownStep.receivesItemId)?.name : undefined;
+
+    if (steps.length === 2 && givesName && receivesName) {
+      return {
+        badge: 'Propuesta directa',
+        title: `Propuesta de canje ${code}`,
+        body: `Te proponen cambiar tu "${givesName}" por "${receivesName}" (${code}). Revisa y responde antes de 48 horas.`,
+      };
+    }
+    return {
+      badge: 'Nueva ruta circular',
+      title: `Propuesta de trueque ${code}`,
+      body: `Has sido invitado a una ruta circular de ${steps.length} pasos (${code}) para "${dto.objectiveText.trim()}". Revisa y responde antes de 48 horas.`,
+    };
   }
 
   private normalizeProposalSteps(

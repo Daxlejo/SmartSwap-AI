@@ -315,6 +315,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: excludeOwnerId
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
         - name: status
           in: query
           required: false
@@ -831,9 +837,13 @@ paths:
         '200':
           description: Ranked circular swap routes enriched with AI explanations
         '400':
-          description: Validation error
+          description: Validation error, or wantedItemId is your own item
         '401':
           description: Unauthorized
+        '404':
+          description: wantedItemId is no longer published
+        '409':
+          description: wantedItemId is already reserved in another swap
       tags:
         - Routes
       security:
@@ -856,6 +866,14 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 60
+                wantedItemId:
+                  type: string
+                  minLength: 1
+                minSteps:
+                  type: integer
+                  minimum: 2
+                  maximum: 4
+                  default: 2
                 maxSteps:
                   type: integer
                   minimum: 2
@@ -920,6 +938,14 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 60
+                wantedItemId:
+                  type: string
+                  minLength: 1
+                minSteps:
+                  type: integer
+                  minimum: 2
+                  maximum: 4
+                  default: 2
                 maxSteps:
                   type: integer
                   minimum: 2
@@ -1016,6 +1042,47 @@ paths:
                 - objectiveText
                 - matchScore
                 - steps
+              additionalProperties: false
+  /api/v1/routes/direct:
+    post:
+      operationId: RoutesController_proposeDirect
+      summary: >-
+        Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not
+        required to match)
+      parameters: []
+      responses:
+        '201':
+          description: Persisted 2-person swap route proposal with locked items
+        '400':
+          description: Validation error or the wanted item is your own
+        '401':
+          description: Unauthorized
+        '403':
+          description: The offered item is not yours
+        '404':
+          description: One or both items do not exist
+        '409':
+          description: One of the items is already locked in another proposal
+      tags:
+        - Routes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                offeredItemId:
+                  type: string
+                  minLength: 1
+                wantedItemId:
+                  type: string
+                  minLength: 1
+              required:
+                - offeredItemId
+                - wantedItemId
               additionalProperties: false
   /api/v1/routes/{id}/propose:
     post:

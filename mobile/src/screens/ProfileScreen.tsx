@@ -15,6 +15,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
+import { swapDraftPath } from '@/utils/swapSearch';
 import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { ProfilePhotoPicker } from '@/components/ProfilePhotoPicker';
@@ -300,9 +301,16 @@ export const ProfileScreen = () => {
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 font-headline-sm text-headline-sm text-on-surface break-words">
-                      {item.name}
-                    </h3>
+                    <button
+                      type="button"
+                      data-testid={`profile-item-${item.id}`}
+                      onClick={() => navigate(`/item/${item.id}`, { state: { item } })}
+                      className="min-w-0 min-h-11 -my-1 text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <h3 className="font-headline-sm text-headline-sm text-on-surface break-words hover:underline">
+                        {item.name}
+                      </h3>
+                    </button>
                     <button
                       type="button"
                       aria-label={t('profile.itemOptions', { name: item.name })}
@@ -332,7 +340,7 @@ export const ProfileScreen = () => {
                         type="button"
                         onClick={() => {
                           setActiveMenuId(null);
-                          navigate('/swap/configure');
+                          navigate(swapDraftPath({ step: 2, offeredItemId: item.id, wantFixed: false }));
                         }}
                         className="min-h-11 px-3 font-label-md text-label-md text-primary hover:bg-primary/10 rounded-lg flex items-center gap-1 transition-colors font-bold"
                       >

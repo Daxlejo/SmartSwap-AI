@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-16T17:35:02.605Z",
+  "generatedAt": "2026-11-17T15:02:07.562Z",
   "stats": {
-    "totalFiles": 163,
-    "apiFiles": 68,
-    "mobileFiles": 95,
-    "endpointsCount": 45
+    "totalFiles": 173,
+    "apiFiles": 69,
+    "mobileFiles": 104,
+    "endpointsCount": 46
   },
   "endpoints": [
     {
@@ -313,6 +313,14 @@
     },
     {
       "method": "POST",
+      "path": "/routes/direct",
+      "controller": "RoutesController",
+      "handler": "proposeDirect",
+      "summary": "Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not required to match)",
+      "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
       "path": "/routes/find",
       "controller": "RoutesController",
       "handler": "findRoutesAlias",
@@ -437,6 +445,7 @@
       "api/src/modules/notifications/notifications.service.ts"
     ],
     "api/routes": [
+      "api/src/modules/routes/dto/propose-direct.dto.ts",
       "api/src/modules/routes/dto/propose-route.dto.ts",
       "api/src/modules/routes/dto/respond-route.dto.ts",
       "api/src/modules/routes/dto/search-routes.dto.ts",
@@ -471,8 +480,10 @@
       "mobile/src/App.tsx"
     ],
     "mobile/components": [
+      "mobile/src/components/BackToTopButton.tsx",
       "mobile/src/components/BottomNav.tsx",
       "mobile/src/components/DemoAccountSwitcher.tsx",
+      "mobile/src/components/ExampleRing.tsx",
       "mobile/src/components/ExploreFiltersSheet.tsx",
       "mobile/src/components/LanguageSelector.tsx",
       "mobile/src/components/LocationPicker.tsx",
@@ -514,6 +525,8 @@
     ],
     "mobile/hooks": [
       "mobile/src/hooks/useAppResume.ts",
+      "mobile/src/hooks/useExampleRingPeople.ts",
+      "mobile/src/hooks/useItem.ts",
       "mobile/src/hooks/useRevealOnError.ts",
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
@@ -527,7 +540,8 @@
     "mobile/layouts": [
       "mobile/src/layouts/AppLayout.tsx",
       "mobile/src/layouts/AuthLayout.tsx",
-      "mobile/src/layouts/navigation.ts"
+      "mobile/src/layouts/navigation.ts",
+      "mobile/src/layouts/ScrollManager.tsx"
     ],
     "mobile/main.tsx": [
       "mobile/src/main.tsx"
@@ -540,6 +554,7 @@
       "mobile/src/screens/ExchangesScreen.tsx",
       "mobile/src/screens/ExploreScreen.tsx",
       "mobile/src/screens/HomeScreen.tsx",
+      "mobile/src/screens/ItemDetailScreen.tsx",
       "mobile/src/screens/LoginScreen.tsx",
       "mobile/src/screens/NotificationsScreen.tsx",
       "mobile/src/screens/OnboardingScreen.tsx",
@@ -572,6 +587,7 @@
     "mobile/test": [
       "mobile/src/test/avatarIdentity.test.tsx",
       "mobile/src/test/configureSwap.test.tsx",
+      "mobile/src/test/exampleRing.test.tsx",
       "mobile/src/test/formErrors.test.tsx",
       "mobile/src/test/languageSelector.test.tsx",
       "mobile/src/test/swapRing.test.tsx"
@@ -583,7 +599,9 @@
       "mobile/src/utils/avatarIdentity.ts",
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
+      "mobile/src/utils/exampleRing.ts",
       "mobile/src/utils/exploreFilters.ts",
+      "mobile/src/utils/formAlert.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
@@ -1444,6 +1462,16 @@
         "Notification"
       ]
     },
+    "api/src/modules/routes/dto/propose-direct.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ProposeDirectDto",
+        "proposeDirectSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
     "api/src/modules/routes/dto/propose-route.dto.ts": {
       "module": "api/routes",
       "exports": [
@@ -1619,6 +1647,7 @@
         "../../common/decorators/current-user.decorator",
         "../../common/guards/jwt-auth.guard",
         "../../common/pipes/zod-validation.pipe",
+        "./dto/propose-direct.dto",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1650,6 +1679,14 @@
           "controller": "RoutesController",
           "handler": "proposeRoute",
           "summary": "Propose a circular swap route, lock involved items, and notify participants",
+          "file": "api/src/modules/routes/routes.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/direct",
+          "controller": "RoutesController",
+          "handler": "proposeDirect",
+          "summary": "Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not required to match)",
           "file": "api/src/modules/routes/routes.controller.ts"
         },
         {
@@ -1732,6 +1769,7 @@
         "../ai/services/ai-explainer.service",
         "../geo/geo.service",
         "../geo/geo.types",
+        "./dto/propose-direct.dto",
         "./dto/propose-route.dto",
         "./dto/respond-route.dto",
         "./dto/search-routes.dto",
@@ -1937,6 +1975,17 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/components/BackToTopButton.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "BackToTopButton"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/hooks/useTranslation",
+        "react"
+      ]
+    },
     "mobile/src/components/BottomNav.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -1965,6 +2014,23 @@
         "clsx",
         "react",
         "react-router-dom"
+      ]
+    },
+    "mobile/src/components/ExampleRing.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ExampleRing",
+        "ExampleRingPerson",
+        "ExampleRingProps"
+      ],
+      "imports": [
+        "./ui/Icon",
+        "@/hooks/useTranslation",
+        "@/utils/avatarIdentity",
+        "@/utils/categoryIcon",
+        "@/utils/exampleRing",
+        "clsx",
+        "react"
       ]
     },
     "mobile/src/components/ExploreFiltersSheet.tsx": {
@@ -2062,7 +2128,7 @@
         "ObjectCardProps"
       ],
       "imports": [
-        "./ui/Button",
+        "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/hooks/useTranslation",
         "@/types"
@@ -2430,6 +2496,32 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useExampleRingPeople.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useExampleRingPeople"
+      ],
+      "imports": [
+        "@/components/ExampleRing",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useItem.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "ItemLookup",
+        "useItem"
+      ],
+      "imports": [
+        "@/context/AppContext",
+        "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/types",
+        "react"
+      ]
+    },
     "mobile/src/hooks/useRevealOnError.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2510,6 +2602,7 @@
         "AppLayout"
       ],
       "imports": [
+        "./ScrollManager",
         "./navigation",
         "@/components/BottomNav",
         "@/components/ServerStatusBanner",
@@ -2534,9 +2627,20 @@
         "BackAction",
         "MAIN_TABS",
         "backActionFor",
+        "isFlowEnd",
         "isMainTab"
       ],
       "imports": []
+    },
+    "mobile/src/layouts/ScrollManager.tsx": {
+      "module": "mobile/layouts",
+      "exports": [
+        "ScrollManager"
+      ],
+      "imports": [
+        "react",
+        "react-router-dom"
+      ]
     },
     "mobile/src/main.tsx": {
       "module": "mobile/main.tsx",
@@ -2563,6 +2667,7 @@
         "@/screens/ConfigureSwapScreen",
         "@/screens/ExploreScreen",
         "@/screens/HomeScreen",
+        "@/screens/ItemDetailScreen",
         "@/screens/LoginScreen",
         "@/screens/NotificationsScreen",
         "@/screens/OnboardingScreen",
@@ -2585,7 +2690,6 @@
         "ConfigureSwapScreen"
       ],
       "imports": [
-        "@/components/LocationPrompt",
         "@/components/LocationScopeSelector",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2594,6 +2698,7 @@
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useItem",
         "@/hooks/useTranslation",
         "@/types",
         "@/utils/currency",
@@ -2618,18 +2723,15 @@
         "ExploreScreen"
       ],
       "imports": [
+        "@/components/BackToTopButton",
         "@/components/ExploreFiltersSheet",
         "@/components/LocationPrompt",
         "@/components/ObjectCard",
         "@/components/ScreenHeader",
-        "@/components/ui/Avatar",
-        "@/components/ui/Badge",
-        "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
@@ -2648,21 +2750,44 @@
         "HomeScreen"
       ],
       "imports": [
+        "@/components/ExampleRing",
         "@/components/LocationPrompt",
-        "@/components/LocationScopeSelector",
         "@/components/NotificationBell",
-        "@/components/ObjectCard",
         "@/components/ScreenHeader",
         "@/components/SwapRing",
         "@/components/ui/Button",
-        "@/components/ui/Chip",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useExampleRingPeople",
         "@/hooks/useTranslation",
         "@/utils/swapRing",
+        "@/utils/swapSearch",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/ItemDetailScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "ItemDetailScreen"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/Button",
+        "@/components/ui/EmptyState",
+        "@/components/ui/ErrorState",
+        "@/components/ui/Icon",
+        "@/components/ui/ItemImage",
+        "@/context/AppContext",
+        "@/hooks/useItem",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/types",
+        "@/utils/currency",
         "@/utils/swapSearch",
         "react",
         "react-router-dom"
@@ -2717,15 +2842,15 @@
         "OnboardingScreen"
       ],
       "imports": [
+        "@/components/ExampleRing",
         "@/components/ProfilePhotoPicker",
-        "@/components/SwapRing",
         "@/components/ui/Button",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useExampleRingPeople",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/services/storage/preferencesStorage",
-        "@/utils/swapRing",
         "clsx",
         "react",
         "react-router-dom"
@@ -2756,6 +2881,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/utils/currency",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2778,6 +2904,7 @@
         "@/types",
         "@/utils/currency",
         "@/utils/swapRing",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2823,6 +2950,7 @@
         "@/services/http/apiClient",
         "@/services/items/items.service",
         "@/utils/currency",
+        "@/utils/formAlert",
         "@/utils/imageCompressor",
         "clsx",
         "react",
@@ -2889,11 +3017,12 @@
       "imports": [
         "@/components/ui/Button",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useItem",
         "@/hooks/useTranslation",
-        "@/services/routes/routes.service",
+        "@/services/http/apiClient",
         "@/types",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -3094,6 +3223,7 @@
       "module": "mobile/services",
       "exports": [
         "NormalizedRouteStep",
+        "ProposeDirectPayload",
         "ProposeRoutePayload",
         "ProposeRouteStepInput",
         "RouteDecision",
@@ -3169,6 +3299,18 @@
         "vitest"
       ]
     },
+    "mobile/src/test/exampleRing.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ExampleRing",
+        "@/i18n",
+        "@/utils/avatarIdentity",
+        "@/utils/exampleRing",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
     "mobile/src/test/formErrors.test.tsx": {
       "module": "mobile/test",
       "exports": [],
@@ -3176,6 +3318,7 @@
         "@/components/ui/FormErrorAlert",
         "@/components/ui/Input",
         "@/i18n",
+        "@/utils/formAlert",
         "react-dom/server",
         "vitest"
       ]
@@ -3220,6 +3363,7 @@
       "module": "mobile/utils",
       "exports": [
         "avatarColorFor",
+        "distinctAvatarColors",
         "hashSeed",
         "initialsFor"
       ],
@@ -3239,6 +3383,24 @@
         "formatCop",
         "formatCopDigits",
         "sanitizeCopDigits"
+      ],
+      "imports": []
+    },
+    "mobile/src/utils/exampleRing.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "EXAMPLE_BADGE_PX",
+        "EXAMPLE_NODE_PX",
+        "EXAMPLE_RING_CENTER",
+        "EXAMPLE_RING_HEIGHT",
+        "EXAMPLE_RING_RADIUS",
+        "EXAMPLE_RING_WIDTH",
+        "ExampleArc",
+        "ExampleRingGeometry",
+        "RingPoint",
+        "exampleRingGeometry",
+        "nodeClearanceDeg",
+        "pointAt"
       ],
       "imports": []
     },
@@ -3262,6 +3424,14 @@
       "imports": [
         "@/types"
       ]
+    },
+    "mobile/src/utils/formAlert.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "FormAlertContent",
+        "formAlertFor"
+      ],
+      "imports": []
     },
     "mobile/src/utils/imageCompressor.ts": {
       "module": "mobile/utils",
@@ -3334,20 +3504,30 @@
     "mobile/src/utils/swapSearch.ts": {
       "module": "mobile/utils",
       "exports": [
+        "CIRCULAR_MAX_STEPS",
+        "CIRCULAR_MIN_STEPS",
+        "DirectProposalDraft",
         "InventorySnapshot",
-        "MIN_OBJECTIVE_LENGTH",
         "NoRoutesReason",
-        "SwapSearchBlocker",
-        "SwapSearchInput",
-        "SwapSearchNavigation",
-        "SwapSearchState",
+        "SwapDraft",
+        "SwapDraftStep",
+        "SwapMode",
         "VALUE_TOLERANCE_PCT",
-        "buildSwapSearchNavigation",
+        "buildCircularSearchPath",
+        "buildDirectPreviewRoute",
+        "findWantedCandidates",
         "getNoRoutesReason",
-        "getSwapSearchBlocker",
-        "isOfferableItem"
+        "isOfferableItem",
+        "itemOwnerAsUser",
+        "parseSwapDraft",
+        "reachableStep",
+        "swapDraftForItem",
+        "swapDraftPath"
       ],
-      "imports": []
+      "imports": [
+        "@/services/routes/routes.service",
+        "@/types"
+      ]
     }
   }
 }

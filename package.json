@@ -18,7 +18,8 @@
     "typecheck": "npm --workspace=mobile run typecheck && npm --workspace=api run typecheck",
     "graphify": "node scripts/graphify.mjs",
     "smoke:demo": "node scripts/smoke-demo.mjs",
-    "audit:ui": "node scripts/audit-ui.mjs"
+    "audit:ui": "node scripts/audit-ui.mjs",
+    "e2e:flow": "node scripts/e2e-flow.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.2",

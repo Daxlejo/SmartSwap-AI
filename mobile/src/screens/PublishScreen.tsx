@@ -17,6 +17,7 @@ import { aiService, type ItemConditionLabel } from '@/services/ai/ai.service';
 import { compressImageToDataUrl } from '@/utils/imageCompressor';
 import { ApiError } from '@/services/http/apiClient';
 import { FormErrorAlert } from '@/components/ui/FormErrorAlert';
+import { formAlertFor, type FormAlertContent } from '@/utils/formAlert';
 import { useRevealOnError } from '@/hooks/useRevealOnError';
 
 import { ItemImage } from '@/components/ui/ItemImage';
@@ -67,14 +68,6 @@ const CONDITIONS: ReadonlyArray<{ label: ItemConditionLabel; desc: string; icon:
   },
 ];
 
-const SUGGESTIONS = [
-  'Cámara',
-  'iPad',
-  'Laptop',
-  'Smartwatch',
-  'Nintendo Switch',
-  'Audífonos',
-];
 
 interface FormErrors {
   name?: string;
@@ -257,18 +250,25 @@ export const PublishScreen: React.FC = () => {
 
   // Form errors: one notice per failed attempt (scrolled to and focused) plus a message per field
   const [errors, setErrors] = useState<FormErrors>({});
-  const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [formAlert, setFormAlert] = useState<FormAlertContent | null>(null);
   const [errorAttempt, setErrorAttempt] = useState(0);
   const formAlertRef = useRevealOnError<HTMLDivElement>(errorAttempt);
 
   const showFormAlert = (message: string) => {
-    setFormAlert(message);
+    setFormAlert({ message, details: [] });
     setErrorAttempt((prev) => prev + 1);
   };
 
-  const failValidation = (nextErrors: FormErrors, fieldLabels: string[]) => {
+  // The notice at the top says each problem in words, not which fields to check
+  const failValidation = (nextErrors: FormErrors) => {
     setErrors((prev) => ({ ...prev, ...nextErrors }));
-    showFormAlert(t('publish.errors.reviewFields', { fields: fieldLabels.join(', ') }));
+    setFormAlert(
+      formAlertFor(
+        Object.values(nextErrors).filter((message): message is string => Boolean(message)),
+        (count) => t('publish.errors.fixThese', { count }),
+      ),
+    );
+    setErrorAttempt((prev) => prev + 1);
   };
 
   const goToStep = (step: WizardStep) => {
@@ -461,7 +461,7 @@ export const PublishScreen: React.FC = () => {
   // Step 1 Validation & Next
   const handleNextStep1 = () => {
     if (photos.length === 0) {
-      failValidation({ photos: t('publish.errors.photoRequired') }, [t('publish.steps.1')]);
+      failValidation({ photos: t('publish.errors.photoRequired') });
       return;
     }
     setErrors((prev) => ({ ...prev, photos: undefined }));
@@ -499,21 +499,7 @@ export const PublishScreen: React.FC = () => {
     }
 
     if (Object.keys(nextErrors).length > 0) {
-      const fieldLabels: Record<keyof FormErrors, string> = {
-        name: t('publish.info.name'),
-        description: t('publish.info.description'),
-        category: t('publish.info.category'),
-        condition: t('publish.info.condition'),
-        estimatedValue: t('publish.info.estimatedValue'),
-        location: t('publish.info.location'),
-        photos: t('publish.steps.1'),
-        wantedItems: t('publish.steps.3'),
-        submit: '',
-      };
-      failValidation(
-        nextErrors,
-        (Object.keys(nextErrors) as Array<keyof FormErrors>).map((key) => fieldLabels[key]),
-      );
+      failValidation(nextErrors);
       return;
     }
 
@@ -546,7 +532,7 @@ export const PublishScreen: React.FC = () => {
 
   const handleNextStep3 = () => {
     if (wantedItems.length === 0) {
-      failValidation({ wantedItems: t('publish.errors.wantedRequired') }, [t('publish.steps.3')]);
+      failValidation({ wantedItems: t('publish.errors.wantedRequired') });
       return;
     }
     setErrors((prev) => ({ ...prev, wantedItems: undefined }));
@@ -881,7 +867,8 @@ export const PublishScreen: React.FC = () => {
           ref={formAlertRef}
           testId="publish-error-alert"
           className="mb-5"
-          message={formAlert}
+          message={formAlert.message}
+          details={formAlert.details}
           onDismiss={() => setFormAlert(null)}
           dismissLabel={t('auth.errors.dismiss')}
         />
@@ -991,9 +978,6 @@ export const PublishScreen: React.FC = () => {
               })}
             </div>
 
-            {errors.photos && (
-              <p className="font-body-sm text-body-sm text-error mt-1">{errors.photos}</p>
-            )}
           </div>
 
           {/* AI Autocomplete Assistant Banner in Step 1 */}
@@ -1318,8 +1302,9 @@ export const PublishScreen: React.FC = () => {
           </div>
 
           {/* Search / Add Input */}
-          <div className="flex gap-2 items-center">
-            <div className="flex-1">
+          {/* With large system text the button drops under the field instead of squeezing it */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex-1 min-w-[13.5rem]">
               <Input
                 placeholder={t('publish.wants.searchPlaceholder')}
                 leftIcon="search"
@@ -1342,28 +1327,6 @@ export const PublishScreen: React.FC = () => {
             >
               {t('publish.wants.add')}
             </Button>
-          </div>
-
-          {/* Suggestion Chips */}
-          <div className="space-y-2">
-            <span className="font-label-md text-label-md font-semibold text-on-surface">
-              {t('publish.wants.ideas')}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((item) => {
-                const isAdded = wantedItems.includes(item);
-                return (
-                  <Chip
-                    key={item}
-                    active={isAdded}
-                    icon={isAdded ? 'check' : 'add'}
-                    onClick={() => handleToggleSuggestion(item)}
-                  >
-                    {item}
-                  </Chip>
-                );
-              })}
-            </div>
           </div>
 
           {aiSuggestedWants.length > 0 && (
@@ -1397,21 +1360,12 @@ export const PublishScreen: React.FC = () => {
             </span>
 
             {wantedItems.length === 0 ? (
+              // A neutral empty state: the notice at the top already says what is missing
               <div
                 data-testid="accepted-wants-empty"
-                className={clsx(
-                  'p-4 rounded-xl border border-dashed text-center',
-                  errors.wantedItems
-                    ? 'border-error/50 bg-error-container/20'
-                    : 'border-outline/50 bg-surface-container-low',
-                )}
+                className="p-4 rounded-xl border border-dashed border-outline/50 bg-surface-container-low text-center"
               >
-                <p
-                  className={clsx(
-                    'font-body-sm text-body-sm',
-                    errors.wantedItems ? 'text-error' : 'text-on-surface-variant',
-                  )}
-                >
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
                   {t('publish.wants.empty')}
                 </p>
               </div>
@@ -1434,9 +1388,6 @@ export const PublishScreen: React.FC = () => {
                   </span>
                 ))}
               </div>
-            )}
-            {errors.wantedItems && (
-              <span className="font-body-sm text-body-sm text-error">{errors.wantedItems}</span>
             )}
           </div>
 

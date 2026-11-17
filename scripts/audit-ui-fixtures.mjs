@@ -165,12 +165,33 @@ export const notifications = [
   },
 ];
 
+/** A 1-to-1 proposal just sent: the viewer offers the backpack for Laura's guitar. */
+export const directRoute = {
+  ...activeRoute,
+  id: 'r-direct',
+  code: 'SW-2207',
+  initiatorId: me.id,
+  objectiveText: publicItems[3].name,
+  status: 'PROPOSED',
+  aiExplanation: null,
+  steps: [
+    step(0, me, laura, mochila, publicItems[3], 'ACCEPTED'),
+    step(1, laura, me, publicItems[3], mochila, 'PENDING'),
+  ],
+};
+
 /**
  * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
  * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
+ * Scenario `noRings` finds no ring for any search; `wantReserved` answers a ring search
+ * as the API does when the wanted item is already reserved in another swap.
  */
 export const respond = (method, path, scenario = 'default') => {
   const p = path.replace(/\?.*$/, '');
+  if (scenario === 'noRings' && p === '/routes/search') return [200, []];
+  if (scenario === 'wantReserved' && p === '/routes/search') {
+    return [409, { statusCode: 409, message: 'The item you want is already reserved in another swap' }];
+  }
   if (scenario === 'empty') {
     if (p === '/items/me' || p === '/items/mine') return [200, []];
     if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, []];
@@ -185,13 +206,17 @@ export const respond = (method, path, scenario = 'default') => {
   if (p === '/geo/municipalities') return [200, [pasto, ipiales, tuquerres]];
   if (p === '/geo/resolve') return [200, { municipality: pasto, distanceKm: 1 }];
   if (p === '/items/me' || p === '/items/mine') return [200, myItems];
-  if (p === '/items' && method === 'GET') return [200, publicItems];
+  // Like the API: the viewer's own items only come back when the app forgets to leave them out
+  if (p === '/items' && method === 'GET') {
+    return [200, path.includes('excludeOwnerId=') ? publicItems : [...publicItems, myItems[0]]];
+  }
   if (p.startsWith('/items/') && method === 'GET') {
     const found = [...myItems, ...publicItems].find((i) => i.id === p.split('/')[2]);
     return found ? [200, found] : [404, { message: 'Not found' }];
   }
   if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, [activeRoute]];
   if (p === '/routes/search' || p === '/routes/find') return [200, [suggestedRoute]];
+  if (p === '/routes/direct' && method === 'POST') return [201, directRoute];
   if (p === '/routes/propose' || p === '/proposals') return [201, { ...suggestedRoute, id: 'r-new', status: 'PROPOSED' }];
   if (p.startsWith('/routes/') || p.startsWith('/proposals/')) {
     const id = p.split('/')[2];
@@ -210,7 +235,8 @@ export const respond = (method, path, scenario = 'default') => {
       description: 'Lámpara metálica con brazo articulado, funciona bien.',
       estimatedValue: 90000,
       suggestedValueRange: { min: 70000, max: 110000 },
-      suggestedWants: ['Libros'],
+      suggestedWants: ['Libros de diseño', 'Flexómetro láser'],
+      source: 'openai',
       aiTags: ['lámpara', 'escritorio'],
     }];
   }

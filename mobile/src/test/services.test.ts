@@ -156,6 +156,19 @@ describe('Domain Services & Utilities', () => {
     expect(list[0].id).toBe('item-101');
   });
 
+  it('asks the API to leave out the viewer own items', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => [],
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await itemsService.listItems({ excludeOwnerId: 'user-1' });
+    expect(String(fetchMock.mock.calls[0][0])).toContain('excludeOwnerId=user-1');
+  });
+
   it('calculates proportional target dimensions capped at max 1024px', () => {
     expect(calculateTargetDimensions(4000, 3000, 1024)).toEqual({ width: 1024, height: 768 });
     expect(calculateTargetDimensions(1500, 3000, 1024)).toEqual({ width: 512, height: 1024 });

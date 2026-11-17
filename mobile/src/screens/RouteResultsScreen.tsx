@@ -7,7 +7,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getNoRoutesReason, isOfferableItem } from '@/utils/swapSearch';
+import {
+  CIRCULAR_MAX_STEPS,
+  CIRCULAR_MIN_STEPS,
+  getNoRoutesReason,
+  isOfferableItem,
+  VALUE_TOLERANCE_PCT,
+} from '@/utils/swapSearch';
 
 interface ResultsLocationState {
   routes?: SwapRoute[];
@@ -17,6 +23,7 @@ interface ResultsLocationState {
   wantItemId?: string;
   objectiveText?: string;
   desiredCategory?: string;
+  minSteps?: number;
   maxSteps?: number;
   valueTolerancePct?: number;
 }
@@ -29,13 +36,21 @@ export const RouteResultsScreen: React.FC = () => {
   const [searchParams] = useSearchParams();
   const locationState = location.state as ResultsLocationState | null;
 
+  // Searching replaced itself with this screen, so one step back is step 3 of New swap
+  const goBack = () => {
+    const historyIndex = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (historyIndex > 0) navigate(-1);
+    else navigate('/swap/configure', { replace: true });
+  };
+
   const haveId = searchParams.get('have') || locationState?.offeredItemId || '';
   const wantId = searchParams.get('want') || locationState?.wantItemId || '';
   const objectiveText = searchParams.get('q') || locationState?.objectiveText || wantId;
   const hasSearchParams = haveId !== '' && objectiveText !== '';
-  const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || 4;
+  const minSteps = Number(searchParams.get('minSteps')) || locationState?.minSteps || CIRCULAR_MIN_STEPS;
+  const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || CIRCULAR_MAX_STEPS;
   const valueTolerancePct =
-    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
+    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || VALUE_TOLERANCE_PCT;
 
   const [routes, setRoutes] = useState<SwapRoute[]>(() => locationState?.routes || []);
   const hasSearchAnswer =
@@ -44,7 +59,7 @@ export const RouteResultsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(() => !hasSearchAnswer);
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [hopFilter, setHopFilter] = useState<'all' | 2 | 3 | 4>('all');
+  const [hopFilter, setHopFilter] = useState<'all' | 3 | 4>('all');
 
   useEffect(() => {
     if (!hasSearchParams) {
@@ -65,8 +80,10 @@ export const RouteResultsScreen: React.FC = () => {
       try {
         const result = await searchRoutesReal({
           offeredItemId: haveId,
+          wantedItemId: wantId || undefined,
           objectiveText,
           desiredCategory: locationState?.desiredCategory,
+          minSteps,
           maxSteps,
           valueTolerancePct,
         });
@@ -96,6 +113,7 @@ export const RouteResultsScreen: React.FC = () => {
     haveId,
     wantId,
     objectiveText,
+    minSteps,
     maxSteps,
     valueTolerancePct,
     locationState?.desiredCategory,
@@ -168,7 +186,6 @@ export const RouteResultsScreen: React.FC = () => {
             {(
               [
                 { key: 'all', label: t('routeResults.filters.all') },
-                { key: 2, label: t('routeResults.filters.two') },
                 { key: 3, label: t('routeResults.filters.three') },
                 { key: 4, label: t('routeResults.filters.four') },
               ] as const
@@ -230,7 +247,7 @@ export const RouteResultsScreen: React.FC = () => {
               noRoutesReason === 'noCycles' ? t('routeResults.noCyclesDescription') : undefined
             }
             action={
-              <Button variant="primary" onClick={() => navigate('/swap/configure')}>
+              <Button variant="primary" onClick={goBack}>
                 {t('routeResults.changeSearch')}
               </Button>
             }

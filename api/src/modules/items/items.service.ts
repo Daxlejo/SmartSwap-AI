@@ -106,6 +106,8 @@ export class ItemsService {
 
     if (query.ownerId) {
       where.ownerId = query.ownerId.trim();
+    } else if (query.excludeOwnerId) {
+      where.ownerId = { not: query.excludeOwnerId };
     }
 
     if (query.minPrice !== undefined || query.maxPrice !== undefined) {

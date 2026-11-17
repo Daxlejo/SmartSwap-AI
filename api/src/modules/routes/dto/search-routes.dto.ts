@@ -19,6 +19,19 @@ export const searchRoutesSchema = z
       .min(1, 'desiredCategory cannot be empty when provided')
       .max(60, 'desiredCategory must be at most 60 characters long')
       .optional(),
+    /** Exact item the searcher wants to receive; every returned ring ends with it. */
+    wantedItemId: z
+      .string()
+      .trim()
+      .min(1, 'wantedItemId cannot be empty when provided')
+      .optional(),
+    /** Shortest ring to return (3 skips the 1-to-1 swaps, which are proposed directly); above maxSteps it is capped to it. */
+    minSteps: z.coerce
+      .number()
+      .int('minSteps must be an integer')
+      .min(2, 'minSteps must be at least 2')
+      .max(4, 'minSteps must be at most 4')
+      .default(2),
     maxSteps: z.coerce
       .number()
       .int('maxSteps must be an integer')

@@ -75,6 +75,8 @@ interface RawAiPhotoAnalysisDto {
   };
   suggestedWants?: string[];
   wants?: string[];
+  /** `openai` when the model answered; `fallback` for the server's fixed templates. */
+  source?: string;
   aiTags?: string[];
   tags?: string[];
   confidence?: number;
@@ -110,11 +112,16 @@ const normalizePhotoAnalysisResponse = (
         ? Math.round(raw.suggestedValueRange.max)
         : Math.max(minValue, Math.round(estimatedValue * 1.15));
 
-  const rawWants = Array.isArray(raw.suggestedWants)
-    ? raw.suggestedWants
-    : Array.isArray(raw.wants)
-      ? raw.wants
-      : [];
+  // Ideas for "what would you accept" only when the AI wrote them for this item; a
+  // fixed fallback list (Tablet, Smartphone, Headphones...) is never shown as advice
+  const rawWants =
+    raw.source !== 'openai'
+      ? []
+      : Array.isArray(raw.suggestedWants)
+        ? raw.suggestedWants
+        : Array.isArray(raw.wants)
+          ? raw.wants
+          : [];
 
   const rawTags = Array.isArray(raw.aiTags)
     ? raw.aiTags

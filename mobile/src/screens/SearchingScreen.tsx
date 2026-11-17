@@ -1,455 +1,324 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { formatMatchScore } from '@/services/routes/routes.service';
+import { useItem } from '@/hooks/useItem';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Icon } from '@/components/ui/Icon';
 import { Button } from '@/components/ui/Button';
+import { ApiError } from '@/services/http/apiClient';
+import {
+  CIRCULAR_MAX_STEPS,
+  CIRCULAR_MIN_STEPS,
+  VALUE_TOLERANCE_PCT,
+  type DirectProposalDraft,
+} from '@/utils/swapSearch';
 
-import { ItemImage } from '@/components/ui/ItemImage';
-import { useTranslation } from '@/hooks/useTranslation';
-
-const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values', 'found'] as const;
+const MESSAGE_KEYS = ['inventories', 'crossMatches', 'optimalRoutes', 'values'] as const;
+const MESSAGE_INTERVAL_MS = 900;
 
 // Anonymous pulses travelling the orbit while the engine searches.
 const ORBIT_DOTS = 4;
 
-interface SearchingLocationState {
-  offeredItemId?: string;
-  wantItemId?: string;
-  objectiveText?: string;
-  desiredCategory?: string;
-  maxSteps?: number;
-  valueTolerancePct?: number;
-}
+/**
+ * One engine call per visit (history entry) and attempt: a remount of the same
+ * screen (React's StrictMode does one in development) reuses the call in flight
+ * instead of asking the engine, and the AI behind it, a second time.
+ */
+const searchesInFlight = new Map<string, Promise<SwapRoute[]>>();
+const MAX_REMEMBERED_SEARCHES = 10;
 
+const searchOnce = (key: string, run: () => Promise<SwapRoute[]>): Promise<SwapRoute[]> => {
+  const known = searchesInFlight.get(key);
+  if (known) return known;
+  const promise = run();
+  searchesInFlight.set(key, promise);
+  // A failed search may be retried with the same key; keep only a few recent ones
+  promise.catch(() => searchesInFlight.delete(key));
+  if (searchesInFlight.size > MAX_REMEMBERED_SEARCHES) {
+    const oldest = searchesInFlight.keys().next().value;
+    if (oldest !== undefined) searchesInFlight.delete(oldest);
+  }
+  return promise;
+};
+
+type SearchOutcome =
+  | { status: 'pending' }
+  | { status: 'done'; routes: SwapRoute[] }
+  /** One of the two items can no longer be swapped (deleted, reserved or the user's own). */
+  | { status: 'unavailable' }
+  | { status: 'failed' };
+
+/** Answers of the engine that mean "this item cannot be part of a swap", not "try again". */
+const UNAVAILABLE_STATUS_CODES = [400, 403, 404, 409];
+
+/** Back one step inside the app, or to Home when the screen was opened directly. */
+const useGoBack = () => {
+  const navigate = useNavigate();
+  return () => {
+    const historyIndex = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (historyIndex > 0) navigate(-1);
+    else navigate('/home', { replace: true });
+  };
+};
+
+/**
+ * "Searching": calls the ring engine once and waits for the user. It never moves on by
+ * itself. With rings it offers "See N routes"; without them, an empty state with
+ * "Propose a direct swap" and "Back". Whatever comes next replaces this screen in the
+ * history, so going back from the results lands on step 3 and never searches again.
+ */
 export const SearchingScreen: React.FC = () => {
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const { t } = useTranslation();
-  const location = useLocation();
   const { searchRoutesReal } = useApp();
   const [searchParams] = useSearchParams();
-  const locationState = location.state as SearchingLocationState | null;
+  const { key: visitKey } = useLocation();
 
-  const haveId = searchParams.get('have') || locationState?.offeredItemId || '';
-  const wantId = searchParams.get('want') || locationState?.wantItemId || '';
-  const objectiveText = searchParams.get('q') || locationState?.objectiveText || wantId;
-  const hasSearchParams = haveId !== '' && objectiveText !== '';
-  const maxSteps = Number(searchParams.get('maxSteps')) || locationState?.maxSteps || 4;
-  const valueTolerancePct =
-    Number(searchParams.get('tolerance')) || locationState?.valueTolerancePct || 25;
+  const haveId = searchParams.get('have') ?? '';
+  const wantId = searchParams.get('want') ?? '';
+  const objectiveText = searchParams.get('q') ?? '';
+  const minSteps = Number(searchParams.get('minSteps')) || CIRCULAR_MIN_STEPS;
+  const maxSteps = Number(searchParams.get('maxSteps')) || CIRCULAR_MAX_STEPS;
+  const valueTolerancePct = Number(searchParams.get('tolerance')) || VALUE_TOLERANCE_PCT;
+  const hasSearchParams = haveId !== '' && wantId !== '' && objectiveText !== '';
 
-  // Animation phases: 1 (0-600ms), 2 (600-2500ms), 3 (2500ms+)
-  const [phase, setPhase] = useState<1 | 2 | 3>(1);
+  const { item: offeredItem, status: offeredStatus } = useItem(haveId || undefined);
+  const { item: wantedItem, status: wantedStatus } = useItem(wantId || undefined);
+
+  const [outcome, setOutcome] = useState<SearchOutcome>({ status: 'pending' });
+  const [attempt, setAttempt] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
-  const [progressWidth, setProgressWidth] = useState(0);
-  const [matchPercent, setMatchPercent] = useState(0);
-  const [discoveredRoutes, setDiscoveredRoutes] = useState<SwapRoute[]>([]);
-  const discoveredRoutesRef = useRef<SwapRoute[]>([]);
-  // Outcome of the engine call; only a finished search may say "search done".
-  const [searchStatus, setSearchStatus] = useState<'pending' | 'done' | 'failed'>('pending');
-  const searchStatusRef = useRef<'pending' | 'done' | 'failed'>('pending');
-  const hasNavigated = useRef(false);
+  const resultRef = useRef<HTMLDivElement>(null);
 
-  const handleNavigate = useCallback(() => {
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
-    const query = new URLSearchParams({
-      have: haveId,
-      want: wantId,
-      q: objectiveText,
-      maxSteps: String(maxSteps),
-      tolerance: String(valueTolerancePct),
-    }).toString();
-
-    navigate(`/swap/results?${query}`, {
-      state: {
-        routes: discoveredRoutesRef.current,
-        // Lets Results reuse an empty answer instead of calling the engine and the AI again.
-        searchCompleted: searchStatusRef.current === 'done',
+  useEffect(() => {
+    if (!hasSearchParams) return;
+    let active = true;
+    setOutcome({ status: 'pending' });
+    searchOnce(`${visitKey}:${attempt}`, () =>
+      searchRoutesReal({
         offeredItemId: haveId,
-        wantItemId: wantId,
+        wantedItemId: wantId,
         objectiveText,
-        desiredCategory: locationState?.desiredCategory,
+        minSteps,
         maxSteps,
         valueTolerancePct,
-      },
-    });
-  }, [
-    navigate,
-    haveId,
-    wantId,
-    objectiveText,
-    maxSteps,
-    valueTolerancePct,
-    locationState?.desiredCategory,
-  ]);
-
-  // Phase scheduling and real backend route discovery via searchRoutesReal
-  useEffect(() => {
-    if (!hasSearchParams) {
-      return;
-    }
-    let isMounted = true;
-
-    searchRoutesReal({
-      offeredItemId: haveId,
-      objectiveText,
-      desiredCategory: locationState?.desiredCategory,
-      maxSteps,
-      valueTolerancePct,
-    })
+      }),
+    )
       .then((routes) => {
-        if (!isMounted) return;
-        discoveredRoutesRef.current = routes;
-        setDiscoveredRoutes(routes);
-        searchStatusRef.current = 'done';
-        setSearchStatus('done');
+        if (active) setOutcome({ status: 'done', routes });
       })
       .catch((error: unknown) => {
-        // Results repeats the search and shows the failure with a retry.
-        console.error('Route search failed on the Searching screen', error);
-        if (!isMounted) return;
-        searchStatusRef.current = 'failed';
-        setSearchStatus('failed');
+        console.error('Route search failed', error);
+        if (!active) return;
+        const unavailable =
+          error instanceof ApiError && UNAVAILABLE_STATUS_CODES.includes(error.statusCode);
+        setOutcome({ status: unavailable ? 'unavailable' : 'failed' });
       });
-
-    // Kick off progress bar animation (2500ms)
-    const progressTimer = setTimeout(() => {
-      setProgressWidth(100);
-    }, 50);
-
-    // Phase 2 start at 600ms
-    const phase2Timer = setTimeout(() => {
-      setPhase(2);
-    }, 600);
-
-    // Message interval every 800ms up to 2400ms
-    const msgTimer1 = setTimeout(() => setMessageIndex(1), 800);
-    const msgTimer2 = setTimeout(() => setMessageIndex(2), 1600);
-    const msgTimer3 = setTimeout(() => setMessageIndex(3), 2400);
-
-    // Phase 3 trigger at 2500ms
-    const phase3Timer = setTimeout(() => {
-      setPhase(3);
-      setMessageIndex(4);
-    }, 2500);
-
-    // Auto-navigate once the user has seen the final search state (4500ms)
-    const autoNavTimer = setTimeout(() => {
-      handleNavigate();
-    }, 4500);
-
     return () => {
-      isMounted = false;
-      clearTimeout(progressTimer);
-      clearTimeout(phase2Timer);
-      clearTimeout(msgTimer1);
-      clearTimeout(msgTimer2);
-      clearTimeout(msgTimer3);
-      clearTimeout(phase3Timer);
-      clearTimeout(autoNavTimer);
+      active = false;
     };
   }, [
     hasSearchParams,
+    visitKey,
     haveId,
     wantId,
     objectiveText,
+    minSteps,
     maxSteps,
     valueTolerancePct,
-    locationState?.desiredCategory,
     searchRoutesReal,
-    handleNavigate,
+    attempt,
   ]);
 
-  const topRoute = discoveredRoutes[0];
-  const targetMatchScore = topRoute ? (formatMatchScore(topRoute.matchScore) ?? 0) : 0;
-
-  // Match counter animation (0 to targetMatchScore% in Phase 3)
+  // Rotating hint while the engine works
   useEffect(() => {
-    if (phase === 3) {
-      const start = 0;
-      const end = targetMatchScore;
-      const duration = 750;
-      const startTime = performance.now();
+    if (outcome.status !== 'pending') return;
+    const timer = setInterval(
+      () => setMessageIndex((index) => (index + 1) % MESSAGE_KEYS.length),
+      MESSAGE_INTERVAL_MS,
+    );
+    return () => clearInterval(timer);
+  }, [outcome.status]);
 
-      const animateCounter = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        const currentVal = Math.round(start + (end - start) * easeOut);
-        setMatchPercent(currentVal);
-
-        if (progress < 1) {
-          requestAnimationFrame(animateCounter);
-        }
-      };
-
-      requestAnimationFrame(animateCounter);
-    }
-  }, [phase, targetMatchScore]);
-
-  const isPhase3 = phase === 3;
-  const routeFound = isPhase3 && topRoute !== undefined;
-  const searchFinishedEmpty = isPhase3 && searchStatus === 'done' && topRoute === undefined;
-  // Chain summary once a real route comes back: item photo, then "You" and each
-  // participant's first name (up to 4 steps); never prices.
-  const chainSummary =
-    topRoute && topRoute.chainItems.length >= 2
-      ? topRoute.chainItems.slice(0, 4).map((item, idx) => ({
-          user:
-            idx === 0
-              ? t('searching.you')
-              : topRoute.participants[idx]?.name?.split(' ')[0] ||
-                t('searching.step', { count: idx + 1 }),
-          itemImg: item.imageUrl,
-          itemName: item.name,
-          category: item.category,
-        }))
-      : [];
+  // The answer takes focus so screen readers announce it
+  useEffect(() => {
+    if (outcome.status !== 'pending') resultRef.current?.focus();
+  }, [outcome.status]);
 
   if (!hasSearchParams) {
     return <Navigate to="/swap/configure" replace />;
   }
 
+  const routes = outcome.status === 'done' ? outcome.routes : [];
+  const found = routes.length > 0;
+  // Deleted meanwhile: the empty answer would otherwise offer a direct swap that cannot work
+  const itemGone =
+    outcome.status === 'unavailable' || offeredStatus === 'missing' || wantedStatus === 'missing';
+  const finishedEmpty = outcome.status === 'done' && !found && !itemGone;
+
+  const openResults = () => {
+    const query = new URLSearchParams({
+      have: haveId,
+      want: wantId,
+      q: objectiveText,
+      minSteps: String(minSteps),
+      maxSteps: String(maxSteps),
+      tolerance: String(valueTolerancePct),
+    }).toString();
+    navigate(`/swap/results?${query}`, {
+      replace: true,
+      state: { routes, searchCompleted: true },
+    });
+  };
+
+  const proposeDirect = () => {
+    if (!offeredItem || !wantedItem) return;
+    const direct: DirectProposalDraft = { offeredItem, wantedItem };
+    navigate('/swap/proposal/confirm', { replace: true, state: { direct } });
+  };
+
   return (
-    <div className="flex flex-col items-center justify-between flex-1 w-full max-w-[390px] mx-auto px-margin py-3 text-center overflow-x-clip select-none animate-fade-in relative">
+    <div className="flex flex-col items-center flex-1 w-full px-margin pt-6 pb-4 text-center gap-6">
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(14px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-          0% { opacity: 0; transform: scale(0.3); }
-          70% { transform: scale(1.08); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes dashFlow {
-          from { stroke-dashoffset: 704; }
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes spinSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulseSuccess {
-          0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(26, 122, 74, 0.45);
-          }
-          50% {
-            transform: scale(1.08);
-            box-shadow: 0 0 0 10px rgba(26, 122, 74, 0);
-          }
-        }
-        .animate-fade-in {
-          animation: fadeIn 600ms ease-out forwards;
-        }
-        .animate-slide-up {
-          animation: slideUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-dash-flow {
-          animation: dashFlow 7s linear infinite;
-        }
-        .animate-spin-slow {
-          animation: spinSlow 3.5s linear infinite;
-        }
-        .animate-pulse-success {
-          animation: pulseSuccess 1.8s ease-in-out infinite;
-        }
-        @keyframes ripple {
-          0% { opacity: 0.7; transform: scale(0.55); }
-          100% { opacity: 0; transform: scale(1.25); }
-        }
-        .searching-ripple {
-          animation: ripple 2.4s ease-out infinite;
-        }
-        .searching-ripple-delayed {
-          animation-delay: 1.2s;
-        }
-        .searching-orbit {
-          animation: spinSlow 6s linear infinite;
-        }
+        @keyframes searchingSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes searchingRipple { 0% { opacity: 0.7; transform: scale(0.55); } 100% { opacity: 0; transform: scale(1.25); } }
+        .searching-orbit { animation: searchingSpin 6s linear infinite; }
+        .searching-ripple { animation: searchingRipple 2.4s ease-out infinite; }
+        .searching-ripple-delayed { animation-delay: 1.2s; }
         @media (prefers-reduced-motion: reduce) {
-          .searching-ripple,
-          .searching-orbit,
-          .animate-dash-flow,
-          .animate-spin-slow,
-          .animate-pulse-success {
-            animation: none;
-          }
+          .searching-orbit, .searching-ripple { animation: none; }
         }
       `}</style>
 
-      {/* Header section: Entrance Title */}
-      <div className="flex flex-col items-center animate-slide-up shrink-0 pt-1">
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high mb-2 shadow-2xs">
-          <Icon name="cyclone" size="xs" filled className="text-primary animate-spin-slow" />
-          <span className="font-label-sm text-caption text-primary font-bold uppercase tracking-wider">
-            {t('searching.badge')}
-          </span>
-        </div>
-        <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">
-          {t('searching.title')}
+      <div className="flex flex-col items-center gap-1.5">
+        <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface">
+          {outcome.status === 'pending'
+            ? t('searching.title')
+            : found
+              ? t('searching.foundTitle', { count: routes.length })
+              : itemGone
+                ? t('searching.unavailableTitle')
+                : finishedEmpty
+                  ? t('searching.emptyTitle')
+                  : t('searching.failedTitle')}
         </h1>
-        <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5 max-w-[280px]">
-          {t('searching.subtitle')}
-        </p>
+        {wantedItem && (
+          <p className="font-body-md text-body-md text-on-surface-variant max-w-[300px]">
+            {t('searching.subtitle', { name: wantedItem.name })}
+          </p>
+        )}
       </div>
 
-      {/* Neutral search animation: an orbit with anonymous pulses, no people, names or prices */}
-      <div
-        className="relative w-[240px] h-[240px] my-auto flex items-center justify-center shrink-0"
-        aria-hidden="true"
-      >
-        <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple" />
-        <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple searching-ripple-delayed" />
-
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 240 240">
-          <circle cx="120" cy="120" r="96" fill="none" stroke="rgb(var(--color-primary))" strokeOpacity="0.18" strokeWidth="2.5" />
+      {/* Neutral animation: an orbit with anonymous pulses, no people, names or prices */}
+      <div className="relative w-[220px] h-[220px] flex items-center justify-center shrink-0" aria-hidden="true">
+        {outcome.status === 'pending' && (
+          <>
+            <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple" />
+            <span className="absolute inset-6 rounded-full border-2 border-primary/20 searching-ripple searching-ripple-delayed" />
+          </>
+        )}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 220 220">
           <circle
-            cx="120"
-            cy="120"
-            r="96"
+            cx="110"
+            cy="110"
+            r="88"
             fill="none"
-            stroke={routeFound ? 'rgb(var(--color-success))' : 'rgb(var(--color-primary))'}
-            strokeOpacity={routeFound ? 0.85 : 0.6}
-            strokeWidth={isPhase3 ? 3.5 : 2.5}
-            strokeDasharray={isPhase3 ? undefined : '8 6'}
-            className={isPhase3 ? 'transition-all duration-700' : 'animate-dash-flow'}
+            stroke={
+              found
+                ? 'rgb(var(--color-success))'
+                : outcome.status === 'pending'
+                  ? 'rgb(var(--color-primary))'
+                  : 'rgb(var(--color-outline))'
+            }
+            strokeOpacity={outcome.status === 'pending' ? 0.25 : 0.7}
+            strokeWidth="3"
+            strokeDasharray={outcome.status === 'pending' ? '8 6' : undefined}
           />
         </svg>
-
-        {!isPhase3 && (
+        {outcome.status === 'pending' && (
           <div className="absolute inset-0 searching-orbit">
             {Array.from({ length: ORBIT_DOTS }, (_, idx) => (
               <span
                 key={idx}
                 className="absolute left-1/2 top-1/2 w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full bg-secondary-container shadow-xs"
-                style={{ transform: `rotate(${(360 / ORBIT_DOTS) * idx}deg) translateY(-96px)` }}
+                style={{ transform: `rotate(${(360 / ORBIT_DOTS) * idx}deg) translateY(-88px)` }}
               />
             ))}
           </div>
         )}
-
-        <div className="relative z-20 flex flex-col items-center justify-center">
-          <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md transition-all duration-500 ${
-              routeFound
-                ? 'bg-success text-on-success animate-pulse-success'
-                : 'bg-primary text-on-primary ring-4 ring-primary/20'
-            }`}
-          >
-            <Icon
-              name={routeFound ? 'check' : searchFinishedEmpty ? 'travel_explore' : 'sync'}
-              size="md"
-              className={routeFound || searchFinishedEmpty ? 'text-[26px] font-bold' : 'animate-spin-slow'}
-            />
-          </div>
-          <span className="font-label-sm text-caption font-bold uppercase tracking-wider mt-1 text-on-surface-variant">
-            {routeFound
-              ? t('searching.connected')
-              : searchFinishedEmpty
-                ? t('searching.searchDone')
-                : 'SmartSwap'}
-          </span>
-        </div>
-      </div>
-
-      {/* Middle & Reveal Info Section */}
-      <div className="w-full flex flex-col items-center gap-2 shrink-0 py-1">
-        {isPhase3 ? (
-          <div className="w-full flex flex-col items-center gap-2 animate-slide-up">
-            {/* Reveal Badges & Percentage */}
-            {topRoute && (
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/30 text-success shadow-2xs">
-                <Icon name="verified" size="xs" filled />
-                <span className="font-label-sm text-label-sm font-bold">
-                  {t('searching.routeFound', { code: topRoute?.code ?? '' })}
-                </span>
-              </div>
-              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary">
-                <Icon name="auto_awesome" size="xs" />
-                <span className="font-label-sm text-label-sm font-bold">
-                  {t('searching.matchPercent', { percent: matchPercent })}
-                </span>
-              </div>
-            </div>
-            )}
-
-            {/* Chain summary: item photo (or category fallback) and first name of each participant */}
-            {chainSummary.length > 0 && (
-            <div className="flex items-center justify-between w-full max-w-[340px] px-3 py-2 bg-surface-container-lowest rounded-2xl border border-surface-container-high/60 shadow-xs">
-              {chainSummary.map((step, idx) => (
-                <React.Fragment key={`${step.user}-${idx}`}>
-                  <div className="flex-1 basis-0 min-w-fit flex flex-col items-center">
-                    <div className="w-9 h-9 rounded-xl overflow-hidden bg-surface-container p-1 border border-surface-container-high/50 shrink-0">
-                      <ItemImage src={step.itemImg} alt={step.itemName} category={step.category} className="w-full h-full" imgClassName="object-contain" />
-                    </div>
-                    <span className="font-label-sm text-caption text-on-surface font-semibold mt-1 text-center">
-                      {step.user}
-                    </span>
-                  </div>
-                  {idx < chainSummary.length - 1 && (
-                    <Icon
-                      name="arrow_forward"
-                      size="xs"
-                      className="text-primary font-bold shrink-0 mb-3"
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-            )}
-
-            {!topRoute && (
-              <p className="font-body-md text-body-md text-on-surface-variant font-medium max-w-[300px]">
-                {searchFinishedEmpty ? t('searching.searchDoneHint') : t('searching.openingResults')}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center min-h-[44px]">
-            <p className="font-body-md text-body-md text-on-surface-variant font-medium">
-              {t(`searching.messages.${MESSAGE_KEYS[messageIndex]}`)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Section: Progress Bar & CTA Button */}
-      <div className="w-full flex flex-col items-center gap-3 shrink-0 pt-1 pb-2">
-        {/* Progress Bar (0 to 100% over 2500ms) */}
-        <div className="w-full max-w-xs bg-surface-container-high rounded-full h-1.5 overflow-hidden">
-          <div
-            className="bg-primary h-full rounded-full transition-all duration-[2500ms] ease-out"
-            style={{ width: `${progressWidth}%` }}
+        <div
+          className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-md ${
+            found
+              ? 'bg-success text-on-success'
+              : outcome.status === 'pending'
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-container-high text-on-surface-variant'
+          }`}
+        >
+          <Icon
+            name={found ? 'check' : outcome.status === 'pending' ? 'cycle' : finishedEmpty ? 'search_off' : itemGone ? 'inventory_2' : 'cloud_off'}
+            size="lg"
+            className={outcome.status === 'pending' ? 'searching-orbit' : undefined}
           />
         </div>
+      </div>
 
-        {/* Bottom CTA Button */}
-        {isPhase3 ? (
-          <div className="w-full max-w-xs animate-slide-up">
-            <Button variant="primary" size="lg" fullWidth onClick={handleNavigate}>
-              <span>
-                {topRoute
-                  ? t('searching.viewChain', { count: topRoute.stepsCount })
-                  : t('searching.viewResults')}
-              </span>
+      <div
+        ref={resultRef}
+        tabIndex={-1}
+        aria-live="polite"
+        className="w-full max-w-sm flex flex-col items-center gap-3 focus:outline-none"
+      >
+        {outcome.status === 'pending' ? (
+          <p className="font-body-md text-body-md text-on-surface-variant min-h-12">
+            {t(`searching.messages.${MESSAGE_KEYS[messageIndex]}`)}
+          </p>
+        ) : found ? (
+          <>
+            <p className="font-body-md text-body-md text-on-surface-variant">{t('searching.foundHint')}</p>
+            <Button data-testid="searching-view-routes" variant="primary" size="lg" fullWidth rightIcon="arrow_forward" onClick={openResults}>
+              {t('searching.viewRoutes', { count: routes.length })}
             </Button>
-          </div>
+          </>
+        ) : itemGone ? (
+          <>
+            <p className="font-body-md text-body-md text-on-surface-variant">{t('searching.unavailableHint')}</p>
+            <Button data-testid="searching-back" variant="primary" size="lg" fullWidth leftIcon="arrow_back" onClick={goBack}>
+              {t('searching.back')}
+            </Button>
+          </>
+        ) : finishedEmpty ? (
+          <>
+            <p className="font-body-md text-body-md text-on-surface-variant">{t('searching.emptyHint')}</p>
+            <Button
+              data-testid="searching-propose-direct"
+              variant="primary"
+              size="lg"
+              fullWidth
+              rightIcon="send"
+              disabled={!offeredItem || !wantedItem}
+              onClick={proposeDirect}
+            >
+              {t('searching.proposeDirect')}
+            </Button>
+            <Button data-testid="searching-back" variant="outline" size="lg" fullWidth leftIcon="arrow_back" onClick={goBack}>
+              {t('searching.back')}
+            </Button>
+          </>
         ) : (
-          <div className="h-[52px] flex items-center justify-center">
-            <span className="font-body-sm text-body-sm text-on-surface-variant text-caption flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
-              {t('searching.syncing')}
-            </span>
-          </div>
+          <>
+            <p role="alert" className="font-body-md text-body-md text-on-surface-variant">
+              {t('searching.failedHint')}
+            </p>
+            <Button variant="primary" size="lg" fullWidth leftIcon="refresh" onClick={() => setAttempt((value) => value + 1)}>
+              {t('states.retry')}
+            </Button>
+            <Button variant="outline" size="lg" fullWidth leftIcon="arrow_back" onClick={goBack}>
+              {t('searching.back')}
+            </Button>
+          </>
         )}
       </div>
     </div>

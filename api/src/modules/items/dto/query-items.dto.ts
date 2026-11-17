@@ -12,6 +12,8 @@ export const queryItemsSchema = z.object({
   category: z.string().trim().optional(),
   condition: z.string().trim().optional(),
   ownerId: z.string().trim().optional(),
+  /** Leaves out one user's items (the viewer's own, so Explore shows only what they can ask for). */
+  excludeOwnerId: z.string().trim().min(1).optional(),
   status: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),

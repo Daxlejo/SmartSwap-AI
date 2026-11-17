@@ -21,6 +21,7 @@ describe('aiService', () => {
         suggestedWants: ['MacBook Air', 'iPad Pro', 'Bicicleta'],
         aiTags: ['sony', 'mirrorless', '4k', 'fotografia'],
         confidence: 0.94,
+        source: 'openai',
       });
 
       const payload = {
@@ -56,6 +57,7 @@ describe('aiService', () => {
         estimatedValue: 300,
         wants: ['PlayStation 5'],
         tags: ['nintendo', 'oled'],
+        source: 'openai',
       });
 
       const result = await aiService.analyzeItemPhoto({
@@ -68,6 +70,21 @@ describe('aiService', () => {
       expect(result.maxValue).toBe(345);
       expect(result.suggestedWants).toEqual(['PlayStation 5']);
       expect(result.aiTags).toEqual(['nintendo', 'oled']);
+    });
+  });
+
+  describe('suggested wants', () => {
+    it('drops the ideas of a fallback answer, which do not come from the item', async () => {
+      vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        name: 'Guitarra',
+        estimatedValue: 300000,
+        suggestedWants: ['Tablet', 'Smartphone', 'Auriculares'],
+        source: 'fallback',
+      });
+
+      const result = await aiService.analyzeItemPhoto({ hintText: 'Guitarra', locale: 'es' });
+
+      expect(result.suggestedWants).toEqual([]);
     });
   });
 

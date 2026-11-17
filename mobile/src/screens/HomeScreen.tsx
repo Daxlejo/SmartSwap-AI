@@ -1,19 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { LocationPrompt } from '@/components/LocationPrompt';
-import { LocationScopeSelector } from '@/components/LocationScopeSelector';
 import { Button } from '@/components/ui/Button';
-import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { ObjectCard } from '@/components/ObjectCard';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { NotificationBell } from '@/components/NotificationBell';
 import { SwapRing } from '@/components/SwapRing';
+import { ExampleRing } from '@/components/ExampleRing';
+import { useExampleRingPeople } from '@/hooks/useExampleRingPeople';
 import { toRingParticipants } from '@/utils/swapRing';
 import { isOfferableItem } from '@/utils/swapSearch';
 
@@ -24,17 +23,11 @@ export const HomeScreen = () => {
   const { t } = useTranslation();
   const {
     currentUser,
-    items,
     myItems,
     routes,
     loadStates,
-    isItemsLoading,
     refreshItems,
-    locationScope,
-    setLocationScope,
   } = useApp();
-
-  const [filterMode, setFilterMode] = useState<'nearby' | 'wishlist'>('nearby');
 
   const activeRoutes = routes.filter(
     (route) => !INACTIVE_ROUTE_STATUSES.has((route.status || '').toUpperCase()),
@@ -45,23 +38,8 @@ export const HomeScreen = () => {
   // Until the user has one active item there is nothing to offer, so publishing comes first.
   // Only decided once the items loaded: while loading or after an error the usual layout stays.
   const hasActiveItem = loadStates.items !== 'ready' || myItems.some(isOfferableItem);
+  const examplePeople = useExampleRingPeople();
   const activeRing = useMemo(() => toRingParticipants(activeRoute?.steps ?? []), [activeRoute]);
-
-  const isLoading = isItemsLoading || loadStates.items === 'loading';
-  const hasError = loadStates.items === 'error';
-  const otherItems = useMemo(
-    () => items.filter((i) => i.ownerId !== currentUser?.id),
-    [items, currentUser?.id],
-  );
-
-  const displayedItems = useMemo(() => {
-    if (filterMode !== 'wishlist') return otherItems;
-    const wanted = myItems.flatMap((item) => item.wants.map((want) => want.trim().toLowerCase()));
-    return otherItems.filter((item) => {
-      const name = item.name.toLowerCase();
-      return wanted.some((want) => want.length > 1 && name.includes(want));
-    });
-  }, [filterMode, otherItems, myItems]);
 
   const openActiveRoute = () => {
     if (!activeRoute) return;
@@ -86,23 +64,27 @@ export const HomeScreen = () => {
 
       {hasActiveItem ? (
         <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
-          {/* Main action: one title, one line, one button */}
-          <div className="col-span-2 rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="font-headline-md text-headline-md text-on-hero font-bold">
+          {/* Main action: the swap ring explained, and the way into a new swap */}
+          <div
+            data-testid="home-ring-card"
+            className="col-span-2 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-sm px-3 pt-4 pb-4 flex flex-col items-center gap-3"
+          >
+            <ExampleRing people={examplePeople} viewerId={currentUser?.id} />
+            <div className="flex flex-col gap-1 text-center px-1">
+              <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
                 {t('home.engine.title')}
               </h2>
-              <p className="font-body-md text-body-md text-on-hero-variant">
+              <p className="font-body-md text-body-md text-on-surface-variant">
                 {t('home.engine.description')}
               </p>
             </div>
             <Button
-              variant="tonal"
+              data-testid="home-new-swap"
+              variant="primary"
               size="lg"
               fullWidth
               rightIcon="arrow_forward"
               onClick={() => navigate('/swap/configure')}
-              className="bg-surface text-primary hover:bg-surface-container-low"
             >
               {t('home.engine.cta')}
             </Button>
@@ -263,90 +245,6 @@ export const HomeScreen = () => {
         </section>
       )}
 
-      <section aria-label={t('home.recommended.aria')} className="flex flex-col gap-3">
-        <h2 className="font-headline-md text-headline-md text-on-surface font-bold">
-          {t('home.recommended.title')}
-        </h2>
-        <div
-          role="group"
-          aria-label={t('home.recommended.filterAria')}
-          className="flex items-center gap-2"
-        >
-          <Chip
-            active={filterMode === 'nearby'}
-            aria-pressed={filterMode === 'nearby'}
-            onClick={() => setFilterMode('nearby')}
-          >
-            {t('home.recommended.nearby')}
-          </Chip>
-          <Chip
-            active={filterMode === 'wishlist'}
-            aria-pressed={filterMode === 'wishlist'}
-            onClick={() => setFilterMode('wishlist')}
-          >
-            {t('home.recommended.wishlist')}
-          </Chip>
-        </div>
-
-        <LocationScopeSelector />
-
-        {isLoading && (
-          <div className="flex flex-col space-y-3">
-            {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                className="h-36 rounded-2xl bg-surface-container-low animate-pulse border border-surface-container-high"
-              />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && hasError && <ErrorState onRetry={() => void refreshItems()} />}
-
-        {!isLoading && !hasError && displayedItems.length === 0 && (
-          <EmptyState
-            illustration="search"
-            title={
-              filterMode === 'wishlist'
-                ? t('home.recommended.emptyDescription')
-                : locationScope !== 'country'
-                  ? t('states.homeCatalog')
-                  : t('states.explore')
-            }
-            action={
-              filterMode === 'wishlist' ? (
-                <Button variant="primary" size="md" onClick={() => setFilterMode('nearby')}>
-                  {t('home.recommended.nearby')}
-                </Button>
-              ) : locationScope !== 'country' ? (
-                <Button variant="primary" size="md" onClick={() => setLocationScope('country')}>
-                  {t('states.homeCatalogCta')}
-                </Button>
-              ) : (
-                <Button variant="primary" size="md" onClick={() => navigate('/publish')}>
-                  {t('states.exploreCta')}
-                </Button>
-              )
-            }
-          />
-        )}
-
-        {!isLoading && !hasError && displayedItems.length > 0 && (
-          <div className="flex flex-col space-y-3">
-            {displayedItems.map((item) => (
-              <ObjectCard
-                key={item.id}
-                item={item}
-                onOfferSwap={() =>
-                  navigate('/swap/configure', {
-                    state: { wantItemId: item.id, wantItemName: item.name },
-                  })
-                }
-              />
-            ))}
-          </div>
-        )}
-      </section>
     </div>
   );
 };

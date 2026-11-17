@@ -206,7 +206,7 @@ export class AiVisionService {
       '  "minValue": numero_entero_en_COP,',
       '  "maxValue": numero_entero_en_COP,',
       '  "aiTags": ["5 etiquetas semánticas en minúsculas"],',
-      `  "suggestedWants": ["3 artículos sugeridos en ${language} de valor similar para trueque"],`,
+      `  "suggestedWants": ["3 artículos concretos en ${language} que el dueño de ESTE artículo aceptaría a cambio: de valor parecido y relacionados con su uso, su categoría o quien suele tenerlo (nada genérico)"],`,
       '  "confidence": numero_entre_0_y_1',
       '}',
       'Los valores de "category" y "conditionLabel" deben quedar exactamente como se listan (en español).',
@@ -393,10 +393,15 @@ export class AiVisionService {
         Array.isArray(raw.aiTags) && raw.aiTags.length > 0
           ? raw.aiTags.map((t) => String(t).toLowerCase().trim()).slice(0, 6)
           : fallback.aiTags,
+      // Ideas for "what would you accept" only when the model wrote them for this item:
+      // the fallback's fixed list has nothing to do with the photo, so it is never sent
       suggestedWants:
-        Array.isArray(raw.suggestedWants) && raw.suggestedWants.length > 0
-          ? raw.suggestedWants.map((w) => String(w).trim()).slice(0, 4)
-          : fallback.suggestedWants,
+        raw.source === 'openai' && Array.isArray(raw.suggestedWants)
+          ? raw.suggestedWants
+              .map((w) => String(w).trim())
+              .filter((w) => w.length > 1)
+              .slice(0, 4)
+          : [],
       confidence:
         typeof raw.confidence === 'number' &&
         raw.confidence >= 0 &&

@@ -36,3 +36,22 @@ export const initialsFor = (name: string): string => {
   const second = words.length > 1 ? (Array.from(words[1])[0] ?? '') : '';
   return `${first}${second}`.toLocaleUpperCase('es');
 };
+
+/**
+ * One colour per person that is never repeated inside the same group: each keeps its
+ * stable colour unless someone earlier already has it, then takes the next free one.
+ */
+export const distinctAvatarColors = (seeds: readonly string[]): string[] => {
+  const used = new Set<string>();
+  return seeds.map((seed) => {
+    const start = hashSeed(seed) % AVATAR_COLORS.length;
+    for (let offset = 0; offset < AVATAR_COLORS.length; offset++) {
+      const color = AVATAR_COLORS[(start + offset) % AVATAR_COLORS.length];
+      if (!used.has(color)) {
+        used.add(color);
+        return color;
+      }
+    }
+    return AVATAR_COLORS[start];
+  });
+};

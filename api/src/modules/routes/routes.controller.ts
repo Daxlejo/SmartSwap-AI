@@ -21,6 +21,10 @@ import {
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
+  ProposeDirectDto,
+  proposeDirectSchema,
+} from './dto/propose-direct.dto';
+import {
   ProposeRouteDto,
   proposeRouteSchema,
 } from './dto/propose-route.dto';
@@ -52,8 +56,10 @@ export class RoutesController {
     status: 200,
     description: 'Ranked circular swap routes enriched with AI explanations',
   })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 400, description: 'Validation error, or wantedItemId is your own item' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'wantedItemId is no longer published' })
+  @ApiResponse({ status: 409, description: 'wantedItemId is already reserved in another swap' })
   async searchRoutes(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Body(new ZodValidationPipe(searchRoutesSchema.strip()))
@@ -102,6 +108,31 @@ export class RoutesController {
     dto: ProposeRouteDto,
   ): Promise<SwapRouteDto> {
     return this.routesService.proposeRoute(currentUser.sub, dto);
+  }
+
+  @Post('direct')
+  @ApiOperation({
+    summary:
+      'Propose a 1-to-1 swap of one of your items for an item of another user (a 2-person ring; their wants are not required to match)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Persisted 2-person swap route proposal with locked items',
+  })
+  @ApiResponse({ status: 400, description: 'Validation error or the wanted item is your own' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'The offered item is not yours' })
+  @ApiResponse({ status: 404, description: 'One or both items do not exist' })
+  @ApiResponse({
+    status: 409,
+    description: 'One of the items is already locked in another proposal',
+  })
+  async proposeDirect(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body(new ZodValidationPipe(proposeDirectSchema))
+    dto: ProposeDirectDto,
+  ): Promise<SwapRouteDto> {
+    return this.routesService.proposeDirect(currentUser.sub, dto);
   }
 
   @Post(':id/propose')
