@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-15T18:28:11.042Z",
+  "generatedAt": "2026-11-17T06:08:26.601Z",
   "stats": {
-    "totalFiles": 150,
+    "totalFiles": 154,
     "apiFiles": 66,
-    "mobileFiles": 84,
+    "mobileFiles": 88,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -507,6 +507,7 @@
       "mobile/src/context/ThemeContext.tsx"
     ],
     "mobile/hooks": [
+      "mobile/src/hooks/useAppResume.ts",
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
       "mobile/src/hooks/useTranslation.ts"
@@ -523,6 +524,11 @@
     ],
     "mobile/main.tsx": [
       "mobile/src/main.tsx"
+    ],
+    "mobile/native": [
+      "mobile/src/native/index.ts",
+      "mobile/src/native/serverWarmup.ts",
+      "mobile/src/native/systemBars.ts"
     ],
     "mobile/router.tsx": [
       "mobile/src/router.tsx"
@@ -1931,6 +1937,7 @@
         "./ui/Button",
         "./ui/Icon",
         "./ui/Select",
+        "@/hooks/useAppResume",
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
         "@/services/geo/geo.service",
@@ -2002,6 +2009,7 @@
         "./ui/BottomSheet",
         "./ui/Button",
         "./ui/Icon",
+        "@/hooks/useAppResume",
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
         "@/services/media/photoPicker",
@@ -2316,6 +2324,17 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useAppResume.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useAppResume"
+      ],
+      "imports": [
+        "@capacitor/app",
+        "@capacitor/core",
+        "react"
+      ]
+    },
     "mobile/src/hooks/useServerStatus.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2424,9 +2443,46 @@
         "./context/ThemeContext",
         "./i18n",
         "./index.css",
+        "./native",
         "./services/storage/preferencesStorage",
         "react",
         "react-dom/client"
+      ]
+    },
+    "mobile/src/native/index.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "initNative"
+      ],
+      "imports": [
+        "./serverWarmup",
+        "./systemBars"
+      ]
+    },
+    "mobile/src/native/serverWarmup.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "WARMUP_MIN_INTERVAL_MS",
+        "createWarmup",
+        "startServerWarmup"
+      ],
+      "imports": [
+        "@/services/health/health.service",
+        "@capacitor/app",
+        "@capacitor/core"
+      ]
+    },
+    "mobile/src/native/systemBars.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "FALLBACK_SURFACE",
+        "ThemeBarsOptions",
+        "readThemeBars",
+        "startSystemBarsSync",
+        "surfaceTokenToHex"
+      ],
+      "imports": [
+        "@capacitor/core"
       ]
     },
     "mobile/src/router.tsx": {
@@ -2600,6 +2656,7 @@
         "@/components/ui/ItemImage",
         "@/components/ui/ThemeToggle",
         "@/context/AppContext",
+        "@/hooks/useAppResume",
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
@@ -2909,6 +2966,7 @@
         "PhotoPickFailure",
         "PhotoSource",
         "classifyPhotoFailure",
+        "isPermissionFailure",
         "pickPhotos",
         "usesNativePicker"
       ],
