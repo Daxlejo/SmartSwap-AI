@@ -208,6 +208,31 @@ const main = async () => {
       assert((await page.locator('[data-testid=item-propose-button]').count()) === 0, 'own item offers a proposal');
     });
 
+    await run('every screen opens at the top; Explore keeps its place and offers Back to top', browser, 'default', async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 480 });
+      await page.goto(`${BASE}/explore`, { waitUntil: 'networkidle' });
+      assert((await page.locator('[data-testid=back-to-top]').count()) === 0, 'Back to top shows before scrolling');
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await page.waitForTimeout(400);
+      const explorePosition = await page.evaluate(() => window.scrollY);
+      assert(explorePosition > 480, `Explore did not scroll more than one screen (${explorePosition})`);
+      assert(await page.getByTestId('back-to-top').isVisible(), 'Back to top missing after one screen');
+
+      await page.locator('[data-testid^=object-card-]').last().click();
+      await waitPath(page, /^\/item\//);
+      await page.waitForTimeout(300);
+      assert((await page.evaluate(() => window.scrollY)) === 0, 'the item detail did not open at the top');
+
+      await page.goBack();
+      await waitPath(page, /^\/explore$/);
+      await page.waitForTimeout(400);
+      const back = await page.evaluate(() => window.scrollY);
+      assert(Math.abs(back - explorePosition) < 4, `Explore lost its place (${back} vs ${explorePosition})`);
+
+      await page.getByTestId('back-to-top').click();
+      await page.waitForFunction(() => window.scrollY === 0, null, { timeout: 3000 });
+    });
+
     await run('Explore leaves out the own items', browser, 'default', async ({ page, calls }) => {
       await page.goto(`${BASE}/explore`, { waitUntil: 'networkidle' });
       const listCalls = calls.filter((call) => call.path === '/items' && call.method === 'GET');
