@@ -47,17 +47,26 @@ export function useKeepFocusedFieldVisible(): void {
       }, KEYBOARD_SETTLE_MS);
     };
 
+    // Only a shrinking viewport means the keyboard opened; growing back (keyboard closed) must not jump.
+    let lastViewportHeight = window.visualViewport?.height ?? 0;
+    const onViewportResize = () => {
+      const height = window.visualViewport?.height ?? 0;
+      const shrank = height < lastViewportHeight;
+      lastViewportHeight = height;
+      if (shrank) revealActiveField();
+    };
+
     const onFocusIn = (event: FocusEvent) => {
       if (asKeyboardField(event.target)) revealActiveField();
     };
 
     document.addEventListener('focusin', onFocusIn);
-    window.visualViewport?.addEventListener('resize', revealActiveField);
+    window.visualViewport?.addEventListener('resize', onViewportResize);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('focusin', onFocusIn);
-      window.visualViewport?.removeEventListener('resize', revealActiveField);
+      window.visualViewport?.removeEventListener('resize', onViewportResize);
     };
   }, []);
 }
