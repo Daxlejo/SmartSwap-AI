@@ -5,10 +5,15 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.FrameLayout;
 
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.Plugin;
@@ -36,12 +41,45 @@ public class ThemeBarsPlugin extends Plugin {
     private int color = Color.parseColor("#f8fafc");
     private boolean dark = false;
 
+    /**
+     * Opaque strip under the status bar. On Android 15+ the WebView draws edge to edge,
+     * so screens without a top bar scrolled their content behind the clock; this strip
+     * covers exactly the status bar height (0 when Android already pads the content).
+     */
+    private View statusScrim;
+
     @Override
     public void load() {
         SharedPreferences prefs = getContext().getSharedPreferences(PREFS, 0);
         color = prefs.getInt(KEY_COLOR, color);
         dark = prefs.getBoolean(KEY_DARK, dark);
-        getBridge().executeOnMainThread(this::applyLater);
+        getBridge().executeOnMainThread(() -> {
+            addStatusScrim();
+            applyLater();
+        });
+    }
+
+    private void addStatusScrim() {
+        try {
+            ViewGroup content = getActivity().findViewById(android.R.id.content);
+            if (content == null || statusScrim != null) return;
+            View scrim = new View(getContext());
+            scrim.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            content.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.TOP));
+            ViewCompat.setOnApplyWindowInsetsListener(scrim, (view, insets) -> {
+                int top = insets.getInsets(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()).top;
+                ViewGroup.LayoutParams params = view.getLayoutParams();
+                if (params.height != top) {
+                    params.height = top;
+                    view.setLayoutParams(params);
+                }
+                return insets;
+            });
+            statusScrim = scrim;
+            ViewCompat.requestApplyInsets(scrim);
+        } catch (RuntimeException error) {
+            Log.w("ThemeBars", "Could not add the status bar strip", error);
+        }
     }
 
     @PluginMethod
@@ -107,6 +145,9 @@ public class ThemeBarsPlugin extends Plugin {
 
         // Area behind the bars when Android 15+ draws the app edge to edge
         decor.setBackgroundColor(color);
+        if (statusScrim != null) {
+            statusScrim.setBackgroundColor(color);
+        }
 
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, decor);
         controller.setAppearanceLightStatusBars(!dark);
