@@ -108,6 +108,13 @@ export class ItemsService {
       where.ownerId = query.ownerId.trim();
     }
 
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      where.estimatedValue = {
+        ...(query.minPrice !== undefined ? { gte: query.minPrice } : {}),
+        ...(query.maxPrice !== undefined ? { lte: query.maxPrice } : {}),
+      };
+    }
+
     const rawSearch = query.search || query.query;
     if (rawSearch) {
       const searchTerm = rawSearch.trim();

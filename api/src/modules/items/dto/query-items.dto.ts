@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+/** Whole pesos from the query string; an empty value (`?maxPrice=`) means no limit, not 0. */
+const priceParam = z.preprocess(
+  (value) => (value === '' || value === null ? undefined : value),
+  z.coerce.number().int().min(0).optional(),
+);
+
 export const queryItemsSchema = z.object({
   search: z.string().trim().optional(),
   query: z.string().trim().optional(),
@@ -18,6 +24,15 @@ export const queryItemsSchema = z.object({
     .optional(),
   scope: z.enum(['nearby', 'department', 'country']).optional(),
   radiusKm: z.coerce.number().min(1).max(300).optional(),
-});
+  /** Price range in whole Colombian pesos (COP), both ends inclusive. */
+  minPrice: priceParam,
+  maxPrice: priceParam,
+}).refine(
+  (query) =>
+    query.minPrice === undefined ||
+    query.maxPrice === undefined ||
+    query.minPrice <= query.maxPrice,
+  { message: 'minPrice must be less than or equal to maxPrice', path: ['minPrice'] },
+);
 
 export type QueryItemsDto = z.infer<typeof queryItemsSchema>;

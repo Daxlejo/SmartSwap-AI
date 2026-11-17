@@ -5,6 +5,8 @@ export type LocationScopePreference = 'nearby' | 'department' | 'country';
 export const THEME_STORAGE_KEY = 'smartswap_theme';
 export const LOCALE_STORAGE_KEY = 'smartswap_locale';
 export const LOCATION_SCOPE_STORAGE_KEY = 'smartswap_location_scope';
+/** Prefix of the per-user flag that hides the first-run introduction once seen. */
+export const ONBOARDING_STORAGE_PREFIX = 'smartswap_onboarding_done_';
 
 // Keys written by earlier builds; read once and migrated to the canonical keys.
 const LEGACY_THEME_STORAGE_KEY = 'smartswap-theme';
@@ -88,4 +90,21 @@ export const preferencesStorage = {
   setLocationScope(scope: LocationScopePreference): void {
     write(LOCATION_SCOPE_STORAGE_KEY, scope);
   },
+
+  /** Whether this user already saw (or skipped) the first-run introduction on this device. */
+  isOnboardingDone(userId: string): boolean {
+    try {
+      return getStorage()?.getItem(`${ONBOARDING_STORAGE_PREFIX}${userId}`) === '1';
+    } catch {
+      return false;
+    }
+  },
+
+  markOnboardingDone(userId: string): void {
+    write(`${ONBOARDING_STORAGE_PREFIX}${userId}`, '1');
+  },
 };
+
+/** Where a freshly registered user lands: the introduction the first time, Home afterwards. */
+export const postRegisterRoute = (userId: string): '/welcome' | '/home' =>
+  preferencesStorage.isOnboardingDone(userId) ? '/home' : '/welcome';

@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import type { Item, User } from '@/types';
 import { ObjectCard } from '@/components/ObjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Chip } from '@/components/ui/Chip';
 import { Icon } from '@/components/ui/Icon';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
@@ -15,49 +14,19 @@ import { ApiError } from '@/services/http/apiClient';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCop } from '@/utils/currency';
 import { LocationPrompt } from '@/components/LocationPrompt';
-import { LocationScopeSelector } from '@/components/LocationScopeSelector';
+import { ExploreFiltersSheet, DEFAULT_ZONE } from '@/components/ExploreFiltersSheet';
+import { itemsService } from '@/services/items/items.service';
+import type { LocationScopePreference } from '@/services/storage/preferencesStorage';
+import {
+  DEFAULT_EXPLORE_FILTERS,
+  activeFilterKeys,
+  applyExploreFilters,
+  clearFilter,
+  type ActiveFilterKey,
+  type ExploreFilters,
+} from '@/utils/exploreFilters';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { ScreenHeader } from '@/components/ScreenHeader';
-
-interface CategoryOption {
-  id: string;
-  label: string;
-  icon: string;
-}
-
-const CATEGORIES: CategoryOption[] = [
-  { id: 'Todos', label: 'Todos', icon: 'category_search' },
-  { id: 'Tecnología', label: 'Tecnología', icon: 'computer' },
-  { id: 'Deportes', label: 'Deportes', icon: 'sports_soccer' },
-  { id: 'Fotografía', label: 'Fotografía', icon: 'photo_camera' },
-  { id: 'Videojuegos', label: 'Videojuegos', icon: 'sports_esports' },
-  { id: 'Música', label: 'Música', icon: 'music_note' },
-  { id: 'Hogar', label: 'Hogar', icon: 'home' },
-  { id: 'Otros', label: 'Otros', icon: 'category' },
-];
-
-const KNOWN_CATEGORY_IDS = new Set([
-  'Tecnología',
-  'Deportes',
-  'Fotografía',
-  'Videojuegos',
-  'Música',
-  'Hogar',
-]);
-
-const CONDITION_OPTIONS = [
-  'Todos',
-  'Como nuevo',
-  'Excelente estado',
-  'Buen estado',
-] as const;
-
-const SORT_OPTIONS = [
-  'Relevancia',
-  'Menor valor',
-  'Mayor valor',
-  'Más recientes',
-] as const;
 
 export const ExploreScreen = () => {
   const navigate = useNavigate();
@@ -77,15 +46,14 @@ export const ExploreScreen = () => {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
-  const [conditionIndex, setConditionIndex] = useState<number>(0);
-  const [sortIndex, setSortIndex] = useState<number>(0);
+  const [filters, setFilters] = useState<ExploreFilters>(DEFAULT_EXPLORE_FILTERS);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  // Items of another zone, loaded while the sheet is open so "Apply (N)" counts for real
+  const [zonePreview, setZonePreview] = useState<{
+    zone: LocationScopePreference;
+    items: Item[] | null;
+  } | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-
-  const selectedCondition = CONDITION_OPTIONS[conditionIndex];
-  const selectedSort = SORT_OPTIONS[sortIndex];
-  const conditionLabel = t(`catalog.conditions.${selectedCondition}`);
-  const sortLabel = t(`explore.sortOptions.${selectedSort}`);
 
   useEffect(() => {
     void refreshItems();
@@ -150,70 +118,76 @@ export const ExploreScreen = () => {
     return usersById.get(item.ownerId);
   };
 
-  const filteredItems = useMemo(() => {
-    const trimmedQuery = searchQuery.trim().toLowerCase();
+  const filteredItems = useMemo(
+    () => applyExploreFilters(items, searchQuery, filters),
+    [items, searchQuery, filters],
+  );
 
-    const filtered = items.filter((item) => {
-      // 1. Search query filter (by name or category)
-      const matchesSearch =
-        trimmedQuery === '' ||
-        item.name.toLowerCase().includes(trimmedQuery) ||
-        item.category.toLowerCase().includes(trimmedQuery);
+  const municipalityCode = currentUser?.municipalityCode;
 
-      if (!matchesSearch) return false;
+  const handleDraftZoneChange = useCallback(
+    (zone: LocationScopePreference) => {
+      if (zone === locationScope || !municipalityCode) return;
+      setZonePreview({ zone, items: null });
+      itemsService
+        .listItems({ scope: zone, municipalityCode })
+        .then((list) =>
+          setZonePreview((current) => (current?.zone === zone ? { zone, items: list } : current)),
+        )
+        .catch(() => {
+          // Without the preview the button just says "Apply"; applying still loads the zone
+        });
+    },
+    [locationScope, municipalityCode],
+  );
 
-      // 2. Category chip filter
-      const matchesCategory =
-        selectedCategory === 'Todos'
-          ? true
-          : selectedCategory === 'Otros'
-            ? item.category === 'Otros' || !KNOWN_CATEGORY_IDS.has(item.category)
-            : item.category === selectedCategory;
+  const countFor = useCallback(
+    (draft: ExploreFilters, zone: LocationScopePreference): number | null => {
+      const source =
+        zone === locationScope ? items : zonePreview?.zone === zone ? zonePreview.items : null;
+      return source ? applyExploreFilters(source, searchQuery, draft).length : null;
+    },
+    [items, locationScope, zonePreview, searchQuery],
+  );
 
-      if (!matchesCategory) return false;
-
-      // 3. Condition filter
-      const matchesCondition =
-        selectedCondition === 'Todos' ||
-        item.condition.toLowerCase() === selectedCondition.toLowerCase();
-
-      return matchesCondition;
-    });
-
-    // 4. Sort options
-    if (selectedSort === 'Menor valor') {
-      return [...filtered].sort((a, b) => (a.estimatedValue ?? 0) - (b.estimatedValue ?? 0));
-    }
-    if (selectedSort === 'Mayor valor') {
-      return [...filtered].sort((a, b) => (b.estimatedValue ?? 0) - (a.estimatedValue ?? 0));
-    }
-    if (selectedSort === 'Más recientes') {
-      return [...filtered].reverse();
-    }
-
-    return filtered;
-  }, [items, searchQuery, selectedCategory, selectedCondition, selectedSort]);
-
-  const handleCycleCondition = () => {
-    setConditionIndex((prev) => (prev + 1) % CONDITION_OPTIONS.length);
-  };
-
-  const handleCycleSort = () => {
-    setSortIndex((prev) => (prev + 1) % SORT_OPTIONS.length);
+  const handleApplyFilters = (next: ExploreFilters, zone: LocationScopePreference) => {
+    setFilters(next);
+    if (zone !== locationScope) setLocationScope(zone);
+    setZonePreview(null);
+    setIsFiltersOpen(false);
   };
 
   const handleResetFilters = () => {
     setSearchQuery('');
-    setSelectedCategory('Todos');
-    setConditionIndex(0);
-    setSortIndex(0);
+    setFilters(DEFAULT_EXPLORE_FILTERS);
   };
 
-  const hasActiveFilters =
-    searchQuery.trim() !== '' ||
-    selectedCategory !== 'Todos' ||
-    selectedCondition !== 'Todos' ||
-    selectedSort !== 'Relevancia';
+  const activeKeys = activeFilterKeys(filters);
+  const showZoneChip = Boolean(municipalityCode) && locationScope !== DEFAULT_ZONE;
+  const activeFilterCount = activeKeys.length + (showZoneChip ? 1 : 0);
+
+  const chipLabel = (key: ActiveFilterKey): string => {
+    switch (key) {
+      case 'category':
+        return t(`catalog.categories.${filters.category}`, { defaultValue: filters.category ?? '' });
+      case 'condition':
+        return t(`catalog.conditions.${filters.condition}`, { defaultValue: filters.condition ?? '' });
+      case 'price':
+        if (filters.minPrice !== null && filters.maxPrice !== null) {
+          return t('explore.filters.priceRange', {
+            min: formatCop(filters.minPrice),
+            max: formatCop(filters.maxPrice),
+          });
+        }
+        return filters.minPrice !== null
+          ? t('explore.filters.priceFrom', { min: formatCop(filters.minPrice) })
+          : t('explore.filters.priceUpTo', { max: formatCop(filters.maxPrice) });
+      case 'sort':
+        return t(`explore.sortOptions.${filters.sort}`);
+    }
+  };
+
+  const hasActiveFilters = searchQuery.trim() !== '' || activeKeys.length > 0;
 
   const selectedItemOwner = selectedItem ? resolveOwner(selectedItem) : undefined;
   const isSelectedItemMine =
@@ -232,14 +206,14 @@ export const ExploreScreen = () => {
       <div className="px-margin pt-4 space-y-3">
         <ScreenHeader title={t('headers.explore.title')} />
         <LocationPrompt />
-        <LocationScopeSelector />
       </div>
-      {/* Sticky at the top (this tab has no TopBar): only search and categories, on an opaque
-          background so the cards scrolling underneath never show through */}
+      {/* Sticky at the top (this tab has no TopBar): only the search and the Filters button, on
+          an opaque background so the cards scrolling underneath never show through */}
       <div className="sticky top-safe z-30 bg-surface border-b border-surface-container-high px-margin pt-3 pb-3 space-y-3">
         {/* Section 1: Search Bar */}
-        <div className="space-y-1.5">
-          <div className="relative flex items-center w-full">
+        {/* With large system text the button drops under the search instead of squeezing it */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex items-center flex-1 min-w-[11rem]">
             <span className="absolute left-4 text-on-surface-variant pointer-events-none flex items-center">
               <Icon name="search" size="md" />
             </span>
@@ -249,7 +223,7 @@ export const ExploreScreen = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('explore.searchPlaceholder')}
               aria-label={t('explore.searchAria')}
-              className="w-full h-12 pl-11 pr-11 rounded-2xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md border border-surface-container-high/60 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all"
+              className={`w-full h-12 pl-11 ${searchQuery ? 'pr-11' : 'pr-3'} rounded-2xl bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md border border-surface-container-high/60 focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary transition-all`}
             />
             {searchQuery.length > 0 && (
               <button
@@ -262,69 +236,68 @@ export const ExploreScreen = () => {
               </button>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsFiltersOpen(true)}
+            data-testid="explore-filters-button"
+            aria-haspopup="dialog"
+            className={`shrink-0 inline-flex items-center gap-1.5 min-h-12 px-4 rounded-2xl font-label-lg text-label-lg font-bold border transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              activeFilterCount > 0
+                ? 'bg-primary text-on-primary border-primary'
+                : 'bg-surface-container-lowest text-on-surface border-outline/60 hover:bg-surface-container-low'
+            }`}
+          >
+            <Icon name="tune" size="sm" />
+            <span>
+              {activeFilterCount > 0
+                ? t('explore.filters.buttonCount', { count: activeFilterCount })
+                : t('explore.filters.button')}
+            </span>
+          </button>
         </div>
 
-        {/* Section 2: Category Chips (Horizontal scroll, no scrollbar) */}
-        <div
-          role="tablist"
-          aria-label={t('explore.categoriesAria')}
-          className="flex items-center gap-space-xs overflow-x-auto -mx-margin px-margin py-0.5 [scrollbar-width:none] [-ms-overflow-style:none]"
-        >
-          {CATEGORIES.map((category) => {
-            const isActive = selectedCategory === category.id;
-            return (
-              <Chip
-                key={category.id}
-                role="tab"
-                aria-selected={isActive}
-                active={isActive}
-                icon={category.icon}
-                iconFilled={isActive}
-                onClick={() => setSelectedCategory(category.id)}
-                className="shrink-0"
-              >
-                {t(`catalog.categories.${category.id}`, { defaultValue: category.label })}
-              </Chip>
-            );
-          })}
-        </div>
+        {/* Active filters: each chip removes its own filter right away */}
+        {(showZoneChip || activeKeys.length > 0) && (
+          <ul aria-label={t('explore.filters.activeAria')} className="flex flex-wrap gap-2">
+            {showZoneChip && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setLocationScope(DEFAULT_ZONE)}
+                  aria-label={t('explore.filters.remove', { label: t(`location.scope.${locationScope}`) })}
+                  className="inline-flex items-center gap-1 min-h-11 pl-3 pr-2 rounded-full bg-primary/10 text-primary border border-primary/30 font-label-md text-label-md font-bold"
+                >
+                  <span>{t(`location.scope.${locationScope}`)}</span>
+                  <Icon name="close" size="xs" />
+                </button>
+              </li>
+            )}
+            {activeKeys.map((key) => (
+              <li key={key}>
+                <button
+                  type="button"
+                  data-testid={`explore-chip-${key}`}
+                  onClick={() => setFilters((current) => clearFilter(current, key))}
+                  aria-label={t('explore.filters.remove', { label: chipLabel(key) })}
+                  className="inline-flex items-center gap-1 min-h-11 pl-3 pr-2 rounded-full bg-primary/10 text-primary border border-primary/30 font-label-md text-label-md font-bold"
+                >
+                  <span>{chipLabel(key)}</span>
+                  <Icon name="close" size="xs" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Filters and result count (not sticky: they scroll away with the list) */}
       <div className="px-margin pt-3 pb-2 flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCycleCondition}
-            aria-label={t('explore.filterByCondition', { value: conditionLabel })}
-            className={`inline-flex shrink-0 items-center gap-1.5 min-h-11 px-4 rounded-full font-label-md text-label-md transition-all active:scale-95 border ${
-              selectedCondition !== 'Todos'
-                ? 'bg-secondary-fixed text-on-secondary-fixed border-secondary/30 font-bold'
-                : 'bg-surface-container-lowest text-on-surface border-outline/60 hover:bg-surface-container-low font-semibold'
-            }`}
-          >
-            <Icon name="tune" size="sm" />
-            <span>{t('explore.condition', { value: conditionLabel })}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleCycleSort}
-            aria-label={t('explore.sortBy', { value: sortLabel })}
-            className={`inline-flex shrink-0 items-center gap-1.5 min-h-11 px-4 rounded-full font-label-md text-label-md transition-all active:scale-95 border ${
-              selectedSort !== 'Relevancia'
-                ? 'bg-tertiary-fixed text-on-tertiary-fixed border-tertiary/30 font-bold'
-                : 'bg-surface-container-lowest text-on-surface border-outline/60 hover:bg-surface-container-low font-semibold'
-            }`}
-          >
-            <Icon name="swap_vert" size="sm" />
-            <span>{t('explore.sort', { value: sortLabel })}</span>
-          </button>
-        </div>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-2">
           <span className="font-body-sm text-body-sm text-on-surface-variant">
             {showSkeleton ? t('explore.loadingCatalog') : t('explore.itemsFound', { count: filteredItems.length })}
           </span>
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center">
             {hasActiveFilters && (
               <button
                 type="button"
@@ -472,6 +445,20 @@ export const ExploreScreen = () => {
           </div>
         )}
       </div>
+
+      <ExploreFiltersSheet
+        isOpen={isFiltersOpen}
+        onClose={() => {
+          setIsFiltersOpen(false);
+          setZonePreview(null);
+        }}
+        filters={filters}
+        zone={locationScope}
+        showZone={Boolean(municipalityCode)}
+        countFor={countFor}
+        onDraftZoneChange={handleDraftZoneChange}
+        onApply={handleApplyFilters}
+      />
 
       {/* Section 5: Item Detail Bottom Sheet */}
       <BottomSheet

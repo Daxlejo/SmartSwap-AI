@@ -4,6 +4,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { SplashScreen } from '@/screens/SplashScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
 import { RegisterScreen } from '@/screens/RegisterScreen';
+import { OnboardingScreen } from '@/screens/OnboardingScreen';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { ConfigureSwapScreen } from '@/screens/ConfigureSwapScreen';
 import { SearchingScreen } from '@/screens/SearchingScreen';
@@ -41,6 +42,10 @@ export const router = createBrowserRouter(
         {
           path: '/register',
           element: <RegisterScreen />,
+        },
+        {
+          path: '/welcome',
+          element: <OnboardingScreen />,
         },
       ],
     },

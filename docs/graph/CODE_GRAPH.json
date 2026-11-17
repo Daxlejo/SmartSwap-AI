@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-15T18:28:11.042Z",
+  "generatedAt": "2026-11-16T17:35:02.605Z",
   "stats": {
-    "totalFiles": 150,
-    "apiFiles": 66,
-    "mobileFiles": 84,
+    "totalFiles": 163,
+    "apiFiles": 68,
+    "mobileFiles": 95,
     "endpointsCount": 45
   },
   "endpoints": [
@@ -20,7 +20,7 @@
       "path": "/ai/estimate-value",
       "controller": "AiController",
       "handler": "estimateValue",
-      "summary": "Estimate fair circular swap value (COP) for an item",
+      "summary": "Estimate the Colombian market price (COP) of an item",
       "file": "api/src/modules/ai/ai.controller.ts"
     },
     {
@@ -394,8 +394,10 @@
       "api/src/modules/ai/dto/explain-route.dto.ts",
       "api/src/modules/ai/services/ai-embedding.service.ts",
       "api/src/modules/ai/services/ai-explainer.service.ts",
+      "api/src/modules/ai/services/ai-price.service.ts",
       "api/src/modules/ai/services/ai-vision.service.ts",
-      "api/src/modules/ai/services/openai-client.service.ts"
+      "api/src/modules/ai/services/openai-client.service.ts",
+      "api/src/modules/ai/services/price-bounds.ts"
     ],
     "api/auth": [
       "api/src/modules/auth/auth.controller.ts",
@@ -471,12 +473,15 @@
     "mobile/components": [
       "mobile/src/components/BottomNav.tsx",
       "mobile/src/components/DemoAccountSwitcher.tsx",
+      "mobile/src/components/ExploreFiltersSheet.tsx",
+      "mobile/src/components/LanguageSelector.tsx",
       "mobile/src/components/LocationPicker.tsx",
       "mobile/src/components/LocationPrompt.tsx",
       "mobile/src/components/LocationScopeSelector.tsx",
       "mobile/src/components/NotificationBell.tsx",
       "mobile/src/components/ObjectCard.tsx",
       "mobile/src/components/PhotoSourceSheet.tsx",
+      "mobile/src/components/ProfilePhotoPicker.tsx",
       "mobile/src/components/ProposalCard.tsx",
       "mobile/src/components/RouteCard.tsx",
       "mobile/src/components/RouteStep.tsx",
@@ -492,6 +497,7 @@
       "mobile/src/components/ui/EmptyIllustration.tsx",
       "mobile/src/components/ui/EmptyState.tsx",
       "mobile/src/components/ui/ErrorState.tsx",
+      "mobile/src/components/ui/FormErrorAlert.tsx",
       "mobile/src/components/ui/Icon.tsx",
       "mobile/src/components/ui/Input.tsx",
       "mobile/src/components/ui/ItemImage.tsx",
@@ -507,6 +513,8 @@
       "mobile/src/context/ThemeContext.tsx"
     ],
     "mobile/hooks": [
+      "mobile/src/hooks/useAppResume.ts",
+      "mobile/src/hooks/useRevealOnError.ts",
       "mobile/src/hooks/useServerStatus.ts",
       "mobile/src/hooks/useTheme.ts",
       "mobile/src/hooks/useTranslation.ts"
@@ -534,6 +542,7 @@
       "mobile/src/screens/HomeScreen.tsx",
       "mobile/src/screens/LoginScreen.tsx",
       "mobile/src/screens/NotificationsScreen.tsx",
+      "mobile/src/screens/OnboardingScreen.tsx",
       "mobile/src/screens/ProfileScreen.tsx",
       "mobile/src/screens/ProposalConfirmScreen.tsx",
       "mobile/src/screens/ProposalSentScreen.tsx",
@@ -561,16 +570,20 @@
       "mobile/src/services/storage/tokenStorage.ts"
     ],
     "mobile/test": [
+      "mobile/src/test/avatarIdentity.test.tsx",
       "mobile/src/test/configureSwap.test.tsx",
+      "mobile/src/test/formErrors.test.tsx",
+      "mobile/src/test/languageSelector.test.tsx",
       "mobile/src/test/swapRing.test.tsx"
     ],
     "mobile/types": [
       "mobile/src/types/index.ts"
     ],
     "mobile/utils": [
-      "mobile/src/utils/avatarArt.ts",
+      "mobile/src/utils/avatarIdentity.ts",
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
+      "mobile/src/utils/exploreFilters.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
@@ -694,6 +707,7 @@
         "./dto/estimate-value.dto",
         "./dto/explain-route.dto",
         "./services/ai-explainer.service",
+        "./services/ai-price.service",
         "./services/ai-vision.service",
         "@nestjs/common",
         "@nestjs/swagger"
@@ -712,7 +726,7 @@
           "path": "/ai/estimate-value",
           "controller": "AiController",
           "handler": "estimateValue",
-          "summary": "Estimate fair circular swap value (COP) for an item",
+          "summary": "Estimate the Colombian market price (COP) of an item",
           "file": "api/src/modules/ai/ai.controller.ts"
         },
         {
@@ -734,6 +748,7 @@
         "./ai.controller",
         "./services/ai-embedding.service",
         "./services/ai-explainer.service",
+        "./services/ai-price.service",
         "./services/ai-vision.service",
         "./services/openai-client.service",
         "@nestjs/common"
@@ -812,12 +827,26 @@
         "@nestjs/common"
       ]
     },
+    "api/src/modules/ai/services/ai-price.service.ts": {
+      "module": "api/ai",
+      "exports": [
+        "AiPriceService",
+        "PriceEstimate",
+        "PriceUnavailableReason"
+      ],
+      "imports": [
+        "../dto/estimate-value.dto",
+        "./openai-client.service",
+        "./price-bounds",
+        "@nestjs/common",
+        "zod"
+      ]
+    },
     "api/src/modules/ai/services/ai-vision.service.ts": {
       "module": "api/ai",
       "exports": [
         "AiVisionService",
         "ConditionLabelEs",
-        "ValueEstimationResult",
         "VisionAnalysisResult"
       ],
       "imports": [
@@ -840,6 +869,21 @@
         "@nestjs/common",
         "@nestjs/config"
       ]
+    },
+    "api/src/modules/ai/services/price-bounds.ts": {
+      "module": "api/ai",
+      "exports": [
+        "CATEGORY_PRICE_BOUNDS",
+        "CategoryPriceBounds",
+        "MAX_RANGE_RATIO",
+        "PriceCategoryKey",
+        "PriceRange",
+        "PriceRangeRejection",
+        "checkPriceRange",
+        "resolvePriceCategory",
+        "roundCop"
+      ],
+      "imports": []
     },
     "api/src/modules/auth/auth.controller.ts": {
       "module": "api/auth",
@@ -1077,6 +1121,8 @@
       "exports": [
         "CreateItemDto",
         "ITEM_CONDITIONS",
+        "ITEM_DESCRIPTION_MAX_LENGTH",
+        "ITEM_NAME_MAX_LENGTH",
         "NormalizedItemCondition",
         "createItemSchema",
         "itemConditionSchema",
@@ -1921,6 +1967,35 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/components/ExploreFiltersSheet.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "DEFAULT_ZONE",
+        "ExploreFiltersSheet",
+        "ExploreFiltersSheetProps"
+      ],
+      "imports": [
+        "./ui/BottomSheet",
+        "./ui/Button",
+        "./ui/Chip",
+        "@/hooks/useTranslation",
+        "@/services/storage/preferencesStorage",
+        "@/utils/currency",
+        "@/utils/exploreFilters",
+        "react"
+      ]
+    },
+    "mobile/src/components/LanguageSelector.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "LanguageSelector",
+        "LanguageSelectorProps"
+      ],
+      "imports": [
+        "@/hooks/useTranslation",
+        "clsx"
+      ]
+    },
     "mobile/src/components/LocationPicker.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -1931,6 +2006,7 @@
         "./ui/Button",
         "./ui/Icon",
         "./ui/Select",
+        "@/hooks/useAppResume",
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
         "@/services/geo/geo.service",
@@ -2002,9 +2078,25 @@
         "./ui/BottomSheet",
         "./ui/Button",
         "./ui/Icon",
+        "@/hooks/useAppResume",
         "@/hooks/useTranslation",
         "@/services/device/appSettings",
         "@/services/media/photoPicker",
+        "react"
+      ]
+    },
+    "mobile/src/components/ProfilePhotoPicker.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "ProfilePhotoPicker",
+        "ProfilePhotoPickerProps"
+      ],
+      "imports": [
+        "./PhotoSourceSheet",
+        "./ui/Avatar",
+        "./ui/Button",
+        "@/hooks/useTranslation",
+        "@/utils/imageCompressor",
         "react"
       ]
     },
@@ -2115,7 +2207,7 @@
       "imports": [
         "./Icon",
         "@/hooks/useTranslation",
-        "@/utils/avatarArt",
+        "@/utils/avatarIdentity",
         "clsx",
         "react"
       ]
@@ -2200,6 +2292,17 @@
         "./Button",
         "./Icon",
         "@/hooks/useTranslation",
+        "react"
+      ]
+    },
+    "mobile/src/components/ui/FormErrorAlert.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "FormErrorAlert",
+        "FormErrorAlertProps"
+      ],
+      "imports": [
+        "./Icon",
         "react"
       ]
     },
@@ -2313,6 +2416,26 @@
       ],
       "imports": [
         "@/services/storage/preferencesStorage",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useAppResume.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useAppResume"
+      ],
+      "imports": [
+        "@capacitor/app",
+        "@capacitor/core",
+        "react"
+      ]
+    },
+    "mobile/src/hooks/useRevealOnError.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useRevealOnError"
+      ],
+      "imports": [
         "react"
       ]
     },
@@ -2442,6 +2565,7 @@
         "@/screens/HomeScreen",
         "@/screens/LoginScreen",
         "@/screens/NotificationsScreen",
+        "@/screens/OnboardingScreen",
         "@/screens/ProfileScreen",
         "@/screens/ProposalConfirmScreen",
         "@/screens/ProposalSentScreen",
@@ -2494,15 +2618,14 @@
         "ExploreScreen"
       ],
       "imports": [
+        "@/components/ExploreFiltersSheet",
         "@/components/LocationPrompt",
-        "@/components/LocationScopeSelector",
         "@/components/ObjectCard",
         "@/components/ScreenHeader",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
-        "@/components/ui/Chip",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
@@ -2510,8 +2633,11 @@
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/services/items/items.service",
+        "@/services/storage/preferencesStorage",
         "@/types",
         "@/utils/currency",
+        "@/utils/exploreFilters",
         "react",
         "react-router-dom"
       ]
@@ -2537,6 +2663,7 @@
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/utils/swapRing",
+        "@/utils/swapSearch",
         "react",
         "react-router-dom"
       ]
@@ -2552,11 +2679,14 @@
         "@/components/DemoAccountSwitcher",
         "@/components/LocationPicker",
         "@/components/ui/Button",
+        "@/components/ui/FormErrorAlert",
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/context/AppContext",
+        "@/hooks/useRevealOnError",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
         "react",
         "react-router-dom"
       ]
@@ -2581,6 +2711,26 @@
         "react-router-dom"
       ]
     },
+    "mobile/src/screens/OnboardingScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "OnboardingScreen"
+      ],
+      "imports": [
+        "@/components/ProfilePhotoPicker",
+        "@/components/SwapRing",
+        "@/components/ui/Button",
+        "@/components/ui/Icon",
+        "@/context/AppContext",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/services/storage/preferencesStorage",
+        "@/utils/swapRing",
+        "clsx",
+        "react",
+        "react-router-dom"
+      ]
+    },
     "mobile/src/screens/ProfileScreen.tsx": {
       "module": "mobile/screens",
       "exports": [
@@ -2588,7 +2738,9 @@
       ],
       "imports": [
         "@/components/DemoAccountSwitcher",
+        "@/components/LanguageSelector",
         "@/components/LocationPicker",
+        "@/components/ProfilePhotoPicker",
         "@/components/ScreenHeader",
         "@/components/ui/Avatar",
         "@/components/ui/BottomSheet",
@@ -2602,11 +2754,8 @@
         "@/context/AppContext",
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
-        "@/services/device/appSettings",
         "@/services/http/apiClient",
-        "@/services/media/photoPicker",
         "@/utils/currency",
-        "@/utils/imageCompressor",
         "react",
         "react-router-dom"
       ]
@@ -2663,10 +2812,12 @@
         "@/components/ui/Badge",
         "@/components/ui/Button",
         "@/components/ui/Chip",
+        "@/components/ui/FormErrorAlert",
         "@/components/ui/Icon",
         "@/components/ui/Input",
         "@/components/ui/ItemImage",
         "@/context/AppContext",
+        "@/hooks/useRevealOnError",
         "@/hooks/useTranslation",
         "@/services/ai/ai.service",
         "@/services/http/apiClient",
@@ -2788,11 +2939,14 @@
     "mobile/src/services/ai/ai.service.ts": {
       "module": "mobile/services",
       "exports": [
+        "AiItemCondition",
         "AiPhotoAnalysisResponse",
         "AiValueEstimateResponse",
         "AnalyzeItemPhotoPayload",
         "EstimateItemValuePayload",
-        "aiService"
+        "ItemConditionLabel",
+        "aiService",
+        "toAiCondition"
       ],
       "imports": [
         "@/services/http/apiClient"
@@ -2909,6 +3063,7 @@
         "PhotoPickFailure",
         "PhotoSource",
         "classifyPhotoFailure",
+        "isPermissionFailure",
         "pickPhotos",
         "usesNativePicker"
       ],
@@ -2970,8 +3125,10 @@
         "LOCATION_SCOPE_STORAGE_KEY",
         "LocalePreference",
         "LocationScopePreference",
+        "ONBOARDING_STORAGE_PREFIX",
         "THEME_STORAGE_KEY",
         "ThemePreference",
+        "postRegisterRoute",
         "preferencesStorage"
       ],
       "imports": []
@@ -2987,6 +3144,19 @@
       ],
       "imports": []
     },
+    "mobile/src/test/avatarIdentity.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/ItemImage",
+        "@/i18n",
+        "@/utils/avatarIdentity",
+        "@/utils/categoryIcon",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
     "mobile/src/test/configureSwap.test.tsx": {
       "module": "mobile/test",
       "exports": [],
@@ -2996,6 +3166,27 @@
         "@/utils/swapSearch",
         "react-dom/server",
         "react-router-dom",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/formErrors.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/ui/FormErrorAlert",
+        "@/components/ui/Input",
+        "@/i18n",
+        "react-dom/server",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/languageSelector.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "@/components/LanguageSelector",
+        "@/i18n",
+        "react-dom/server",
         "vitest"
       ]
     },
@@ -3025,21 +3216,20 @@
       ],
       "imports": []
     },
-    "mobile/src/utils/avatarArt.ts": {
+    "mobile/src/utils/avatarIdentity.ts": {
       "module": "mobile/utils",
       "exports": [
-        "AvatarTraits",
-        "avatarDataUri",
-        "avatarTraitsFor",
-        "buildAvatarSvg",
-        "hashName"
+        "avatarColorFor",
+        "hashSeed",
+        "initialsFor"
       ],
       "imports": []
     },
     "mobile/src/utils/categoryIcon.ts": {
       "module": "mobile/utils",
       "exports": [
-        "categoryIcon"
+        "categoryIcon",
+        "itemIcon"
       ],
       "imports": []
     },
@@ -3051,6 +3241,27 @@
         "sanitizeCopDigits"
       ],
       "imports": []
+    },
+    "mobile/src/utils/exploreFilters.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "ActiveFilterKey",
+        "DEFAULT_EXPLORE_FILTERS",
+        "EXPLORE_CATEGORIES",
+        "EXPLORE_CONDITIONS",
+        "EXPLORE_SORTS",
+        "ExploreCategory",
+        "ExploreCondition",
+        "ExploreFilters",
+        "ExploreSort",
+        "activeFilterKeys",
+        "applyExploreFilters",
+        "clearFilter",
+        "isPriceRangeValid"
+      ],
+      "imports": [
+        "@/types"
+      ]
     },
     "mobile/src/utils/imageCompressor.ts": {
       "module": "mobile/utils",

@@ -214,7 +214,16 @@ export const respond = (method, path, scenario = 'default') => {
       aiTags: ['lámpara', 'escritorio'],
     }];
   }
-  if (p === '/ai/estimate-value') return [200, { estimatedValue: 90000, suggestedValueRange: { min: 70000, max: 110000 } }];
+  if (p === '/ai/estimate-value') {
+    return [200, {
+      available: true,
+      estimatedValue: 280000,
+      minValue: 240000,
+      maxValue: 350000,
+      reasoning: 'Un control DualSense nuevo se consigue en Colombia entre 240.000 y 350.000 pesos.',
+      source: 'openai',
+    }];
+  }
   if (p === '/ai/explain-route') return [200, { explanation: activeRoute.aiExplanation, fairnessScore: 90 }];
   return null;
 };

@@ -32,6 +32,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const { t } = useTranslation();
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const messageId = inputId ? `${inputId}-message` : undefined;
 
     return (
       <div className="flex flex-col gap-1.5 w-full">
@@ -55,6 +56,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || helperText ? messageId : undefined}
             className={clsx(
               'w-full h-[52px] bg-surface-container-lowest text-on-surface rounded-2xl border border-outline/60 font-body-md text-body-md',
               'placeholder:text-on-surface-variant transition-all duration-150',
@@ -87,9 +90,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error ? (
-          <span className="font-body-sm text-body-sm text-error">{error}</span>
+          <span id={messageId} className="font-body-sm text-body-sm text-error">
+            {error}
+          </span>
         ) : helperText ? (
-          <span className="font-body-sm text-body-sm text-on-surface-variant">{helperText}</span>
+          <span id={messageId} className="font-body-sm text-body-sm text-on-surface-variant">
+            {helperText}
+          </span>
         ) : null}
       </div>
     );

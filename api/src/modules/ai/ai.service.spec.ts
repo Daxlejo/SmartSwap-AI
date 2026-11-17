@@ -140,45 +140,6 @@ describe('AI Module Services (Vision, Embeddings, Route Explainer)', () => {
       expect(result.description).toContain('Musical instrument');
       expect(result.suggestedWants).toContain('USB audio interface');
     });
-
-    it('prices items in whole Colombian pesos rounded to the nearest 10,000', async () => {
-      const estimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'LIKE_NEW',
-        description: 'Portátil de 13 pulgadas',
-      });
-
-      expect(estimate.estimatedValue).toBeGreaterThanOrEqual(1_000_000);
-      expect(estimate.estimatedValue % 10_000).toBe(0);
-      expect(estimate.minValue % 10_000).toBe(0);
-      expect(estimate.maxValue % 10_000).toBe(0);
-      expect(estimate.minValue).toBeLessThan(estimate.estimatedValue);
-      expect(estimate.maxValue).toBeGreaterThan(estimate.estimatedValue);
-    });
-
-    it('estimates item value based on condition multiplier', async () => {
-      const likeNewEstimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'LIKE_NEW',
-        description: 'Portátil de 13 pulgadas con 8GB RAM y 256GB SSD',
-      });
-
-      const forPartsEstimate = await visionService.estimateValue({
-        name: 'MacBook Air M1',
-        category: 'Tecnología',
-        condition: 'FOR_PARTS',
-        description: 'Portátil para repuestos',
-      });
-
-      expect(likeNewEstimate.source).toBe('fallback');
-      expect(likeNewEstimate.conditionLabel).toBe('Como nuevo');
-      expect(forPartsEstimate.conditionLabel).toBe('Para piezas');
-      expect(likeNewEstimate.estimatedValue).toBeGreaterThan(
-        forPartsEstimate.estimatedValue,
-      );
-    });
   });
 
   describe('AiExplainerService', () => {

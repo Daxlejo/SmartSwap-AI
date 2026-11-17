@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   LOCALE_STORAGE_KEY,
   THEME_STORAGE_KEY,
+  postRegisterRoute,
   preferencesStorage,
 } from '@/services/storage/preferencesStorage';
 
@@ -80,5 +81,28 @@ describe('preferencesStorage', () => {
     vi.stubGlobal('window', undefined);
     expect(preferencesStorage.getTheme()).toBe('light');
     expect(preferencesStorage.getLocale()).toBe('es');
+  });
+
+  describe('first-run introduction', () => {
+    it('is pending until marked, and only for the user who saw it', () => {
+      expect(preferencesStorage.isOnboardingDone('user-1')).toBe(false);
+      preferencesStorage.markOnboardingDone('user-1');
+      expect(preferencesStorage.isOnboardingDone('user-1')).toBe(true);
+      expect(preferencesStorage.isOnboardingDone('user-2')).toBe(false);
+      expect(storage.getItem('smartswap_onboarding_done_user-1')).toBe('1');
+    });
+
+    it('sends a new user to the introduction once, then to Home', () => {
+      expect(postRegisterRoute('user-1')).toBe('/welcome');
+      preferencesStorage.markOnboardingDone('user-1');
+      expect(postRegisterRoute('user-1')).toBe('/home');
+      expect(postRegisterRoute('user-2')).toBe('/welcome');
+    });
+
+    it('counts as pending when storage is unavailable', () => {
+      vi.stubGlobal('window', undefined);
+      expect(preferencesStorage.isOnboardingDone('user-1')).toBe(false);
+      expect(() => preferencesStorage.markOnboardingDone('user-1')).not.toThrow();
+    });
   });
 });

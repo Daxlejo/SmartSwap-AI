@@ -30,9 +30,9 @@ import {
   AiExplainerService,
   RouteExplanationResult,
 } from './services/ai-explainer.service';
+import { AiPriceService, PriceEstimate } from './services/ai-price.service';
 import {
   AiVisionService,
-  ValueEstimationResult,
   VisionAnalysisResult,
 } from './services/ai-vision.service';
 
@@ -44,6 +44,7 @@ export class AiController {
   constructor(
     private readonly aiVisionService: AiVisionService,
     private readonly aiExplainerService: AiExplainerService,
+    private readonly aiPriceService: AiPriceService,
   ) {}
 
   @Post('analyze-photo')
@@ -67,18 +68,19 @@ export class AiController {
   @Post('estimate-value')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Estimate fair circular swap value (COP) for an item',
+    summary: 'Estimate the Colombian market price (COP) of an item',
   })
   @ApiResponse({
     status: 200,
-    description: 'Estimated swap value range, tags, and reasoning',
+    description:
+      'Price range with reasoning (available: true), or available: false with the reason when the AI is offline or its answer fails validation',
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async estimateValue(
     @Body(new ZodValidationPipe(estimateValueSchema)) dto: EstimateValueDto,
-  ): Promise<ValueEstimationResult> {
-    return this.aiVisionService.estimateValue(dto);
+  ): Promise<PriceEstimate> {
+    return this.aiPriceService.estimate(dto);
   }
 
   @Post('explain-route')

@@ -15,6 +15,7 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { NotificationBell } from '@/components/NotificationBell';
 import { SwapRing } from '@/components/SwapRing';
 import { toRingParticipants } from '@/utils/swapRing';
+import { isOfferableItem } from '@/utils/swapSearch';
 
 const INACTIVE_ROUTE_STATUSES = new Set(['CANCELLED', 'EXPIRED', 'COMPLETED']);
 
@@ -41,6 +42,9 @@ export const HomeScreen = () => {
   const activeRoute = activeRoutes[0];
   const activeRouteTarget = activeRoute?.chainItems[activeRoute.chainItems.length - 1];
   const activeUserItemsCount = myItems.length;
+  // Until the user has one active item there is nothing to offer, so publishing comes first.
+  // Only decided once the items loaded: while loading or after an error the usual layout stays.
+  const hasActiveItem = loadStates.items !== 'ready' || myItems.some(isOfferableItem);
   const activeRing = useMemo(() => toRingParticipants(activeRoute?.steps ?? []), [activeRoute]);
 
   const isLoading = isItemsLoading || loadStates.items === 'loading';
@@ -80,75 +84,125 @@ export const HomeScreen = () => {
         trailing={<NotificationBell />}
       />
 
-      <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
-        {/* Main action: one title, one line, one button */}
-        <div className="col-span-2 rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-headline-md text-headline-md text-on-hero font-bold">
-              {t('home.engine.title')}
-            </h2>
-            <p className="font-body-md text-body-md text-on-hero-variant">
-              {t('home.engine.description')}
-            </p>
+      {hasActiveItem ? (
+        <section aria-label={t('home.quickActions')} className="grid grid-cols-2 gap-space-sm">
+          {/* Main action: one title, one line, one button */}
+          <div className="col-span-2 rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-headline-md text-headline-md text-on-hero font-bold">
+                {t('home.engine.title')}
+              </h2>
+              <p className="font-body-md text-body-md text-on-hero-variant">
+                {t('home.engine.description')}
+              </p>
+            </div>
+            <Button
+              variant="tonal"
+              size="lg"
+              fullWidth
+              rightIcon="arrow_forward"
+              onClick={() => navigate('/swap/configure')}
+              className="bg-surface text-primary hover:bg-surface-container-low"
+            >
+              {t('home.engine.cta')}
+            </Button>
           </div>
-          <Button
-            variant="tonal"
-            size="lg"
-            fullWidth
-            rightIcon="arrow_forward"
-            onClick={() => navigate('/swap/configure')}
-            className="bg-surface text-primary hover:bg-surface-container-low"
+
+          <button
+            type="button"
+            onClick={() => navigate('/publish')}
+            className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
           >
-            {t('home.engine.cta')}
-          </Button>
-        </div>
+            <Icon name="add_a_photo" size="lg" className="text-primary" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-headline-sm text-headline-sm text-on-surface">
+                {t('home.publish.title')}
+              </span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                {t('home.publish.itemsPublished', { count: activeUserItemsCount })}
+              </span>
+            </span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => navigate('/publish')}
-          className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
-        >
-          <Icon name="add_a_photo" size="lg" className="text-primary" />
-          <span className="flex flex-col gap-0.5">
-            <span className="font-headline-sm text-headline-sm text-on-surface">
-              {t('home.publish.title')}
+          <button
+            type="button"
+            onClick={() => navigate('/swaps')}
+            className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
+          >
+            <Icon name="sync_alt" size="lg" className="text-secondary" />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-headline-sm text-headline-sm text-on-surface">
+                {t('home.activeRoutes.title')}
+              </span>
+              <span className="font-body-sm text-body-sm text-on-surface-variant">
+                {t('home.activeRoutes.circuits', { count: activeRoutes.length })}
+              </span>
             </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {activeUserItemsCount > 0
-                ? t('home.publish.itemsPublished', { count: activeUserItemsCount })
-                : t('home.publish.empty')}
-            </span>
-          </span>
-        </button>
+          </button>
+        </section>
+      ) : (
+        <section aria-label={t('home.quickActions')} className="flex flex-col gap-space-sm">
+          {/* First item: publishing is the main action, with the reason in one line */}
+          <div
+            data-testid="home-first-item"
+            className="rounded-2xl bg-hero p-space-md text-on-hero shadow-md flex flex-col gap-3"
+          >
+            <div className="flex flex-col gap-1">
+              <h2 className="font-headline-md text-headline-md text-on-hero font-bold">
+                {t('home.firstItem.title')}
+              </h2>
+              <p className="font-body-md text-body-md text-on-hero-variant">
+                {t('home.firstItem.reason')}
+              </p>
+            </div>
+            <Button
+              variant="tonal"
+              size="lg"
+              fullWidth
+              leftIcon="add_a_photo"
+              onClick={() => navigate('/publish')}
+              className="bg-surface text-primary hover:bg-surface-container-low"
+            >
+              {t('home.firstItem.cta')}
+            </Button>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/swaps')}
-          className="min-h-[7.5rem] flex flex-col justify-start gap-3 p-4 rounded-2xl bg-surface-container-lowest border border-surface-container-high shadow-xs hover:bg-surface-container-low transition-colors text-left active:scale-[0.98]"
-        >
-          <Icon name="sync_alt" size="lg" className="text-secondary" />
-          <span className="flex flex-col gap-0.5">
-            <span className="font-headline-sm text-headline-sm text-on-surface">
-              {t('home.activeRoutes.title')}
-            </span>
-            <span className="font-body-sm text-body-sm text-on-surface-variant">
-              {t('home.activeRoutes.circuits', { count: activeRoutes.length })}
-            </span>
-          </span>
-        </button>
-      </section>
+          {/* Searching stays available but secondary, saying why it waits */}
+          <div
+            data-testid="home-search-secondary"
+            className="rounded-2xl bg-surface-container-lowest border border-surface-container-high p-space-md flex flex-col gap-3"
+          >
+            <div className="flex items-start gap-3">
+              <Icon name="sync_alt" size="lg" className="text-secondary shrink-0" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <h2 className="font-headline-sm text-headline-sm text-on-surface">
+                  {t('home.engine.title')}
+                </h2>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  {t('home.firstItem.searchReason')}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="md"
+              fullWidth
+              rightIcon="arrow_forward"
+              onClick={() => navigate('/swap/configure')}
+            >
+              {t('home.engine.cta')}
+            </Button>
+          </div>
+        </section>
+      )}
 
-      {!activeRoute && loadStates.routes === 'ready' && (
+      {hasActiveItem && !activeRoute && loadStates.routes === 'ready' && (
         <EmptyState
           illustration="routes"
-          title={activeUserItemsCount > 0 ? t('states.homeRoutes') : t('states.homeNoItems')}
+          title={t('states.homeRoutes')}
           action={
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => navigate(activeUserItemsCount > 0 ? '/swap/configure' : '/publish')}
-            >
-              {activeUserItemsCount > 0 ? t('states.homeRoutesCta') : t('states.homeNoItemsCta')}
+            <Button variant="primary" size="md" onClick={() => navigate('/swap/configure')}>
+              {t('states.homeRoutesCta')}
             </Button>
           }
         />
