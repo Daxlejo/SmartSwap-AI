@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { SwapRoute } from '@/types';
 import { useApp } from '@/context/AppContext';
 import { useItem } from '@/hooks/useItem';
@@ -18,6 +18,28 @@ const MESSAGE_INTERVAL_MS = 900;
 
 // Anonymous pulses travelling the orbit while the engine searches.
 const ORBIT_DOTS = 4;
+
+/**
+ * One engine call per visit (history entry) and attempt: a remount of the same
+ * screen (React's StrictMode does one in development) reuses the call in flight
+ * instead of asking the engine, and the AI behind it, a second time.
+ */
+const searchesInFlight = new Map<string, Promise<SwapRoute[]>>();
+const MAX_REMEMBERED_SEARCHES = 10;
+
+const searchOnce = (key: string, run: () => Promise<SwapRoute[]>): Promise<SwapRoute[]> => {
+  const known = searchesInFlight.get(key);
+  if (known) return known;
+  const promise = run();
+  searchesInFlight.set(key, promise);
+  // A failed search may be retried with the same key; keep only a few recent ones
+  promise.catch(() => searchesInFlight.delete(key));
+  if (searchesInFlight.size > MAX_REMEMBERED_SEARCHES) {
+    const oldest = searchesInFlight.keys().next().value;
+    if (oldest !== undefined) searchesInFlight.delete(oldest);
+  }
+  return promise;
+};
 
 type SearchOutcome =
   | { status: 'pending' }
@@ -46,6 +68,7 @@ export const SearchingScreen: React.FC = () => {
   const { t } = useTranslation();
   const { searchRoutesReal } = useApp();
   const [searchParams] = useSearchParams();
+  const { key: visitKey } = useLocation();
 
   const haveId = searchParams.get('have') ?? '';
   const wantId = searchParams.get('want') ?? '';
@@ -67,14 +90,16 @@ export const SearchingScreen: React.FC = () => {
     if (!hasSearchParams) return;
     let active = true;
     setOutcome({ status: 'pending' });
-    searchRoutesReal({
-      offeredItemId: haveId,
-      wantedItemId: wantId,
-      objectiveText,
-      minSteps,
-      maxSteps,
-      valueTolerancePct,
-    })
+    searchOnce(`${visitKey}:${attempt}`, () =>
+      searchRoutesReal({
+        offeredItemId: haveId,
+        wantedItemId: wantId,
+        objectiveText,
+        minSteps,
+        maxSteps,
+        valueTolerancePct,
+      }),
+    )
       .then((routes) => {
         if (active) setOutcome({ status: 'done', routes });
       })
@@ -85,7 +110,18 @@ export const SearchingScreen: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [hasSearchParams, haveId, wantId, objectiveText, minSteps, maxSteps, valueTolerancePct, searchRoutesReal, attempt]);
+  }, [
+    hasSearchParams,
+    visitKey,
+    haveId,
+    wantId,
+    objectiveText,
+    minSteps,
+    maxSteps,
+    valueTolerancePct,
+    searchRoutesReal,
+    attempt,
+  ]);
 
   // Rotating hint while the engine works
   useEffect(() => {
