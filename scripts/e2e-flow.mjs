@@ -249,7 +249,7 @@ const main = async () => {
       await page.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
       await page.click('[data-testid=profile-item-i-me-1]');
       await waitPath(page, /^\/item\/i-me-1$/);
-      assert(await page.getByRole('button', { name: /eliminar mi publicación/i }).isVisible(), 'no delete button on the own item');
+      assert(await page.getByRole('button', { name: /eliminar mi artículo/i }).isVisible(), 'no delete button on the own item');
       assert((await page.locator('[data-testid=item-propose-button]').count()) === 0, 'own item offers a proposal');
     });
 
