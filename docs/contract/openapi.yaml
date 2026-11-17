@@ -837,9 +837,13 @@ paths:
         '200':
           description: Ranked circular swap routes enriched with AI explanations
         '400':
-          description: Validation error
+          description: Validation error, or wantedItemId is your own item
         '401':
           description: Unauthorized
+        '404':
+          description: wantedItemId is no longer published
+        '409':
+          description: wantedItemId is already reserved in another swap
       tags:
         - Routes
       security:

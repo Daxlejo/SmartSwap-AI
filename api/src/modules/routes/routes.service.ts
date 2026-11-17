@@ -143,12 +143,18 @@ export class RoutesService {
     userId: string,
     dto: SearchRoutesDto,
   ): Promise<SwapRouteDto[]> {
+    if (dto.wantedItemId) {
+      await this.assertWantedItemAvailable(userId, dto.wantedItemId);
+    }
     const locationFilter = await this.buildLocationFilter(userId, dto);
 
     const activeItems = (await this.prisma.item.findMany({
       where: {
         status: ItemStatus.AVAILABLE,
-        ...locationFilter,
+        // The chosen item takes part even when it lies outside the search area
+        ...(dto.wantedItemId
+          ? { OR: [locationFilter, { id: dto.wantedItemId }] }
+          : locationFilter),
       },
       include: CATALOG_ITEM_INCLUDE,
     })) as CatalogItemRow[];
@@ -187,6 +193,27 @@ export class RoutesService {
       const explanation = idx < explanations.length ? explanations[idx] : null;
       return this.routeMapper.fromDiscoveredCycle(cycle, userId, explanation);
     });
+  }
+
+  /**
+   * A ring toward an exact item only makes sense while that item can still be swapped:
+   * say why not (deleted, the searcher's own, already reserved) instead of answering
+   * "no rings", which would invite a direct proposal that cannot work either.
+   */
+  private async assertWantedItemAvailable(userId: string, wantedItemId: string): Promise<void> {
+    const wanted = await this.prisma.item.findUnique({
+      where: { id: wantedItemId },
+      select: { ownerId: true, status: true },
+    });
+    if (!wanted) {
+      throw new NotFoundException('The item you want is no longer published');
+    }
+    if (wanted.ownerId === userId) {
+      throw new BadRequestException('The item you want is already yours');
+    }
+    if (!this.isItemAvailableForProposal(wanted.status)) {
+      throw new ConflictException('The item you want is already reserved in another swap');
+    }
   }
 
   /**

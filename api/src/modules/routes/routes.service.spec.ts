@@ -335,6 +335,7 @@ describe('RoutesService', () => {
   const mockPrismaService = {
     item: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     swapRoute: {
       findMany: jest.fn().mockResolvedValue([]),
@@ -503,6 +504,42 @@ describe('RoutesService', () => {
       expect(aiExplainerService.explainSwapRoute).toHaveBeenCalledWith(
         expect.objectContaining({ locale: 'en' }),
       );
+    });
+  });
+
+  describe('1b. searchRoutes toward an exact item', () => {
+    const search = (wantedItemId: string) =>
+      routesService.searchRoutes(userAId, {
+        objectiveText: 'Cámara',
+        wantedItemId,
+        minSteps: 3,
+        maxSteps: 4,
+        valueTolerancePct: 25,
+        locale: 'es',
+        scope: 'country',
+      });
+
+    it('says the chosen item is gone instead of answering "no rings"', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue(null);
+      await expect(search(itemBId)).rejects.toThrow(NotFoundException);
+      expect(mockPrismaService.item.findMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses the searcher own item and an item already reserved', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValueOnce({ ownerId: userAId, status: ItemStatus.AVAILABLE });
+      await expect(search(itemAId)).rejects.toThrow(BadRequestException);
+      mockPrismaService.item.findUnique.mockResolvedValueOnce({ ownerId: userBId, status: ItemStatus.PENDING_SWAP });
+      await expect(search(itemBId)).rejects.toThrow(ConflictException);
+    });
+
+    it('keeps the chosen item in the catalog even outside the search area', async () => {
+      mockPrismaService.item.findUnique.mockResolvedValue({ ownerId: userBId, status: ItemStatus.AVAILABLE });
+      mockPrismaService.item.findMany.mockResolvedValue([]);
+      await search(itemBId);
+      expect(mockPrismaService.item.findMany.mock.calls[0][0].where).toEqual({
+        status: ItemStatus.AVAILABLE,
+        OR: [{}, { id: itemBId }],
+      });
     });
   });
 

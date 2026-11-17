@@ -56,8 +56,10 @@ export class RoutesController {
     status: 200,
     description: 'Ranked circular swap routes enriched with AI explanations',
   })
-  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 400, description: 'Validation error, or wantedItemId is your own item' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'wantedItemId is no longer published' })
+  @ApiResponse({ status: 409, description: 'wantedItemId is already reserved in another swap' })
   async searchRoutes(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Body(new ZodValidationPipe(searchRoutesSchema.strip()))
