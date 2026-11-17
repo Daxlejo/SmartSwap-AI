@@ -7,7 +7,7 @@ const REMEMBERED_PATHS = new Set(['/explore']);
 const savedPositions = new Map<string, number>();
 
 /** Where a screen opens: at the top, or where the user left a remembered screen. */
-export const scrollTopFor = (pathname: string): number =>
+const scrollTopFor = (pathname: string): number =>
   REMEMBERED_PATHS.has(pathname) ? savedPositions.get(pathname) ?? 0 : 0;
 
 /**
