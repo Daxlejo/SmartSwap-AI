@@ -118,9 +118,17 @@ export const ExploreScreen = () => {
     return usersById.get(item.ownerId);
   };
 
+  // Explore lists only what the user can ask for: the API already leaves out their own
+  // items; this also covers a list loaded before the session was known
+  const viewerId = currentUser?.id;
+  const othersItems = useMemo(
+    () => (viewerId ? items.filter((item) => item.ownerId !== viewerId) : items),
+    [items, viewerId],
+  );
+
   const filteredItems = useMemo(
-    () => applyExploreFilters(items, searchQuery, filters),
-    [items, searchQuery, filters],
+    () => applyExploreFilters(othersItems, searchQuery, filters),
+    [othersItems, searchQuery, filters],
   );
 
   const municipalityCode = currentUser?.municipalityCode;
@@ -130,7 +138,7 @@ export const ExploreScreen = () => {
       if (zone === locationScope || !municipalityCode) return;
       setZonePreview({ zone, items: null });
       itemsService
-        .listItems({ scope: zone, municipalityCode })
+        .listItems({ scope: zone, municipalityCode, excludeOwnerId: viewerId })
         .then((list) =>
           setZonePreview((current) => (current?.zone === zone ? { zone, items: list } : current)),
         )
@@ -138,16 +146,16 @@ export const ExploreScreen = () => {
           // Without the preview the button just says "Apply"; applying still loads the zone
         });
     },
-    [locationScope, municipalityCode],
+    [locationScope, municipalityCode, viewerId],
   );
 
   const countFor = useCallback(
     (draft: ExploreFilters, zone: LocationScopePreference): number | null => {
       const source =
-        zone === locationScope ? items : zonePreview?.zone === zone ? zonePreview.items : null;
+        zone === locationScope ? othersItems : zonePreview?.zone === zone ? zonePreview.items : null;
       return source ? applyExploreFilters(source, searchQuery, draft).length : null;
     },
-    [items, locationScope, zonePreview, searchQuery],
+    [othersItems, locationScope, zonePreview, searchQuery],
   );
 
   const handleApplyFilters = (next: ExploreFilters, zone: LocationScopePreference) => {

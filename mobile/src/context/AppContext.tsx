@@ -15,7 +15,11 @@ import {
 } from '@/services/storage/preferencesStorage';
 import { ApiError, setOnUnauthorizedHandler } from '@/services/http/apiClient';
 import { authService, type RegisterPayload, type UpdateProfilePayload } from '@/services/auth/auth.service';
-import { itemsService, type CreateItemPayload } from '@/services/items/items.service';
+import {
+  itemsService,
+  type CreateItemPayload,
+  type ListItemsParams,
+} from '@/services/items/items.service';
 import {
   routesService,
   mapRouteToProposal,
@@ -161,15 +165,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const sessionEpochRef = useRef(0);
 
   // Latest viewer location for callbacks that must stay stable (kept in sync after every render)
-  const viewerRef = useRef<{ scope: LocationScopePreference; municipalityCode?: string }>({
+  const viewerRef = useRef<{
+    scope: LocationScopePreference;
+    municipalityCode?: string;
+    /** The signed-in user, whose own items the marketplace leaves out. */
+    userId?: string;
+  }>({
     scope: locationScope,
   });
   useEffect(() => {
     viewerRef.current = {
       scope: locationScope,
       municipalityCode: isAuthenticated ? currentUser?.municipalityCode : undefined,
+      userId: isAuthenticated ? currentUser?.id : undefined,
     };
-  }, [locationScope, currentUser?.municipalityCode, isAuthenticated]);
+  }, [locationScope, currentUser?.municipalityCode, currentUser?.id, isAuthenticated]);
+
+  /** Marketplace query for the current viewer: their search area, without their own items. */
+  const marketplaceQuery = useCallback(
+    (viewer?: Pick<User, 'id' | 'municipalityCode'>): ListItemsParams | undefined => {
+      const municipalityCode = viewer ? viewer.municipalityCode : viewerRef.current.municipalityCode;
+      const excludeOwnerId = viewer?.id ?? viewerRef.current.userId;
+      if (!municipalityCode && !excludeOwnerId) return undefined;
+      return {
+        ...(municipalityCode ? { scope: viewerRef.current.scope, municipalityCode } : {}),
+        ...(excludeOwnerId ? { excludeOwnerId } : {}),
+      };
+    },
+    [],
+  );
 
   const unreadNotificationsCount = useMemo(() => {
     return notifications.filter((n) => n.unread).length;
@@ -256,7 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notifications]);
 
   const loadMarketplaceAndUserItems = useCallback(
-    async (hasActiveToken: boolean, viewerMunicipalityCode?: string) => {
+    async (hasActiveToken: boolean, viewer?: Pick<User, 'id' | 'municipalityCode'>) => {
       const epoch = sessionEpochRef.current;
       setIsItemsLoading(true);
       setLoadStates((prev) => ({
@@ -265,13 +289,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         routes: hasActiveToken ? 'loading' : prev.routes,
       }));
       try {
-        const municipalityCode = viewerMunicipalityCode ?? viewerRef.current.municipalityCode;
         const [allItemsResult, myItemsResult, myRoutesResult] = await Promise.allSettled([
-          itemsService.listItems(
-            municipalityCode
-              ? { scope: viewerRef.current.scope, municipalityCode }
-              : undefined,
-          ),
+          itemsService.listItems(marketplaceQuery(hasActiveToken ? viewer : undefined)),
           hasActiveToken ? itemsService.listMyItems() : Promise.resolve<Item[]>([]),
           hasActiveToken ? routesService.listMyRoutes() : Promise.resolve<SwapRoute[]>([]),
         ]);
@@ -307,25 +326,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     },
-    [],
+    [marketplaceQuery],
   );
 
   // Reloads only the marketplace (e.g. after the user widens the search area)
   const reloadMarketplace = useCallback(async () => {
-    const { scope, municipalityCode } = viewerRef.current;
     setIsItemsLoading(true);
     setLoadState('items', 'loading');
     try {
-      setItems(
-        await itemsService.listItems(municipalityCode ? { scope, municipalityCode } : undefined),
-      );
+      setItems(await itemsService.listItems(marketplaceQuery()));
       setLoadState('items', 'ready');
     } catch {
       setLoadState('items', 'error');
     } finally {
       setIsItemsLoading(false);
     }
-  }, [setLoadState]);
+  }, [setLoadState, marketplaceQuery]);
 
   const setLocationScope = useCallback(
     (scope: LocationScopePreference) => {
@@ -379,7 +395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAuthenticated(true);
 
         await Promise.all([
-          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          loadMarketplaceAndUserItems(true, user),
           notificationsService
             .listNotifications()
             .then((list) => {
@@ -500,7 +516,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentUser(user);
         setIsAuthenticated(true);
         await Promise.all([
-          loadMarketplaceAndUserItems(true, user.municipalityCode),
+          loadMarketplaceAndUserItems(true, user),
           refreshNotificationsReal(),
         ]);
       } catch (error) {
@@ -519,7 +535,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(user);
       setIsAuthenticated(true);
       await Promise.all([
-        loadMarketplaceAndUserItems(true, user.municipalityCode),
+        loadMarketplaceAndUserItems(true, user),
         refreshNotificationsReal(),
       ]);
     },
