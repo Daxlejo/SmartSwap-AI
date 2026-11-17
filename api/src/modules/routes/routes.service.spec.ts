@@ -649,6 +649,86 @@ describe('RoutesService', () => {
     });
   });
 
+  describe('2b. proposeDirect', () => {
+    it('proposes a 2-person ring even when the owner does not list the offered item, and names both items in the notice', async () => {
+      const rows = buildCatalogRows();
+      // Offer the MacBook for the camera: Valeria (camera) wants a MacBook, but the swap does not depend on it
+      const offeredAndWanted = [rows[0], { ...rows[1], wants: [] }];
+      mockPrismaService.item.findMany.mockResolvedValue(offeredAndWanted);
+      mockTx.item.findMany.mockResolvedValue(offeredAndWanted);
+      mockTx.swapRoute.findUnique.mockResolvedValue(null);
+      mockTx.swapRoute.create.mockResolvedValue(buildPersisted3HopRoute());
+      mockTx.item.updateMany.mockResolvedValue({ count: 2 });
+      mockTx.notification.createMany.mockResolvedValue({ count: 1 });
+
+      await routesService.proposeDirect(userAId, {
+        offeredItemId: itemAId,
+        wantedItemId: itemBId,
+      });
+
+      expect(mockTx.swapRoute.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            initiatorId: userAId,
+            objectiveText: 'Cámara Sony Alpha a6400',
+            matchScore: expect.any(Number),
+            steps: {
+              create: [
+                expect.objectContaining({
+                  userId: userAId,
+                  givesItemId: itemAId,
+                  receivesItemId: itemBId,
+                  acceptance: StepAcceptance.ACCEPTED,
+                }),
+                expect.objectContaining({
+                  userId: userBId,
+                  givesItemId: itemBId,
+                  receivesItemId: itemAId,
+                  acceptance: StepAcceptance.PENDING,
+                }),
+              ],
+            },
+          }),
+        }),
+      );
+      expect(mockTx.notification.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            userId: userBId,
+            badge: 'Propuesta directa',
+            body: expect.stringContaining('"Cámara Sony Alpha a6400" por "MacBook Air M1 256GB"'),
+          }),
+        ],
+      });
+    });
+
+    it('rejects offering an item of another user', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue(buildCatalogRows().slice(0, 2));
+
+      await expect(
+        routesService.proposeDirect(userBId, { offeredItemId: itemAId, wantedItemId: itemBId }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects asking for your own item', async () => {
+      const rows = buildCatalogRows();
+      mockPrismaService.item.findMany.mockResolvedValue([rows[0], { ...rows[1], ownerId: userAId }]);
+
+      await expect(
+        routesService.proposeDirect(userAId, { offeredItemId: itemAId, wantedItemId: itemBId }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('answers 404 when an item does not exist', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([buildCatalogRows()[0]]);
+
+      await expect(
+        routesService.proposeDirect(userAId, { offeredItemId: itemAId, wantedItemId: 'missing' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('3. respondToRoute — unanimous ACCEPTED transitions to CONFIRMED', () => {
     it('transitions SwapRoute to CONFIRMED and notifies all participants when the last pending participant accepts', async () => {
       // User A (initiator) and User B have already ACCEPTED; User C is the last PENDING participant
