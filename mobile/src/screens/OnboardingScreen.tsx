@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useApp } from '@/context/AppContext';
@@ -6,6 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { preferencesStorage } from '@/services/storage/preferencesStorage';
 import { ApiError } from '@/services/http/apiClient';
 import { ExampleRing } from '@/components/ExampleRing';
+import { useExampleRingPeople } from '@/hooks/useExampleRingPeople';
 import { ProfilePhotoPicker } from '@/components/ProfilePhotoPicker';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -29,20 +30,7 @@ export const OnboardingScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const examplePeople = useMemo(
-    () =>
-      [
-        {
-          id: currentUser?.id ?? 'example-you',
-          name: currentUser?.name ?? t('onboarding.ring.you'),
-          avatarUrl: currentUser?.avatarUrl,
-          gives: { name: t('onboarding.ring.item1'), category: 'Deportes' },
-        },
-        { id: 'example-camilo', name: 'Camilo', gives: { name: t('onboarding.ring.item2'), category: 'Música' } },
-        { id: 'example-laura', name: 'Laura', gives: { name: t('onboarding.ring.item3'), category: 'Hogar' } },
-      ] as const,
-    [currentUser?.id, currentUser?.name, currentUser?.avatarUrl, t],
-  );
+  const examplePeople = useExampleRingPeople();
 
   // The session is restored in the background: wait for the user instead of bouncing to login
   if (!currentUser) return isAuthenticated ? null : <Navigate to="/login" replace />;
