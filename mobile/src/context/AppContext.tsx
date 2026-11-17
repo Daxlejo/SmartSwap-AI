@@ -529,7 +529,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return;
     }
-    await loadMarketplaceAndUserItems(hasActiveToken);
+    // Pass the user: a screen's effect can run before the one that refreshes `viewerRef`
+    await loadMarketplaceAndUserItems(hasActiveToken, currentUser ?? undefined);
   }, [currentUser, loadMarketplaceAndUserItems, refreshNotificationsReal]);
 
   const startSession = useCallback(
