@@ -396,6 +396,7 @@ describe('RoutesService', () => {
 
       const results = await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -435,6 +436,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -457,6 +459,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'es',
@@ -475,6 +478,7 @@ describe('RoutesService', () => {
       await expect(
         routesService.searchRoutes(userAId, {
           objectiveText: 'Monitor',
+          minSteps: 2,
           maxSteps: 4,
           valueTolerancePct: 45,
           locale: 'es',
@@ -489,6 +493,7 @@ describe('RoutesService', () => {
 
       await routesService.searchRoutes(userAId, {
         objectiveText: 'Monitor Ultrawide LG',
+        minSteps: 2,
         maxSteps: 4,
         valueTolerancePct: 45,
         locale: 'en',

@@ -542,4 +542,83 @@ describe('SwapGraphEngine & RouteScoringStrategy', () => {
       expect(filteredCycles).toHaveLength(0);
     });
   });
+  describe('7. Exact wanted item and minimum ring size', () => {
+    // A gives a bike and asks for "consola"; two rings exist: one ends with a Switch, one with a PS5 controller
+    const ringCatalog = (): GraphItemNode[] => [
+      createNode({
+        id: 'a-bike', ownerId: 'user-a', ownerName: 'Ana', name: 'Bicicleta rodado 29',
+        category: 'Deportes', estimatedValue: 400000, wants: [{ queryText: 'consola' }],
+      }),
+      createNode({
+        id: 'b-switch', ownerId: 'user-b', ownerName: 'Beto', name: 'Nintendo Switch OLED consola',
+        category: 'Tecnología', estimatedValue: 420000, wants: [{ queryText: 'bicicleta' }],
+      }),
+      createNode({
+        id: 'c-guitar', ownerId: 'user-c', ownerName: 'Caro', name: 'Guitarra acústica',
+        category: 'Música', estimatedValue: 380000, wants: [{ queryText: 'bicicleta' }],
+      }),
+      createNode({
+        id: 'd-control', ownerId: 'user-d', ownerName: 'Dani', name: 'Control PS5 DualSense',
+        category: 'Tecnología', estimatedValue: 350000, wants: [{ queryText: 'guitarra' }],
+      }),
+    ];
+
+    it('only returns rings that end with the chosen item, even when its name does not match the text', () => {
+      const cycles = engine.findCycles({
+        initiatorUserId: 'user-a',
+        objectiveText: 'consola',
+        offeredItemId: 'a-bike',
+        targetItemId: 'd-control',
+        catalog: ringCatalog(),
+      });
+
+      expect(cycles.length).toBeGreaterThan(0);
+      for (const cycle of cycles) {
+        expect(cycle.chainItems[cycle.chainItems.length - 1].id).toBe('d-control');
+      }
+      expect(cycles[0].chainItems.map((item) => item.id)).toEqual(['a-bike', 'c-guitar', 'd-control']);
+    });
+
+    it('returns nothing when the chosen item belongs to the initiator or is not in the catalog', () => {
+      const base = { initiatorUserId: 'user-a', objectiveText: 'consola', catalog: ringCatalog() };
+      expect(engine.findCycles({ ...base, targetItemId: 'a-bike' })).toEqual([]);
+      expect(engine.findCycles({ ...base, targetItemId: 'missing' })).toEqual([]);
+    });
+
+    it('returns nothing when the chosen item is outside the value band', () => {
+      const catalog = ringCatalog().map((item) =>
+        item.id === 'd-control' ? { ...item, estimatedValue: 2000000 } : item,
+      );
+      expect(
+        engine.findCycles({
+          initiatorUserId: 'user-a',
+          objectiveText: 'consola',
+          targetItemId: 'd-control',
+          valueTolerancePct: 25,
+          catalog,
+        }),
+      ).toEqual([]);
+    });
+
+    it('skips 2-person swaps when minSteps is 3', () => {
+      const all = engine.findCycles({
+        initiatorUserId: 'user-a', objectiveText: 'consola o control', catalog: ringCatalog(),
+      });
+      expect(all.some((cycle) => cycle.hops === 2)).toBe(true);
+
+      const ringsOnly = engine.findCycles({
+        initiatorUserId: 'user-a', objectiveText: 'consola o control', minSteps: 3, catalog: ringCatalog(),
+      });
+      expect(ringsOnly.length).toBeGreaterThan(0);
+      expect(ringsOnly.every((cycle) => cycle.hops >= 3)).toBe(true);
+    });
+
+    it('accepts wantedItemId and minSteps in the search DTO', () => {
+      const dto = searchRoutesSchema.parse({ objectiveText: 'consola', wantedItemId: 'd-control', minSteps: '3' });
+      expect(dto.wantedItemId).toBe('d-control');
+      expect(dto.minSteps).toBe(3);
+      expect(searchRoutesSchema.parse({ objectiveText: 'consola' }).minSteps).toBe(2);
+      expect(() => searchRoutesSchema.parse({ objectiveText: 'consola', minSteps: 5 })).toThrow();
+    });
+  });
 });

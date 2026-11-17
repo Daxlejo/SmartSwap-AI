@@ -161,6 +161,8 @@ export class RoutesService {
       objectiveEmbedding,
       offeredItemId: dto.offeredItemId,
       desiredCategory: dto.desiredCategory,
+      targetItemId: dto.wantedItemId,
+      minSteps: dto.minSteps,
       maxSteps: dto.maxSteps,
       valueTolerancePct: dto.valueTolerancePct,
       catalog,
