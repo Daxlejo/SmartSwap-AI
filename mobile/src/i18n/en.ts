@@ -701,6 +701,12 @@ export const en: TranslationSchema = {
     },
     selectPhoto: 'Select item photo',
     previousStep: 'Previous step',
+    discard: {
+      title: 'Discard this post?',
+      description: 'If you leave now, the photos and details you added are lost.',
+      keepEditing: 'Keep editing',
+      confirm: 'Discard',
+    },
     photos: {
       title: 'Add photos of your item',
       subtitle: 'Take a photo with your camera or pick one from your gallery (automatic HD compression).',

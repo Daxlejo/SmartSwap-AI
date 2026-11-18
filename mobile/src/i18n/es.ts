@@ -699,6 +699,12 @@ export const es = {
     },
     selectPhoto: 'Seleccionar foto del artículo',
     previousStep: 'Paso anterior',
+    discard: {
+      title: '¿Descartar la publicación?',
+      description: 'Si sales ahora se pierden las fotos y los datos que agregaste.',
+      keepEditing: 'Seguir editando',
+      confirm: 'Descartar',
+    },
     photos: {
       title: 'Agrega fotos de tu artículo',
       subtitle: 'Toma una foto o elígela de tu galería.',
