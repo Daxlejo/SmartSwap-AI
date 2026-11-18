@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-17T23:20:12.740Z",
+  "generatedAt": "2026-11-18T00:31:16.959Z",
   "stats": {
-    "totalFiles": 175,
-    "apiFiles": 69,
-    "mobileFiles": 106,
+    "totalFiles": 178,
+    "apiFiles": 70,
+    "mobileFiles": 108,
     "endpointsCount": 46
   },
   "endpoints": [
@@ -432,6 +432,7 @@
       "api/src/modules/items/dto/query-items.dto.ts",
       "api/src/modules/items/dto/update-item.dto.ts",
       "api/src/modules/items/dto/upload-image.dto.ts",
+      "api/src/modules/items/item-title.ts",
       "api/src/modules/items/items.controller.ts",
       "api/src/modules/items/items.module.ts",
       "api/src/modules/items/items.service.ts",
@@ -500,6 +501,7 @@
       "mobile/src/components/ServerStatusBanner.tsx",
       "mobile/src/components/SwapRing.tsx",
       "mobile/src/components/TopBar.tsx",
+      "mobile/src/components/TradeCard.tsx",
       "mobile/src/components/ui/Avatar.tsx",
       "mobile/src/components/ui/Badge.tsx",
       "mobile/src/components/ui/BottomSheet.tsx",
@@ -604,6 +606,7 @@
       "mobile/src/utils/exploreFilters.ts",
       "mobile/src/utils/formAlert.ts",
       "mobile/src/utils/imageCompressor.ts",
+      "mobile/src/utils/itemTitle.ts",
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
       "mobile/src/utils/swapRing.ts",
@@ -1189,6 +1192,13 @@
         "zod"
       ]
     },
+    "api/src/modules/items/item-title.ts": {
+      "module": "api/items",
+      "exports": [
+        "normalizeItemTitle"
+      ],
+      "imports": []
+    },
     "api/src/modules/items/items.controller.ts": {
       "module": "api/items",
       "exports": [
@@ -1302,6 +1312,7 @@
     "api/src/modules/items/items.service.ts": {
       "module": "api/items",
       "exports": [
+        "ITEM_ALREADY_IN_SWAP_MESSAGE",
         "ItemsService"
       ],
       "imports": [
@@ -1313,6 +1324,7 @@
         "./dto/create-item.dto",
         "./dto/query-items.dto",
         "./dto/update-item.dto",
+        "./item-title",
         "./mappers/item.mapper",
         "@nestjs/common",
         "@prisma/client"
@@ -1998,6 +2010,7 @@
         "./ui/Icon",
         "@/context/AppContext",
         "@/hooks/useTranslation",
+        "@/utils/routeView",
         "clsx",
         "react-router-dom"
       ]
@@ -2265,6 +2278,21 @@
         "./ui/Icon",
         "@/hooks/useTranslation",
         "react-router-dom"
+      ]
+    },
+    "mobile/src/components/TradeCard.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "TradeCard",
+        "TradeCardItem",
+        "TradeCardProps"
+      ],
+      "imports": [
+        "@/components/ui/Avatar",
+        "@/components/ui/Badge",
+        "@/components/ui/ItemImage",
+        "@/hooks/useTranslation",
+        "react"
       ]
     },
     "mobile/src/components/ui/Avatar.tsx": {
@@ -2965,6 +2993,7 @@
         "@/utils/currency",
         "@/utils/formAlert",
         "@/utils/imageCompressor",
+        "@/utils/itemTitle",
         "@/utils/wantedItems",
         "clsx",
         "react",
@@ -3060,21 +3089,17 @@
       ],
       "imports": [
         "@/components/ScreenHeader",
-        "@/components/SwapRing",
-        "@/components/ui/Avatar",
-        "@/components/ui/Badge",
+        "@/components/TradeCard",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
-        "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
         "@/utils/relativeTime",
         "@/utils/routeView",
-        "@/utils/swapRing",
         "react",
         "react-router-dom"
       ]
@@ -3306,6 +3331,7 @@
       "exports": [],
       "imports": [
         "@/i18n",
+        "@/services/items/items.service",
         "@/types",
         "@/utils/swapSearch",
         "react-dom/server",
@@ -3458,6 +3484,17 @@
       ],
       "imports": []
     },
+    "mobile/src/utils/itemTitle.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "findDuplicateTitle",
+        "normalizeItemTitle"
+      ],
+      "imports": [
+        "@/types",
+        "@/utils/swapSearch"
+      ]
+    },
     "mobile/src/utils/relativeTime.ts": {
       "module": "mobile/utils",
       "exports": [
@@ -3471,8 +3508,11 @@
       "module": "mobile/utils",
       "exports": [
         "ReceivedProposal",
+        "RoutePhase",
         "canProposeRoute",
         "isSignedInUser",
+        "ownSide",
+        "routePhase",
         "toReceivedProposals"
       ],
       "imports": [
