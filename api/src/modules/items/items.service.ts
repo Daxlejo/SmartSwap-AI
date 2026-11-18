@@ -32,6 +32,11 @@ import { SimilarItemsQueryDto } from './dto/similar-items.dto';
 /** Same bar the route engine uses to accept a want as semantically matched. */
 export const SIMILAR_ITEMS_MIN_SCORE = 0.42;
 const SIMILAR_ITEMS_DEFAULT_LIMIT = 6;
+/**
+ * Most recent rows read when filtering, sorting or ranking in memory. Keeps one request
+ * bounded; with a larger catalog this belongs in the database (unaccent, pgvector).
+ */
+export const MAX_IN_MEMORY_ROWS = 500;
 
 /** Whether a normalized search term appears in the item's name, description or category. */
 const matchesSearchTerm = (
@@ -155,6 +160,7 @@ export class ItemsService {
         where,
         include: ITEM_RELATIONS_INCLUDE,
         orderBy: { createdAt: 'desc' },
+        take: MAX_IN_MEMORY_ROWS,
       });
       const found = searchTerm
         ? rows.filter((row) => matchesSearchTerm(row, searchTerm))
@@ -206,6 +212,8 @@ export class ItemsService {
     const rows = await this.prisma.item.findMany({
       where: { status: ItemStatus.AVAILABLE, ownerId: { not: userId } },
       include: ITEM_RELATIONS_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+      take: MAX_IN_MEMORY_ROWS,
     });
     const ranked = rows
       .map((row) => ({

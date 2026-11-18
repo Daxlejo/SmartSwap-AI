@@ -10,7 +10,7 @@ import { AiEmbeddingService } from '../ai/services/ai-embedding.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { GeoService } from '../geo/geo.service';
-import { ItemsService } from './items.service';
+import { ItemsService, MAX_IN_MEMORY_ROWS } from './items.service';
 import { SupabaseStorageService } from '../storage/supabase-storage.service';
 
 describe('ItemsService', () => {
@@ -169,6 +169,7 @@ describe('ItemsService', () => {
       expect(mockPrismaService.item.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { status: ItemStatus.AVAILABLE, ownerId: { not: ownerId } },
+          take: MAX_IN_MEMORY_ROWS,
         }),
       );
     });

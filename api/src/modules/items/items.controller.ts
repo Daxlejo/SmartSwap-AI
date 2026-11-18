@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   CurrentUser,
   CurrentUserPayload,
@@ -85,6 +86,8 @@ export class ItemsController {
 
   @Get('similar')
   @UseGuards(JwtAuthGuard)
+  // Each call may pay for one OpenAI embedding: stricter than the global 120/min
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Active items of other users semantically close to a text query (fallback of an empty search)',
