@@ -53,7 +53,9 @@ const newPhone = async (browser, scenario = 'default') => {
     if (url.pathname.startsWith(API_PREFIX) && url.host !== `localhost:${PORT}`) {
       const path = url.pathname.slice(API_PREFIX.length);
       calls.push({ method: request.method(), path, query: url.search, body: request.postDataJSON?.() ?? null });
-      const answer = respond(request.method(), path + url.search, scenario);
+      // Once a direct proposal is sent, the routes list includes it, as the real API would
+      const sentDirect = calls.some((call) => call.method === 'POST' && call.path === '/routes/direct');
+      const answer = respond(request.method(), path + url.search, scenario === 'default' && sentDirect ? 'sent' : scenario);
       if (!answer) return route.fulfill({ status: 404, json: { message: 'e2e: no fixture' } });
       return route.fulfill({ status: answer[0], json: answer[1] });
     }
@@ -137,6 +139,15 @@ const main = async () => {
       // The back arrow of "Proposal sent" goes Home, never back to the sent form
       await page.getByRole('button', { name: 'Volver atrás' }).click();
       await waitPath(page, /^\/home$/);
+
+      // Swaps → Sent shows it waiting for an answer, never as cancelled (the API calls it PROPOSED)
+      await page.locator('nav a[href="/swaps"]').click();
+      await waitPath(page, /^\/swaps/);
+      await page.getByRole('tab', { name: /enviadas/i }).click();
+      const sentCard = page.locator('[data-testid=trade-card-r-direct]');
+      await sentCard.waitFor({ timeout: URL_TIMEOUT });
+      assert(await sentCard.getByText('En revisión').isVisible(), 'the direct proposal is not shown as in review');
+      assert((await sentCard.getByText('Propuesta cancelada').count()) === 0, 'the direct proposal is shown as cancelled');
     });
 
     await run('circular search waits, and back walks the steps without searching again', browser, 'default', async ({ page, calls }) => {

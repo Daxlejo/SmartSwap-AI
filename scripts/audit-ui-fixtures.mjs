@@ -184,7 +184,7 @@ export const directRoute = {
 /**
  * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
  * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
- * Scenario `noRings` finds no ring for any search; `wantReserved` answers a ring search
+ * Scenario `sent` also lists a direct proposal the viewer sent. Scenario `noRings` finds no ring for any search; `wantReserved` answers a ring search
  * as the API does when the wanted item is already reserved in another swap.
  */
 export const respond = (method, path, scenario = 'default') => {
@@ -215,7 +215,10 @@ export const respond = (method, path, scenario = 'default') => {
     const found = [...myItems, ...publicItems].find((i) => i.id === p.split('/')[2]);
     return found ? [200, found] : [404, { message: 'Not found' }];
   }
-  if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, [activeRoute]];
+  if ((p === '/routes' || p === '/proposals') && method === 'GET') {
+    // Scenario `sent`: the viewer has also sent a direct proposal that waits for Laura
+    return [200, scenario === 'sent' ? [activeRoute, directRoute] : [activeRoute]];
+  }
   if (p === '/routes/search' || p === '/routes/find') return [200, [suggestedRoute]];
   if (p === '/routes/direct' && method === 'POST') return [201, directRoute];
   if (p === '/routes/propose' || p === '/proposals') return [201, { ...suggestedRoute, id: 'r-new', status: 'PROPOSED' }];
