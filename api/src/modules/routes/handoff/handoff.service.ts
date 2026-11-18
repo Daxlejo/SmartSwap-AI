@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { Prisma, RouteStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { RoutesService } from '../routes.service';
+import { ReportProblemDto } from './dto/report-problem.dto';
 import { ProposeMeetingDto } from './dto/propose-meeting.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { autoCompleteAt, handoffDays } from './handoff.config';
@@ -27,9 +29,14 @@ type Db = PrismaService | Prisma.TransactionClient;
  */
 @Injectable()
 export class HandoffService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly routesService: RoutesService,
+  ) {}
 
   async getHandoff(userId: string, routeId: string): Promise<HandoffDto> {
+    // Reading is what closes a swap whose handoff period is over (no cron)
+    await this.routesService.settleDueHandoffs(userId);
     const route = await this.findForParticipant(this.prisma, userId, routeId);
     return this.toDto(this.prisma, route);
   }
@@ -126,6 +133,47 @@ export class HandoffService {
             badge: 'Entrega',
             title: `Entrega de ${route.code} acordada`,
             body: `Todos confirmaron la fecha y el lugar. Si nadie reporta un problema, el canje se completa automáticamente el ${closesOn}.`,
+            routeId: route.id,
+          })),
+        });
+      }
+
+      return this.toDto(tx, await this.findForParticipant(tx, userId, routeId));
+    });
+  }
+
+  /**
+   * Reports a problem with the handoff: the swap stops completing by itself and the others are
+   * told. It can still be completed (everyone confirms) or cancelled.
+   */
+  async reportProblem(userId: string, routeId: string, dto: ReportProblemDto): Promise<HandoffDto> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockRoute(tx, routeId);
+      const route = await this.findForParticipant(tx, userId, routeId);
+      this.assertHandoffOpen(route);
+      if (route.problemReportedAt) {
+        return this.toDto(tx, route);
+      }
+
+      await tx.swapRoute.update({
+        where: { id: route.id },
+        data: {
+          problemReportedAt: new Date(),
+          problemReportedById: userId,
+          problemReason: dto.reason ?? null,
+        },
+      });
+
+      const reporter = route.steps.find((step) => step.userId === userId)?.user?.name ?? 'Un participante';
+      const others = this.participantIds(route).filter((id) => id !== userId);
+      if (others.length > 0) {
+        await tx.notification.createMany({
+          data: others.map((uid) => ({
+            userId: uid,
+            type: 'HANDOFF_PROBLEM',
+            badge: 'Problema reportado',
+            title: `Problema reportado en ${route.code}`,
+            body: `${reporter} reportó un problema con la entrega. El canje ya no se completará automáticamente; hablen en el chat de entrega.`,
             routeId: route.id,
           })),
         });

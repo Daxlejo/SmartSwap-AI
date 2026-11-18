@@ -20,6 +20,7 @@ import { AiLocale } from '../ai/dto/ai-locale.dto';
 import { AiExplainerService } from '../ai/services/ai-explainer.service';
 import { GeoService } from '../geo/geo.service';
 import { NEARBY_RADIUS_KM } from '../geo/geo.types';
+import { autoCompleteAt, handoffDays } from './handoff/handoff.config';
 import { ProposeDirectDto } from './dto/propose-direct.dto';
 import { ProposeRouteDto } from './dto/propose-route.dto';
 import { RespondRouteDto } from './dto/respond-route.dto';
@@ -57,6 +58,7 @@ const CATALOG_ITEM_INCLUDE = {
 } satisfies Prisma.ItemInclude;
 
 const PROPOSAL_TTL_MS = 48 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const TOP_EXPLAINED_CYCLES = 3;
 
 export const ROUTE_RELATIONS_INCLUDE = {
@@ -452,6 +454,7 @@ export class RoutesService {
    */
   async listMyRoutes(userId: string): Promise<SwapRouteDto[]> {
     await this.expireOverdueRoutes(userId);
+    await this.settleDueHandoffs(userId);
     const routes = await this.prisma.swapRoute.findMany({
       where: {
         OR: [{ initiatorId: userId }, { steps: { some: { userId } } }],
@@ -470,6 +473,7 @@ export class RoutesService {
    */
   async getRouteById(userId: string, routeId: string): Promise<SwapRouteDto> {
     await this.expireOverdueRoutes(userId);
+    await this.settleDueHandoffs(userId);
     const trimmedId = routeId.trim();
     let route = await this.prisma.swapRoute.findUnique({
       where: { id: trimmedId },
@@ -655,9 +659,9 @@ export class RoutesService {
   }
 
   /**
-   * Confirms step delivery and, once all steps are confirmed (or when finalized by the initiator
-   * on a `CONFIRMED` route), completes the swap route, marks all items as `SWAPPED` (`TRADED`),
-   * increments `tradesCompleted` and `co2SavedKg` for every participant, and sends notifications.
+   * Records that the user handed over and received their item. The swap completes early only
+   * when every participant has confirmed; otherwise it waits for the others (or for the end of
+   * the handoff period, see {@link settleDueHandoffs}).
    */
   async completeRoute(
     userId: string,
@@ -675,9 +679,7 @@ export class RoutesService {
       }
 
       const userStep = route.steps.find((step) => step.userId === userId);
-      const isInitiator = route.initiatorId === userId;
-
-      if (!userStep && !isInitiator) {
+      if (!userStep) {
         throw new ForbiddenException(
           'You are not authorized to complete this swap route',
         );
@@ -689,25 +691,14 @@ export class RoutesService {
         );
       }
 
-      if (isInitiator) {
-        await tx.swapRouteStep.updateMany({
-          where: { routeId: route.id },
-          data: { deliveryConfirmed: true },
-        });
-      } else if (userStep) {
-        await tx.swapRouteStep.update({
-          where: { id: userStep.id },
-          data: { deliveryConfirmed: true },
-        });
-      }
+      await tx.swapRouteStep.update({
+        where: { id: userStep.id },
+        data: { deliveryConfirmed: true },
+      });
 
-      const allDelivered =
-        isInitiator ||
-        route.steps.every((step) =>
-          userStep && step.id === userStep.id
-            ? true
-            : Boolean(step.deliveryConfirmed),
-        );
+      const allDelivered = route.steps.every(
+        (step) => step.id === userStep.id || Boolean(step.deliveryConfirmed),
+      );
 
       if (!allDelivered) {
         return tx.swapRoute.findUniqueOrThrow({
@@ -716,62 +707,117 @@ export class RoutesService {
         });
       }
 
-      const completed = await tx.swapRoute.update({
-        where: { id: route.id },
-        data: {
-          status: RouteStatus.COMPLETED,
-        },
-        include: ROUTE_RELATIONS_INCLUDE,
-      });
-
-      const involvedItemIds = this.collectUniqueItemIds(route.steps);
-      await tx.item.updateMany({
-        where: {
-          id: { in: involvedItemIds },
-        },
-        data: {
-          status: ItemStatus.SWAPPED,
-        },
-      });
-
-      const participantIds = Array.from(
-        new Set(route.steps.map((step) => step.userId)),
-      );
-      const totalCo2 =
-        route.co2SavedKg > 0
-          ? route.co2SavedKg
-          : this.scoringStrategy.computeCo2SavedKg(route.steps.length);
-      const co2PerParticipant = Number(
-        (totalCo2 / Math.max(1, participantIds.length)).toFixed(2),
-      );
-
-      await tx.user.updateMany({
-        where: {
-          id: { in: participantIds },
-        },
-        data: {
-          tradesCompleted: { increment: 1 },
-          co2SavedKg: { increment: co2PerParticipant },
-        },
-      });
-
-      if (participantIds.length > 0) {
-        await tx.notification.createMany({
-          data: participantIds.map((uid) => ({
-            userId: uid,
-            type: 'ROUTE_COMPLETED',
-            badge: 'Trueque completado',
-            title: `¡Trueque ${route.code} finalizado con éxito!`,
-            body: `La ruta circular ${route.code} se completó: cada participante ya recibió su artículo.`,
-            routeId: route.id,
-          })),
-        });
-      }
-
-      return completed;
+      return this.finalizeRoute(tx, route, 'confirmed');
     });
 
     return this.routeMapper.toDto(finalizedRoute as SwapRouteWithRelations);
+  }
+
+  /**
+   * Completes, on read and without a cron, the user's swaps whose handoff period is over: the
+   * date and place were agreed, `SWAP_HANDOFF_DAYS` passed since that date, and nobody cancelled
+   * or reported a problem.
+   */
+  async settleDueHandoffs(userId: string, now: Date = new Date()): Promise<void> {
+    const days = handoffDays();
+    const dueRoutes = await this.prisma.swapRoute.findMany({
+      where: {
+        status: RouteStatus.CONFIRMED,
+        meetingConfirmedAt: { not: null },
+        problemReportedAt: null,
+        meetingAt: { lte: new Date(now.getTime() - days * DAY_MS) },
+        steps: { some: { userId } },
+      },
+      select: { id: true },
+    });
+
+    for (const { id } of dueRoutes) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.lockRouteRow(tx, id);
+        const route = await tx.swapRoute.findUnique({
+          where: { id },
+          include: ROUTE_RELATIONS_INCLUDE,
+        });
+        // Re-checked under the lock: a concurrent read may have completed it, or someone reported a problem
+        if (
+          !route ||
+          route.status !== RouteStatus.CONFIRMED ||
+          !route.meetingAt ||
+          !route.meetingConfirmedAt ||
+          route.problemReportedAt ||
+          autoCompleteAt(route.meetingAt, days).getTime() > now.getTime()
+        ) {
+          return;
+        }
+        await this.finalizeRoute(tx, route, 'automatic');
+      });
+    }
+  }
+
+  /**
+   * Closes a swap: COMPLETED, items to SWAPPED (the owners' history), one more completed swap and
+   * the CO2 share for every participant, a notice for each, and the delivery chat deleted (the
+   * swap itself stays).
+   */
+  private async finalizeRoute(
+    tx: Prisma.TransactionClient,
+    route: SwapRouteWithRelations,
+    reason: 'confirmed' | 'automatic',
+  ) {
+    await tx.item.updateMany({
+      where: { id: { in: this.collectUniqueItemIds(route.steps) } },
+      data: { status: ItemStatus.SWAPPED },
+    });
+
+    await tx.swapMessage.deleteMany({ where: { routeId: route.id } });
+
+    const completed = await tx.swapRoute.update({
+      where: { id: route.id },
+      data: {
+        status: RouteStatus.COMPLETED,
+        completedAt: new Date(),
+      },
+      include: ROUTE_RELATIONS_INCLUDE,
+    });
+
+    const participantIds = Array.from(
+      new Set(route.steps.map((step) => step.userId)),
+    );
+    const totalCo2 =
+      route.co2SavedKg > 0
+        ? route.co2SavedKg
+        : this.scoringStrategy.computeCo2SavedKg(route.steps.length);
+    const co2PerParticipant = Number(
+      (totalCo2 / Math.max(1, participantIds.length)).toFixed(2),
+    );
+
+    await tx.user.updateMany({
+      where: {
+        id: { in: participantIds },
+      },
+      data: {
+        tradesCompleted: { increment: 1 },
+        co2SavedKg: { increment: co2PerParticipant },
+      },
+    });
+
+    if (participantIds.length > 0) {
+      await tx.notification.createMany({
+        data: participantIds.map((uid) => ({
+          userId: uid,
+          type: 'ROUTE_COMPLETED',
+          badge: 'Trueque completado',
+          title: `¡Trueque ${route.code} finalizado con éxito!`,
+          body:
+            reason === 'automatic'
+              ? `El canje ${route.code} se completó automáticamente: pasó el periodo de entrega y nadie reportó un problema.`
+              : `La ruta circular ${route.code} se completó: cada participante ya recibió su artículo.`,
+          routeId: route.id,
+        })),
+      });
+    }
+
+    return completed;
   }
 
   /**

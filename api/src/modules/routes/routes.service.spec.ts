@@ -236,6 +236,10 @@ describe('RoutesService', () => {
       meetingPlace: null,
       meetingProposedById: null,
       meetingConfirmedAt: null,
+      problemReportedAt: null,
+      problemReportedById: null,
+      problemReason: null,
+      completedAt: null,
       createdAt: fixedNow,
       updatedAt: fixedNow,
       steps: [
@@ -336,6 +340,9 @@ describe('RoutesService', () => {
     },
     user: {
       updateMany: jest.fn(),
+    },
+    swapMessage: {
+      deleteMany: jest.fn(),
     },
   };
 
@@ -1133,8 +1140,11 @@ describe('RoutesService', () => {
         allDelivered: true,
       });
 
+      // Valeria and Camila already confirmed their delivery; Alex is the last one
+      confirmedRoute.steps[1].deliveryConfirmed = true;
+      confirmedRoute.steps[2].deliveryConfirmed = true;
       mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
-      mockTx.swapRouteStep.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.swapRouteStep.update.mockResolvedValue({});
       mockTx.swapRoute.update.mockResolvedValue(completedRoute);
       mockTx.item.updateMany.mockResolvedValue({ count: 3 });
       mockTx.user.updateMany.mockResolvedValue({ count: 3 });
@@ -1142,12 +1152,18 @@ describe('RoutesService', () => {
 
       const result = await routesService.completeRoute(userAId, routeId);
 
+      expect(mockTx.swapRouteStep.update).toHaveBeenCalledWith({
+        where: { id: 'step-0' },
+        data: { deliveryConfirmed: true },
+      });
       expect(mockTx.swapRoute.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: routeId },
-          data: { status: RouteStatus.COMPLETED },
+          data: { status: RouteStatus.COMPLETED, completedAt: expect.any(Date) },
         }),
       );
+      // The swap stays; its delivery chat goes
+      expect(mockTx.swapMessage.deleteMany).toHaveBeenCalledWith({ where: { routeId } });
       expect(mockTx.item.updateMany).toHaveBeenCalledWith({
         where: {
           id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) },
@@ -1179,6 +1195,28 @@ describe('RoutesService', () => {
       expect(result.status).toBe('COMPLETED');
       expect(result.steps[0].givesItem.status).toBe('TRADED');
       expect(result.steps.every((s) => s.deliveryConfirmed)).toBe(true);
+    });
+
+    it('only records the delivery while other participants still have to confirm, even for the initiator', async () => {
+      const confirmedRoute = buildPersisted3HopRoute({
+        status: RouteStatus.CONFIRMED,
+        stepBAcceptance: StepAcceptance.ACCEPTED,
+        stepCAcceptance: StepAcceptance.ACCEPTED,
+      });
+      mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
+      mockTx.swapRouteStep.update.mockResolvedValue({});
+      mockTx.swapRoute.findUniqueOrThrow.mockResolvedValue(confirmedRoute);
+
+      const result = await routesService.completeRoute(userAId, routeId);
+
+      expect(mockTx.swapRouteStep.update).toHaveBeenCalledWith({
+        where: { id: 'step-0' },
+        data: { deliveryConfirmed: true },
+      });
+      expect(mockTx.swapRouteStep.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.user.updateMany).not.toHaveBeenCalled();
+      expect(result.status).toBe('CONFIRMED');
     });
 
     it('throws NotFoundException in getRouteById when route does not exist', async () => {

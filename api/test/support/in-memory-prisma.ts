@@ -97,6 +97,10 @@ const DEFAULTS: Record<ModelName, () => Row> = {
     meetingPlace: null,
     meetingProposedById: null,
     meetingConfirmedAt: null,
+    problemReportedAt: null,
+    problemReportedById: null,
+    problemReason: null,
+    completedAt: null,
   }),
   swapRouteStep: () => ({
     acceptance: 'PENDING',

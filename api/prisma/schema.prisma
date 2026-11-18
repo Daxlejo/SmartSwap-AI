@@ -131,6 +131,12 @@ model SwapRoute {
   meetingProposedById String?
   /// Set when every participant confirmed the date and place; the handoff period starts then
   meetingConfirmedAt  DateTime?
+  /// A participant reported a problem with the handoff: the swap no longer completes by itself
+  problemReportedAt   DateTime?
+  problemReportedById String?
+  problemReason       String?     @db.VarChar(500)
+  /// When the swap completed (every participant confirmed, or the handoff period ended)
+  completedAt         DateTime?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 

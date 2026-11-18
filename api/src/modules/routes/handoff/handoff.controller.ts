@@ -21,6 +21,7 @@ import {
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { ProposeMeetingDto, proposeMeetingSchema } from './dto/propose-meeting.dto';
+import { ReportProblemDto, reportProblemSchema } from './dto/report-problem.dto';
 import { SendMessageDto, sendMessageSchema } from './dto/send-message.dto';
 import { HandoffDto } from './handoff.mapper';
 import { HandoffService } from './handoff.service';
@@ -90,5 +91,21 @@ export class HandoffController {
     @Param('id') id: string,
   ): Promise<HandoffDto> {
     return this.handoffService.confirmMeeting(currentUser.sub, id);
+  }
+
+  @Post(':id/report-problem')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Report a problem with the handoff; the swap stops completing by itself' })
+  @ApiResponse({ status: 200, description: 'Delivery chat with the reported problem' })
+  @ApiResponse({ status: 400, description: 'Reason longer than 500 characters' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Swap not found or not a participant' })
+  @ApiResponse({ status: 409, description: 'The swap is not waiting for its handoff' })
+  async reportProblem(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(reportProblemSchema)) dto: ReportProblemDto,
+  ): Promise<HandoffDto> {
+    return this.handoffService.reportProblem(currentUser.sub, id, dto);
   }
 }

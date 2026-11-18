@@ -54,8 +54,11 @@ export interface HandoffDto {
   participants: HandoffParticipantDto[];
   meeting: HandoffMeetingDto | null;
   handoffDays: number;
-  /** When the swap completes by itself: set once the date is agreed. */
+  /** When the swap completes by itself: set once the date is agreed, unless someone reported a problem. */
   autoCompleteAt: string | null;
+  /** A participant reported a problem: the swap no longer completes by itself. */
+  problem: { reportedAt: string; reportedById: string | null; reason: string | null } | null;
+  completedAt: string | null;
   messages: HandoffMessageDto[];
 }
 
@@ -86,9 +89,17 @@ export class HandoffMapper {
       meeting,
       handoffDays: days,
       autoCompleteAt:
-        route.meetingAt && route.meetingConfirmedAt
+        route.meetingAt && route.meetingConfirmedAt && !route.problemReportedAt
           ? autoCompleteAt(route.meetingAt, days).toISOString()
           : null,
+      problem: route.problemReportedAt
+        ? {
+            reportedAt: route.problemReportedAt.toISOString(),
+            reportedById: route.problemReportedById ?? null,
+            reason: route.problemReason ?? null,
+          }
+        : null,
+      completedAt: route.completedAt ? route.completedAt.toISOString() : null,
       messages: messages.map((message) => ({
         id: message.id,
         senderId: message.senderId,

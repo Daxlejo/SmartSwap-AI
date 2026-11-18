@@ -1616,6 +1616,42 @@ paths:
         - Swap handoff
       security:
         - bearerAuth: []
+  /api/v1/routes/{id}/report-problem:
+    post:
+      operationId: HandoffController_reportProblem
+      summary: Report a problem with the handoff; the swap stops completing by itself
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery chat with the reported problem
+        '400':
+          description: Reason longer than 500 characters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+        '409':
+          description: The swap is not waiting for its handoff
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
   /api/v1/notifications:
     get:
       operationId: NotificationsController_listUserNotifications

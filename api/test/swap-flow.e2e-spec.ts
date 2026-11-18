@@ -163,12 +163,14 @@ describe('Circular swap flow (e2e)', () => {
     expect(afterMateo.body.status).toBe('CONFIRMED');
   });
 
-  it('completes the swap, marks items as traded and credits CO2 to every participant', async () => {
-    const response = await testApp
-      .http()
-      .post(`/api/v1/routes/${proposed.id}/complete`)
-      .set(authed(alex.token))
-      .expect(200);
+  it('completes the swap once every participant confirms, marks items as traded and credits CO2 to everyone', async () => {
+    const complete = (user: RegisteredUser) =>
+      testApp.http().post(`/api/v1/routes/${proposed.id}/complete`).set(authed(user.token)).expect(200);
+
+    // The initiator alone cannot close it for the others
+    expect((await complete(alex)).body.status).toBe('CONFIRMED');
+    expect((await complete(valeria)).body.status).toBe('CONFIRMED');
+    const response = await complete(mateo);
     expect(response.body.status).toBe('COMPLETED');
 
     const items = testApp.prisma

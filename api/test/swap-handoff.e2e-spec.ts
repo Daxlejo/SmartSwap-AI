@@ -224,4 +224,100 @@ describe('Swap handoff (e2e)', () => {
       await testApp.http().post(`/api/v1/routes/${pending.id}/cancel`).set(authed(alex.token)).expect(200);
     });
   });
+
+  describe('closing', () => {
+    const HOUR = 60 * 60 * 1000;
+    const previousDays = process.env.SWAP_HANDOFF_DAYS;
+
+    beforeAll(() => {
+      // Demo setting: a swap completes as soon as its agreed date has passed
+      process.env.SWAP_HANDOFF_DAYS = '0';
+    });
+
+    afterAll(() => {
+      if (previousDays === undefined) delete process.env.SWAP_HANDOFF_DAYS;
+      else process.env.SWAP_HANDOFF_DAYS = previousDays;
+    });
+
+    /** A confirmed swap whose date (an hour ago) and place everyone agreed, with one message. */
+    const agreedSwap = async (): Promise<RouteBody> => {
+      const swap = await confirmedSwap();
+      await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/messages`)
+        .set(authed(alex.token))
+        .send({ body: 'Listo, nos vemos' })
+        .expect(201);
+      await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/meeting`)
+        .set(authed(alex.token))
+        .send({ at: new Date(Date.now() - HOUR).toISOString(), place: 'Parque Nariño' })
+        .expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/meeting/confirm`).set(authed(valeria.token)).expect(200);
+      const agreed = await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/meeting/confirm`)
+        .set(authed(mateo.token))
+        .expect(200);
+      expect(agreed.body.handoffDays).toBe(0);
+      return swap;
+    };
+
+    const tradesOf = (user: RegisteredUser) =>
+      testApp.prisma.rows('user').find((row) => row.id === user.id)?.tradesCompleted as number;
+
+    it('completes by itself on read once the handoff period is over, and deletes the chat', async () => {
+      const before = tradesOf(valeria);
+      const swap = await agreedSwap();
+
+      const list = await testApp.http().get('/api/v1/routes').set(authed(valeria.token)).expect(200);
+      expect((list.body as RouteBody[]).find((route) => route.id === swap.id)?.status).toBe('COMPLETED');
+      expect(itemStatuses()).toEqual(['SWAPPED', 'SWAPPED', 'SWAPPED']);
+      expect(tradesOf(valeria)).toBe(before + 1);
+      expect(testApp.prisma.rows('swapMessage').filter((m) => m.routeId === swap.id)).toHaveLength(0);
+      expect(testApp.prisma.rows('swapRoute').find((r) => r.id === swap.id)?.completedAt).toBeInstanceOf(Date);
+
+      const mine = await testApp.http().get('/api/v1/items/mine').set(authed(alex.token)).expect(200);
+      const bike = (mine.body.items ?? mine.body).find((item: { id: string }) => item.id === itemIds.bikeId);
+      expect(bike.status).toBe('SWAPPED');
+
+      // Read again: completed once, counted once
+      await testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(mateo.token)).expect(200);
+      expect(tradesOf(valeria)).toBe(before + 1);
+
+      // The items go back to the catalog for the next test
+      for (const id of Object.values(itemIds)) {
+        const row = testApp.prisma.rows('item').find((item) => item.id === id);
+        if (row) row.status = 'AVAILABLE';
+      }
+    });
+
+    it('does not complete by itself after someone reports a problem, but everyone can still complete it', async () => {
+      const swap = await agreedSwap();
+
+      const reported = await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/report-problem`)
+        .set(authed(mateo.token))
+        .send({ reason: 'La guitarra llegó sin funda' })
+        .expect(200);
+      expect(reported.body.problem).toEqual(expect.objectContaining({ reportedById: mateo.id }));
+      expect(reported.body.autoCompleteAt).toBeNull();
+
+      const handoff = await testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(alex.token)).expect(200);
+      expect(handoff.body.status).toBe('CONFIRMED');
+      expect(itemStatuses()).toEqual(['RESERVED', 'RESERVED', 'RESERVED']);
+
+      // "Complete swap" closes it early only when everyone confirms
+      const first = await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(alex.token)).expect(200);
+      expect(first.body.status).toBe('CONFIRMED');
+      await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(valeria.token)).expect(200);
+      const last = await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(mateo.token)).expect(200);
+      expect(last.body.status).toBe('COMPLETED');
+      expect(itemStatuses()).toEqual(['SWAPPED', 'SWAPPED', 'SWAPPED']);
+      expect(testApp.prisma.rows('swapMessage').filter((m) => m.routeId === swap.id)).toHaveLength(0);
+      expect(testApp.prisma.rows('swapRoute').find((r) => r.id === swap.id)?.status).toBe('COMPLETED');
+    });
+  });
 });
