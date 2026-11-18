@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, RouteStatus } from '@prisma/client';
 import { RouteMapper, SwapRouteStatusDto } from '../mappers/route.mapper';
 import { autoCompleteAt } from './handoff.config';
 
@@ -89,7 +89,10 @@ export class HandoffMapper {
       meeting,
       handoffDays: days,
       autoCompleteAt:
-        route.meetingAt && route.meetingConfirmedAt && !route.problemReportedAt
+        route.status === RouteStatus.CONFIRMED &&
+        route.meetingAt &&
+        route.meetingConfirmedAt &&
+        !route.problemReportedAt
           ? autoCompleteAt(route.meetingAt, days).toISOString()
           : null,
       problem: route.problemReportedAt

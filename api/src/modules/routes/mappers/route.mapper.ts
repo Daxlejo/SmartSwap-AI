@@ -105,6 +105,8 @@ export interface SwapRouteDto {
   aiExplanation: string | null;
   co2SavedKg: number;
   expiresAt: string | null;
+  /** When everyone agreed the handoff date and place; "Complete swap" is allowed from then on. */
+  meetingConfirmedAt: string | null;
   createdAt: string;
   hopCount: number;
   stepsCount: number;
@@ -179,6 +181,9 @@ export class RouteMapper {
       co2SavedKg: Number((route.co2SavedKg ?? 0).toFixed(1)),
       expiresAt: route.expiresAt
         ? new Date(route.expiresAt).toISOString()
+        : null,
+      meetingConfirmedAt: route.meetingConfirmedAt
+        ? new Date(route.meetingConfirmedAt).toISOString()
         : null,
       createdAt: new Date(route.createdAt).toISOString(),
       hopCount: mappedSteps.length,
@@ -278,6 +283,7 @@ export class RouteMapper {
       aiExplanation: aiExplanation ?? null,
       co2SavedKg: cycle.co2SavedKg,
       expiresAt: null,
+      meetingConfirmedAt: null,
       createdAt: nowIso,
       hopCount: mappedSteps.length,
       stepsCount: mappedSteps.length,

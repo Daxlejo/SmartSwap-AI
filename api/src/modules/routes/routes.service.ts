@@ -691,6 +691,13 @@ export class RoutesService {
         );
       }
 
+      // A delivery is confirmed only after everyone agreed when and where it happens
+      if (!route.meetingConfirmedAt) {
+        throw new ConflictException(
+          'Agree the date and place of the handoff before confirming the delivery',
+        );
+      }
+
       await tx.swapRouteStep.update({
         where: { id: userStep.id },
         data: { deliveryConfirmed: true },
@@ -826,6 +833,8 @@ export class RoutesService {
    * `AVAILABLE`, and the other participants are notified.
    */
   async cancelRoute(userId: string, routeId: string): Promise<SwapRouteDto> {
+    // A swap whose handoff period is over is already complete: it cannot be cancelled any more
+    await this.settleDueHandoffs(userId);
     const cancelledRoute = await this.prisma.$transaction(async (tx) => {
       await this.lockRouteRow(tx, routeId.trim());
       const route = await tx.swapRoute.findUnique({
@@ -854,10 +863,15 @@ export class RoutesService {
         );
       }
 
-      // Once someone confirmed the handoff, one participant alone cannot undo it
-      if (isConfirmed && route.steps.some((step) => step.deliveryConfirmed)) {
+      // Once someone confirmed the handoff, one participant alone cannot undo it, unless a problem
+      // was reported (otherwise the swap could stay stuck with its items reserved forever)
+      if (
+        isConfirmed &&
+        !route.problemReportedAt &&
+        route.steps.some((step) => step.deliveryConfirmed)
+      ) {
         throw new ConflictException(
-          'A participant already confirmed the delivery; report a problem instead of cancelling',
+          'A participant already confirmed the delivery; report a problem before cancelling',
         );
       }
 

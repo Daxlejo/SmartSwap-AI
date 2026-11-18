@@ -260,7 +260,7 @@ describe('Swap handoff (e2e)', () => {
         .post(`/api/v1/routes/${swap.id}/meeting/confirm`)
         .set(authed(mateo.token))
         .expect(200);
-      expect(agreed.body.handoffDays).toBe(0);
+      expect(agreed.body.autoCompleteAt).not.toBeNull();
       return swap;
     };
 
@@ -294,6 +294,8 @@ describe('Swap handoff (e2e)', () => {
     });
 
     it('does not complete by itself after someone reports a problem, but everyone can still complete it', async () => {
+      // The problem is reported while the handoff period (5 days) is still running
+      process.env.SWAP_HANDOFF_DAYS = '5';
       const swap = await agreedSwap();
 
       const reported = await testApp
@@ -304,6 +306,9 @@ describe('Swap handoff (e2e)', () => {
         .expect(200);
       expect(reported.body.problem).toEqual(expect.objectContaining({ reportedById: mateo.id }));
       expect(reported.body.autoCompleteAt).toBeNull();
+
+      // Even once the period would be over, a reported problem keeps it open
+      process.env.SWAP_HANDOFF_DAYS = '0';
 
       const handoff = await testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(alex.token)).expect(200);
       expect(handoff.body.status).toBe('CONFIRMED');
@@ -318,6 +323,59 @@ describe('Swap handoff (e2e)', () => {
       expect(itemStatuses()).toEqual(['SWAPPED', 'SWAPPED', 'SWAPPED']);
       expect(testApp.prisma.rows('swapMessage').filter((m) => m.routeId === swap.id)).toHaveLength(0);
       expect(testApp.prisma.rows('swapRoute').find((r) => r.id === swap.id)?.status).toBe('COMPLETED');
+      for (const id of Object.values(itemIds)) {
+        const row = testApp.prisma.rows('item').find((item) => item.id === id);
+        if (row) row.status = 'AVAILABLE';
+      }
+    });
+
+    it('closes a swap past its handoff period before any late action can reopen or cancel it', async () => {
+      const swap = await agreedSwap();
+      const before = tradesOf(alex);
+
+      // Nobody read anything since the period ended: a late report, new date or cancel finds it completed
+      await testApp.http().post(`/api/v1/routes/${swap.id}/report-problem`).set(authed(mateo.token)).send({}).expect(409);
+      await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/meeting`)
+        .set(authed(alex.token))
+        .send({ at: new Date(Date.now() + HOUR).toISOString(), place: 'Otro lugar' })
+        .expect(409);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(alex.token)).expect(409);
+
+      expect(testApp.prisma.rows('swapRoute').find((r) => r.id === swap.id)?.status).toBe('COMPLETED');
+      expect(itemStatuses()).toEqual(['SWAPPED', 'SWAPPED', 'SWAPPED']);
+      expect(tradesOf(alex)).toBe(before + 1);
+      for (const id of Object.values(itemIds)) {
+        const row = testApp.prisma.rows('item').find((item) => item.id === id);
+        if (row) row.status = 'AVAILABLE';
+      }
+    });
+
+    it('needs an agreed date before confirming the delivery, and lets a reported problem be cancelled', async () => {
+      process.env.SWAP_HANDOFF_DAYS = '5';
+      const swap = await confirmedSwap();
+      await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(alex.token)).expect(409);
+
+      await testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/meeting`)
+        .set(authed(alex.token))
+        .send({ at: new Date(Date.now() + HOUR).toISOString(), place: 'Parque Nariño' })
+        .expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/meeting/confirm`).set(authed(valeria.token)).expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/meeting/confirm`).set(authed(mateo.token)).expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(alex.token)).expect(200);
+
+      // Alex delivered and Mateo vanished: cancelling is blocked until someone reports the problem
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(valeria.token)).expect(409);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/report-problem`).set(authed(valeria.token)).send({}).expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(valeria.token)).expect(200);
+      expect(itemStatuses()).toEqual(['AVAILABLE', 'AVAILABLE', 'AVAILABLE']);
+
+      const chat = await testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(alex.token)).expect(200);
+      expect(chat.body.status).toBe('CANCELLED');
+      expect(chat.body.autoCompleteAt).toBeNull();
     });
   });
 });

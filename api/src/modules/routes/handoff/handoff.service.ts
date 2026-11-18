@@ -42,7 +42,10 @@ export class HandoffService {
   }
 
   async sendMessage(userId: string, routeId: string, dto: SendMessageDto): Promise<HandoffDto> {
+    await this.routesService.settleDueHandoffs(userId);
     return this.prisma.$transaction(async (tx) => {
+      // Serialized with the completion, which deletes the chat: no message can outlive it
+      await this.lockRoute(tx, routeId);
       const route = await this.findForParticipant(tx, userId, routeId);
       this.assertHandoffOpen(route);
       await tx.swapMessage.create({
@@ -57,6 +60,8 @@ export class HandoffService {
    * proposer, who agrees by proposing.
    */
   async proposeMeeting(userId: string, routeId: string, dto: ProposeMeetingDto): Promise<HandoffDto> {
+    // A swap past its handoff period completes first, so a new date cannot reopen it
+    await this.routesService.settleDueHandoffs(userId);
     return this.prisma.$transaction(async (tx) => {
       await this.lockRoute(tx, routeId);
       const route = await this.findForParticipant(tx, userId, routeId);
@@ -101,6 +106,7 @@ export class HandoffService {
 
   /** Agrees to the proposed date and place; when the last participant agrees, the handoff period starts. */
   async confirmMeeting(userId: string, routeId: string): Promise<HandoffDto> {
+    await this.routesService.settleDueHandoffs(userId);
     return this.prisma.$transaction(async (tx) => {
       await this.lockRoute(tx, routeId);
       const route = await this.findForParticipant(tx, userId, routeId);
@@ -147,6 +153,8 @@ export class HandoffService {
    * told. It can still be completed (everyone confirms) or cancelled.
    */
   async reportProblem(userId: string, routeId: string, dto: ReportProblemDto): Promise<HandoffDto> {
+    // Too late to report once the handoff period is over: the swap completes first
+    await this.routesService.settleDueHandoffs(userId);
     return this.prisma.$transaction(async (tx) => {
       await this.lockRoute(tx, routeId);
       const route = await this.findForParticipant(tx, userId, routeId);

@@ -167,6 +167,17 @@ describe('Circular swap flow (e2e)', () => {
     const complete = (user: RegisteredUser) =>
       testApp.http().post(`/api/v1/routes/${proposed.id}/complete`).set(authed(user.token)).expect(200);
 
+    // The handoff date and place come first
+    await testApp
+      .http()
+      .post(`/api/v1/routes/${proposed.id}/meeting`)
+      .set(authed(alex.token))
+      .send({ at: new Date(Date.now() + 86_400_000).toISOString(), place: 'Parque Nariño' })
+      .expect(200);
+    for (const user of [valeria, mateo]) {
+      await testApp.http().post(`/api/v1/routes/${proposed.id}/meeting/confirm`).set(authed(user.token)).expect(200);
+    }
+
     // The initiator alone cannot close it for the others
     expect((await complete(alex)).body.status).toBe('CONFIRMED');
     expect((await complete(valeria)).body.status).toBe('CONFIRMED');

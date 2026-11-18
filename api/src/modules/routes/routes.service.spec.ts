@@ -1140,7 +1140,8 @@ describe('RoutesService', () => {
         allDelivered: true,
       });
 
-      // Valeria and Camila already confirmed their delivery; Alex is the last one
+      // Date agreed; Valeria and Camila already confirmed their delivery; Alex is the last one
+      confirmedRoute.meetingConfirmedAt = fixedNow;
       confirmedRoute.steps[1].deliveryConfirmed = true;
       confirmedRoute.steps[2].deliveryConfirmed = true;
       mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
@@ -1203,6 +1204,7 @@ describe('RoutesService', () => {
         stepBAcceptance: StepAcceptance.ACCEPTED,
         stepCAcceptance: StepAcceptance.ACCEPTED,
       });
+      confirmedRoute.meetingConfirmedAt = fixedNow;
       mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
       mockTx.swapRouteStep.update.mockResolvedValue({});
       mockTx.swapRoute.findUniqueOrThrow.mockResolvedValue(confirmedRoute);
@@ -1217,6 +1219,15 @@ describe('RoutesService', () => {
       expect(mockTx.item.updateMany).not.toHaveBeenCalled();
       expect(mockTx.user.updateMany).not.toHaveBeenCalled();
       expect(result.status).toBe('CONFIRMED');
+    });
+
+    it('refuses to record a delivery before the date and place are agreed', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED }),
+      );
+
+      await expect(routesService.completeRoute(userAId, routeId)).rejects.toThrow(ConflictException);
+      expect(mockTx.swapRouteStep.update).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException in getRouteById when route does not exist', async () => {
