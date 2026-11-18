@@ -2,8 +2,8 @@
 
 ```
 FASE: 4b-F — Bugs del celular, lint, término único, teclado (recortada: sin flow-runner, i18n-audit, visual-snapshot ni skeletons)
-RAMA / PR: feat/ui-polish — PR_URL (sin fusionar)
-COMMITS: 21 commits atómicos, listados con git log --oneline origin/main..feat/ui-polish
+RAMA / PR: feat/ui-polish — https://github.com/Daxlejo/SmartSwap-AI/pull/26 (sin fusionar)
+COMMITS: commits atómicos, listados con git log --oneline origin/main..feat/ui-polish
 ```
 
 **Base de la rama.** `feat/ui-polish` sale de `main` en 9aec67c (PR #23 y #24 ya fusionados). No toca `mobile/android/` ni `capacitor.config.*` (son de la 4b-N).
