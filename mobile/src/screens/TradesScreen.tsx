@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -35,6 +35,7 @@ const ViewDetailsButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
 
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, language } = useTranslation();
   const {
     routes,
@@ -45,7 +46,10 @@ export const TradesScreen: React.FC = () => {
     cancelRouteReal,
     refreshRoutesReal,
   } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>('recibidas');
+  // "Your route" can open a given tab (e.g. Received, to answer a proposal)
+  const [activeTab, setActiveTab] = useState<TabType>(
+    (location.state as { tab?: TabType } | null)?.tab ?? 'recibidas',
+  );
 
   // Recibidas state
   const [receivedProposals, setReceivedProposals] = useState<ReceivedProposal[]>([]);
@@ -127,7 +131,9 @@ export const TradesScreen: React.FC = () => {
     }
   };
 
-  const openRoute = (route: SwapRoute) => navigate(`/swap/route/${route.id}`, { state: { route } });
+  // `from: 'trades'` lets "Your route" go back here instead of opening Trades again
+  const openRoute = (route: SwapRoute) =>
+    navigate(`/swap/route/${route.id}`, { state: { route, from: 'trades' } });
 
   const showTabs = routes.length > 0 || loadStates.routes === 'ready';
 

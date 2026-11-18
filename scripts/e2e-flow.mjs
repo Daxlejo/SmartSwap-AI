@@ -12,6 +12,7 @@
  *      confirmation returns to step 3.
  *   4. Own item opened from Profile: only "Delete my item".
  *   5. Explore asks the API without the user's own items and shows none of them.
+ *   6. "Your route" and Swaps never loop: answer, wait or open the delivery chat.
  *
  * Back is the browser history back, the same `history.back()` Android's back button
  * runs on a secondary screen (see App.tsx). Exit code 0 only when every check passes.
@@ -287,6 +288,54 @@ const main = async () => {
 
       await page.getByTestId('back-to-top').click();
       await page.waitForFunction(() => window.scrollY === 0, null, { timeout: 3000 });
+    });
+
+    await run('Your route and Swaps never form a loop', browser, 'handoff', async ({ page }) => {
+      const historyLength = () => page.evaluate(() => window.history.length);
+      await page.goto(`${BASE}/swaps`, { waitUntil: 'networkidle' });
+      const card = page.locator('[data-testid=trade-card-r-active]');
+      await card.waitFor({ timeout: URL_TIMEOUT });
+      const before = await historyLength();
+
+      // Swaps → details → "Answer in Swaps" goes back to the same Swaps screen, twice in a row
+      for (let round = 0; round < 2; round += 1) {
+        await card.getByRole('button', { name: 'Ver detalles' }).click();
+        await waitPath(page, /^\/swap\/route\/r-active$/);
+        await page.getByRole('button', { name: 'Responder en Canjes' }).click();
+        await waitPath(page, /^\/swaps$/);
+        await card.waitFor({ timeout: URL_TIMEOUT });
+      }
+      assert((await historyLength()) === before + 1, `history grew while going back and forth (${before} → ${await historyLength()})`);
+      assert(await page.getByRole('tab', { name: /recibidas/i }).getAttribute('aria-selected') === 'true', 'Swaps did not reopen on Received');
+
+      // Opened from a notification, it goes to Swaps → Received once
+      await page.goto(`${BASE}/swap/route/r-active`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Responder en Canjes' }).click();
+      await waitPath(page, /^\/swaps$/);
+      assert(await page.getByRole('tab', { name: /recibidas/i }).getAttribute('aria-selected') === 'true', 'Swaps did not open on Received');
+
+      // Already answered: no "Answer" button, only a disabled "Waiting for answers"
+      await page.goto(`${BASE}/swap/route/r-answered`, { waitUntil: 'networkidle' });
+      const waiting = page.getByRole('button', { name: 'Esperando respuestas' });
+      await waiting.waitFor({ timeout: URL_TIMEOUT });
+      assert(await waiting.isDisabled(), '"Waiting for answers" can be pressed');
+      assert((await page.getByRole('button', { name: 'Responder en Canjes' }).count()) === 0, 'an answered route still offers to answer');
+
+      // Everyone accepted: the delivery chat
+      await page.goto(`${BASE}/swap/route/r-confirmed`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Abrir chat de entrega' }).waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.getByRole('button', { name: 'Responder en Canjes' }).count()) === 0, 'a confirmed swap still offers to answer');
+    });
+
+    await run('a reserved item sits under "In swap", not under Active', browser, 'handoff', async ({ page }) => {
+      await page.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
+      await page.locator('[data-testid=profile-item-i-me-2]').waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.locator('[data-testid=profile-item-i-me-1]').count()) === 0, 'the reserved item is listed as active');
+      await page.getByRole('button', { name: /^En canje/ }).click();
+      await page.locator('[data-testid=profile-item-i-me-1]').waitFor({ timeout: URL_TIMEOUT });
+      await page.click('[data-testid=profile-item-i-me-1]');
+      await waitPath(page, /^\/item\/i-me-1$/);
+      assert((await page.getByRole('button', { name: /eliminar mi artículo/i }).count()) === 0, 'a reserved item can be deleted');
     });
 
     await run('Explore leaves out the own items', browser, 'default', async ({ page, calls }) => {
