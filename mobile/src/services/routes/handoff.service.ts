@@ -38,7 +38,10 @@ export interface Handoff {
   participants: HandoffParticipant[];
   meeting: HandoffMeeting | null;
   handoffDays: number;
+  /** Null until the date is agreed, and again once someone reports a problem. */
   autoCompleteAt: string | null;
+  problem: { reportedAt: string; reportedById: string | null; reason: string | null } | null;
+  completedAt: string | null;
   messages: HandoffMessage[];
 }
 
@@ -60,5 +63,10 @@ export const handoffService = {
 
   confirmMeeting(routeId: string): Promise<Handoff> {
     return apiClient.post<Handoff>(path(routeId, 'meeting/confirm'));
+  },
+
+  /** Stops the swap from completing by itself; the reason is optional. */
+  reportProblem(routeId: string, reason?: string): Promise<Handoff> {
+    return apiClient.post<Handoff>(path(routeId, 'report-problem'), reason ? { reason } : {});
   },
 };

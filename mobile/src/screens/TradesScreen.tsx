@@ -12,6 +12,7 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ownSide, routePhase, toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { deliveryChatPath } from '@/utils/deliveryChat';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
@@ -56,9 +57,6 @@ export const TradesScreen: React.FC = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [actionError, setActionError] = useState<string | null>(null);
-
-  // En Curso state
-  const [completedRouteIds, setCompletedRouteIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     void refreshRoutesReal();
@@ -120,11 +118,9 @@ export const TradesScreen: React.FC = () => {
   const handleCompleteRoute = async (routeId: string) => {
     setActionError(null);
     setProcessingId(routeId);
-    setCompletedRouteIds((prev) => ({ ...prev, [routeId]: true }));
     try {
       await completeSwapReal(routeId);
     } catch (error) {
-      setCompletedRouteIds((prev) => ({ ...prev, [routeId]: false }));
       setActionError(describeError(error));
     } finally {
       setProcessingId(null);
@@ -421,14 +417,18 @@ export const TradesScreen: React.FC = () => {
             inProgressRoutes.map((route) => {
               const person = counterpartOf(route, currentUser?.id);
               const { offered, received } = ownSide(route, currentUser?.id);
-              const isCompleted =
-                Boolean(completedRouteIds[route.id]) || routePhase(route.status) === 'completed';
+              const isCompleted = routePhase(route.status) === 'completed';
               const total = route.stepsCount;
               const accepted = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
               const progress = isCompleted
                 ? t('trades.circuitCompleted', { count: total })
                 : t('trades.stepProgress', { done: accepted, total });
               const isBusy = processingId === route.id;
+              // Only a swap everyone accepted is handed over; each participant confirms their own delivery
+              const isConfirmed = !isCompleted && routePhase(route.status) === 'confirmed';
+              const ownDelivered = Boolean(
+                route.steps?.find((step) => step.userId === currentUser?.id)?.deliveryConfirmed,
+              );
 
               return (
                 <TradeCard
@@ -449,7 +449,18 @@ export const TradesScreen: React.FC = () => {
                   received={received}
                 >
                   <ViewDetailsButton onClick={() => openRoute(route)} />
-                  {!isCompleted && (
+                  {isConfirmed && (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      leftIcon="forum"
+                      onClick={() => navigate(deliveryChatPath(route.id))}
+                    >
+                      {t('routeDetail.openChat')}
+                    </Button>
+                  )}
+                  {isConfirmed && !ownDelivered && (
                     <Button
                       variant="ghost"
                       size="md"
@@ -460,6 +471,11 @@ export const TradesScreen: React.FC = () => {
                     >
                       {isBusy ? t('trades.completing') : t('trades.completeSwap')}
                     </Button>
+                  )}
+                  {isConfirmed && ownDelivered && (
+                    <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
+                      {t('deliveryChat.youDelivered')}
+                    </p>
                   )}
                 </TradeCard>
               );

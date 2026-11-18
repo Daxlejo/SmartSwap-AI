@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Avatar } from '@/components/ui/Avatar';
@@ -34,6 +34,8 @@ export const ProfileScreen = () => {
     myItems,
     isItemsLoading,
     refreshItems,
+    refreshRoutesReal,
+    refreshCurrentUser,
     deleteItemReal,
     updateProfileReal,
     uploadAvatarReal,
@@ -61,9 +63,19 @@ export const ProfileScreen = () => {
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | undefined>();
 
+  // Reading the swaps is what closes those whose handoff period ended (the API has no cron), so
+  // they go first; then the items (In swap / History) and "Completed swaps" are up to date.
+  // Once per visit: refreshing the user changes these callbacks, which must not reload again.
+  const loaders = useRef({ refreshItems, refreshRoutesReal, refreshCurrentUser });
+  loaders.current = { refreshItems, refreshRoutesReal, refreshCurrentUser };
   useEffect(() => {
-    refreshItems().catch(() => {});
-  }, [refreshItems]);
+    const load = async () => {
+      const { refreshItems: items, refreshRoutesReal: routes, refreshCurrentUser: user } = loaders.current;
+      await Promise.resolve(routes()).catch(() => {});
+      await Promise.all([items().catch(() => {}), user().catch(() => {})]);
+    };
+    void load();
+  }, []);
 
   // Opened from the "add your location" prompt: jump straight to the edit sheet
   useEffect(() => {

@@ -337,7 +337,7 @@ const main = async () => {
       ];
       const meetingAt = new Date(Date.now() + 2 * 86_400_000).toISOString();
       const chat = {
-        routeId: 'r-confirmed', code: 'SW-4823', status: 'CONFIRMED', participants: people, handoffDays: 5, autoCompleteAt: null,
+        routeId: 'r-confirmed', code: 'SW-4823', status: 'CONFIRMED', participants: people, handoffDays: 5, autoCompleteAt: null, problem: null, completedAt: null,
         meeting: { at: meetingAt, place: 'Parque Nariño, frente a la iglesia', proposedById: 'u-camilo', confirmedAt: null },
         messages: [{ id: 'm1', senderId: 'u-laura', senderName: 'Laura Benavides Ortega', body: '¿Les sirve el sábado?', createdAt: new Date().toISOString() }],
       };
@@ -354,7 +354,11 @@ const main = async () => {
           chat.meeting.confirmedAt = new Date().toISOString();
           chat.autoCompleteAt = new Date(Date.parse(meetingAt) + 5 * 86_400_000).toISOString();
         }
-        if (!/\/(handoff|messages|meeting|meeting\/confirm)$/.test(path)) return route.fallback();
+        if (path.endsWith('/report-problem')) {
+          chat.problem = { reportedAt: new Date().toISOString(), reportedById: 'u-me', reason: request.postDataJSON()?.reason ?? null };
+          chat.autoCompleteAt = null;
+        }
+        if (!/\/(handoff|messages|meeting|meeting\/confirm|report-problem)$/.test(path)) return route.fallback();
         return route.fulfill({ status: 200, json: chat });
       });
 
@@ -381,6 +385,14 @@ const main = async () => {
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       const top = await notice.evaluate((el) => el.getBoundingClientRect().top);
       assert(top >= 0 && top < 160, `the notice scrolled away (${top})`);
+
+      // Reporting a problem stops the automatic completion
+      await page.getByRole('button', { name: 'Reportar un problema' }).click();
+      await page.fill('#report-reason', 'La bicicleta tiene un pinchazo');
+      await page.getByRole('button', { name: 'Enviar reporte' }).click();
+      await page.getByTestId('problem-reported').waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.getByTestId('auto-complete-date').count()) === 0, 'the auto-complete date stays after a reported problem');
+      assert((await page.getByRole('button', { name: 'Reportar un problema' }).count()) === 0, 'a problem can be reported twice');
 
       const before = polls;
       await page.waitForTimeout(5600);

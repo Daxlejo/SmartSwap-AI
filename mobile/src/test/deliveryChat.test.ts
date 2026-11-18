@@ -26,6 +26,8 @@ const handoff = (overrides: Partial<Handoff> = {}): Handoff => ({
   meeting: null,
   handoffDays: 5,
   autoCompleteAt: null,
+  problem: null,
+  completedAt: null,
   messages: [],
   ...overrides,
 });
@@ -88,10 +90,14 @@ describe('handoffService', () => {
     await handoffService.sendMessage('r1', 'Hola');
     await handoffService.proposeMeeting('r1', proposedByAna.at, 'Parque Nariño');
     await handoffService.confirmMeeting('r1');
+    await handoffService.reportProblem('r1', 'No llegó');
+    await handoffService.reportProblem('r1');
 
     expect(get).toHaveBeenCalledWith('/routes/r1/handoff');
     expect(post).toHaveBeenNthCalledWith(1, '/routes/r1/messages', { body: 'Hola' });
     expect(post).toHaveBeenNthCalledWith(2, '/routes/r1/meeting', { at: proposedByAna.at, place: 'Parque Nariño' });
     expect(post).toHaveBeenNthCalledWith(3, '/routes/r1/meeting/confirm');
+    expect(post).toHaveBeenNthCalledWith(4, '/routes/r1/report-problem', { reason: 'No llegó' });
+    expect(post).toHaveBeenNthCalledWith(5, '/routes/r1/report-problem', {});
   });
 });

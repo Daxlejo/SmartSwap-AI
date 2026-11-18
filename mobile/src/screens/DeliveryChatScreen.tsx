@@ -25,7 +25,7 @@ import { firstName } from '@/utils/swapRing';
  */
 export const DeliveryChatScreen: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
-  const { currentUser } = useApp();
+  const { currentUser, completeSwapReal } = useApp();
   const { t, language } = useTranslation();
   const { handoff, status, refresh, setHandoff } = useHandoff(routeId);
 
@@ -36,6 +36,10 @@ export const DeliveryChatScreen: React.FC = () => {
   const [meetingAt, setMeetingAt] = useState('');
   const [meetingPlace, setMeetingPlace] = useState('');
   const [isSavingMeeting, setIsSavingMeeting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [isSendingReport, setIsSendingReport] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const messageCount = handoff?.messages.length ?? 0;
 
@@ -108,6 +112,40 @@ export const DeliveryChatScreen: React.FC = () => {
       setActionError(describeError(error));
     } finally {
       setIsSavingMeeting(false);
+    }
+  };
+
+  const ownStep = handoff.participants.find((p) => p.userId === currentUser?.id);
+  const deliveredCount = handoff.participants.filter((p) => p.deliveryConfirmed).length;
+  const isCompleted = handoff.status.toUpperCase() === 'COMPLETED';
+
+  // "Complete swap": closes it early only once everyone confirmed
+  const handleComplete = async () => {
+    if (!routeId || isCompleting) return;
+    setIsCompleting(true);
+    setActionError(null);
+    try {
+      await completeSwapReal(routeId);
+      await refresh();
+    } catch (error) {
+      setActionError(describeError(error));
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleReport = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!routeId || isSendingReport) return;
+    setIsSendingReport(true);
+    setActionError(null);
+    try {
+      setHandoff(await handoffService.reportProblem(routeId, reportReason.trim() || undefined));
+      setIsReporting(false);
+    } catch (error) {
+      setActionError(describeError(error));
+    } finally {
+      setIsSendingReport(false);
     }
   };
 
@@ -231,10 +269,87 @@ export const DeliveryChatScreen: React.FC = () => {
           </div>
         )}
 
-        {!open && (
-          <p className="p-3 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm">
-            {t('deliveryChat.closed')}
+        {handoff.problem && (
+          <div
+            role="status"
+            data-testid="problem-reported"
+            className="p-3 rounded-xl bg-error-container/40 text-on-error-container font-body-sm text-body-sm flex flex-col gap-1"
+          >
+            <span className="font-bold">
+              {t('deliveryChat.problemReported', { name: nameOf(handoff.problem.reportedById) })}
+            </span>
+            {handoff.problem.reason && <span className="break-words">{handoff.problem.reason}</span>}
+          </div>
+        )}
+
+        {isCompleted ? (
+          <p
+            data-testid="swap-completed"
+            className="p-3 rounded-xl bg-success-container text-on-success-container font-label-md text-label-md font-bold flex items-center gap-2"
+          >
+            <Icon name="check_circle" size="sm" filled />
+            {t('deliveryChat.completed')}
           </p>
+        ) : (
+          !open && (
+            <p className="p-3 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm">
+              {t('deliveryChat.closed')}
+            </p>
+          )
+        )}
+
+        {/* Closing: complete early (everyone confirms) or report a problem */}
+        {open && (
+          <section aria-label={t('deliveryChat.closingAria')} className="flex flex-col gap-2">
+            <p className="font-body-sm text-body-sm text-on-surface-variant">
+              {t('deliveryChat.deliveredProgress', { done: deliveredCount, total: handoff.participants.length })}
+            </p>
+            {ownStep?.deliveryConfirmed ? (
+              <p className="font-label-md text-label-md text-primary font-bold flex items-center gap-2">
+                <Icon name="check_circle" size="sm" filled />
+                {t('deliveryChat.youDelivered')}
+              </p>
+            ) : (
+              <Button variant="outline" size="md" fullWidth leftIcon="check_circle" isLoading={isCompleting} onClick={handleComplete}>
+                {t('deliveryChat.completeSwap')}
+              </Button>
+            )}
+            {!handoff.problem &&
+              (isReporting ? (
+                <form onSubmit={handleReport} className="flex flex-col gap-2 p-3 rounded-2xl border border-error/30">
+                  <label htmlFor="report-reason" className="font-label-md text-label-md text-on-surface font-bold">
+                    {t('deliveryChat.reportReasonLabel')}
+                  </label>
+                  <textarea
+                    id="report-reason"
+                    rows={2}
+                    maxLength={MAX_MESSAGE_LENGTH}
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+                    className="w-full p-3 bg-surface-container-low text-on-surface rounded-2xl font-body-md text-body-md resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <div className="flex gap-2">
+                    <Button type="button" variant="ghost" size="md" fullWidth onClick={() => setIsReporting(false)}>
+                      {t('deliveryChat.cancelEdit')}
+                    </Button>
+                    <Button type="submit" variant="primary" size="md" fullWidth isLoading={isSendingReport}>
+                      {t('deliveryChat.sendReport')}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="md"
+                  fullWidth
+                  leftIcon="report"
+                  onClick={() => setIsReporting(true)}
+                  className="text-error hover:bg-error-container/20"
+                >
+                  {t('deliveryChat.reportProblem')}
+                </Button>
+              ))}
+          </section>
         )}
 
         {/* Messages */}
