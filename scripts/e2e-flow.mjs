@@ -371,8 +371,11 @@ const main = async () => {
       assert(await page.getByText('¿Les sirve el sábado?').isVisible(), 'the existing message is not shown');
       assert((await page.getByTestId('auto-complete-date').count()) === 0, 'the auto-complete date shows before everyone agreed');
 
+      assert((await page.getByRole('button', { name: 'Completar canje' }).count()) === 0, '"Complete swap" shows before the date is agreed');
+      assert(await page.getByRole('button', { name: 'Cancelar canje' }).isVisible(), 'no way to cancel the swap from the chat');
       await page.getByRole('button', { name: 'Confirmar fecha y lugar' }).click();
       await page.getByTestId('auto-complete-date').waitFor({ timeout: URL_TIMEOUT });
+      assert(await page.getByRole('button', { name: 'Completar canje' }).isVisible(), '"Complete swap" missing once the date is agreed');
       assert((await page.getByTestId('auto-complete-date').textContent()).includes('Se completa automáticamente el'), 'wrong auto-complete text');
 
       await page.fill('#chat-draft', 'x'.repeat(520));

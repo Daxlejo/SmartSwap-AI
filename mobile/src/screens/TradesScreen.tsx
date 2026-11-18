@@ -460,7 +460,7 @@ export const TradesScreen: React.FC = () => {
                       {t('routeDetail.openChat')}
                     </Button>
                   )}
-                  {isConfirmed && !ownDelivered && (
+                  {isConfirmed && !ownDelivered && Boolean(route.meetingConfirmedAt) && (
                     <Button
                       variant="ghost"
                       size="md"

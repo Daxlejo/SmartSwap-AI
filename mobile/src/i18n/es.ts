@@ -637,6 +637,8 @@ export const es = {
     sendReport: 'Enviar reporte',
     problemReported: '{{name}} reportó un problema. El canje ya no se completará automáticamente.',
     completed: 'Canje completado. Los artículos pasaron al historial y los mensajes se borraron.',
+    agreeFirst: 'Primero acuerden la fecha y el lugar; después cada uno confirma su entrega.',
+    cancelSwap: 'Cancelar canje',
   },
   itemDetail: {
     ownerWants: 'Le interesa a cambio',

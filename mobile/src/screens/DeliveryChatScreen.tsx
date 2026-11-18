@@ -25,9 +25,9 @@ import { firstName } from '@/utils/swapRing';
  */
 export const DeliveryChatScreen: React.FC = () => {
   const { routeId } = useParams<{ routeId: string }>();
-  const { currentUser, completeSwapReal } = useApp();
+  const { currentUser, completeSwapReal, cancelRouteReal } = useApp();
   const { t, language } = useTranslation();
-  const { handoff, status, refresh, setHandoff } = useHandoff(routeId);
+  const { handoff, status, refresh, apply } = useHandoff(routeId);
 
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -40,6 +40,7 @@ export const DeliveryChatScreen: React.FC = () => {
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const messageCount = handoff?.messages.length ?? 0;
 
@@ -81,7 +82,7 @@ export const DeliveryChatScreen: React.FC = () => {
     setIsSending(true);
     setActionError(null);
     try {
-      setHandoff(await handoffService.sendMessage(routeId, body));
+      apply(await handoffService.sendMessage(routeId, body));
       setDraft('');
     } catch (error) {
       setActionError(describeError(error));
@@ -106,7 +107,7 @@ export const DeliveryChatScreen: React.FC = () => {
     setIsSavingMeeting(true);
     setActionError(null);
     try {
-      setHandoff(await handoffService.proposeMeeting(routeId, new Date(meetingAt).toISOString(), meetingPlace.trim()));
+      apply(await handoffService.proposeMeeting(routeId, new Date(meetingAt).toISOString(), meetingPlace.trim()));
       setIsEditingMeeting(false);
     } catch (error) {
       setActionError(describeError(error));
@@ -118,6 +119,24 @@ export const DeliveryChatScreen: React.FC = () => {
   const ownStep = handoff.participants.find((p) => p.userId === currentUser?.id);
   const deliveredCount = handoff.participants.filter((p) => p.deliveryConfirmed).length;
   const isCompleted = handoff.status.toUpperCase() === 'COMPLETED';
+  // Delivery is confirmed only once the date and place are agreed (the API answers 409 before)
+  const canComplete = state === 'agreed';
+  // A way out: while nobody delivered, or once a problem was reported
+  const canCancel = deliveredCount === 0 || Boolean(handoff.problem);
+
+  const handleCancel = async () => {
+    if (!routeId || isCancelling) return;
+    setIsCancelling(true);
+    setActionError(null);
+    try {
+      await cancelRouteReal(routeId);
+      await refresh();
+    } catch (error) {
+      setActionError(describeError(error));
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   // "Complete swap": closes it early only once everyone confirmed
   const handleComplete = async () => {
@@ -140,7 +159,7 @@ export const DeliveryChatScreen: React.FC = () => {
     setIsSendingReport(true);
     setActionError(null);
     try {
-      setHandoff(await handoffService.reportProblem(routeId, reportReason.trim() || undefined));
+      apply(await handoffService.reportProblem(routeId, reportReason.trim() || undefined));
       setIsReporting(false);
     } catch (error) {
       setActionError(describeError(error));
@@ -154,7 +173,7 @@ export const DeliveryChatScreen: React.FC = () => {
     setIsSavingMeeting(true);
     setActionError(null);
     try {
-      setHandoff(await handoffService.confirmMeeting(routeId));
+      apply(await handoffService.confirmMeeting(routeId));
     } catch (error) {
       setActionError(describeError(error));
     } finally {
@@ -203,7 +222,7 @@ export const DeliveryChatScreen: React.FC = () => {
             </div>
           )}
 
-          {handoff.autoCompleteAt && (
+          {open && handoff.autoCompleteAt && (
             <p
               data-testid="auto-complete-date"
               className="p-2.5 rounded-xl bg-primary/10 text-primary font-label-md text-label-md font-bold flex items-center gap-2"
@@ -309,6 +328,8 @@ export const DeliveryChatScreen: React.FC = () => {
                 <Icon name="check_circle" size="sm" filled />
                 {t('deliveryChat.youDelivered')}
               </p>
+            ) : !canComplete ? (
+              <p className="font-body-sm text-body-sm text-on-surface-variant">{t('deliveryChat.agreeFirst')}</p>
             ) : (
               <Button variant="outline" size="md" fullWidth leftIcon="check_circle" isLoading={isCompleting} onClick={handleComplete}>
                 {t('deliveryChat.completeSwap')}
@@ -349,6 +370,19 @@ export const DeliveryChatScreen: React.FC = () => {
                   {t('deliveryChat.reportProblem')}
                 </Button>
               ))}
+            {canCancel && (
+              <Button
+                variant="ghost"
+                size="md"
+                fullWidth
+                leftIcon="cancel"
+                isLoading={isCancelling}
+                onClick={handleCancel}
+                className="text-on-surface-variant"
+              >
+                {t('deliveryChat.cancelSwap')}
+              </Button>
+            )}
           </section>
         )}
 

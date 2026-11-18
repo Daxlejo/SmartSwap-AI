@@ -639,6 +639,8 @@ export const en: TranslationSchema = {
     sendReport: 'Send report',
     problemReported: '{{name}} reported a problem. The swap will no longer complete automatically.',
     completed: 'Swap completed. The items moved to history and the messages were deleted.',
+    agreeFirst: 'First agree the date and place; then each of you confirms their delivery.',
+    cancelSwap: 'Cancel swap',
   },
   itemDetail: {
     ownerWants: 'Would take in exchange',
