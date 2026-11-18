@@ -808,6 +808,13 @@ export class RoutesService {
         );
       }
 
+      // Once someone confirmed the handoff, one participant alone cannot undo it
+      if (isConfirmed && route.steps.some((step) => step.deliveryConfirmed)) {
+        throw new ConflictException(
+          'A participant already confirmed the delivery; report a problem instead of cancelling',
+        );
+      }
+
       // Items go back to the catalog before the route is re-read, so the answer shows them active
       await tx.item.updateMany({
         where: { id: { in: this.collectUniqueItemIds(route.steps) } },

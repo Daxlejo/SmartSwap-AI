@@ -1076,6 +1076,17 @@ describe('RoutesService', () => {
       expect(result.steps[0].givesItem.status).toBe('ACTIVE');
     });
 
+    it('refuses to cancel a confirmed swap once someone confirmed the delivery', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED, allDelivered: true }),
+      );
+
+      await expect(routesService.cancelRoute(userBId, 'route-id')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+    });
+
     it('rejects cancelling a confirmed swap by someone outside it', async () => {
       mockTx.swapRoute.findUnique.mockResolvedValue(
         buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED }),
