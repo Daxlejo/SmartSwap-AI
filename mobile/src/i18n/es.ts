@@ -682,6 +682,8 @@ export const es = {
       loginRequired: 'Debes iniciar sesión para publicar un artículo en el catálogo.',
       publishFailed: 'No se pudo publicar el artículo. Intenta nuevamente.',
       publishUnexpected: 'Ocurrió un error al publicar tu artículo.',
+      duplicateInSwap: 'Ya tienes este artículo en un canje en curso.',
+      duplicateActive: 'Ya publicaste un artículo con este nombre.',
     },
     success: {
       title: '¡Artículo publicado!',

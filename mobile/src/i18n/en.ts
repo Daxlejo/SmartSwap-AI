@@ -684,6 +684,8 @@ export const en: TranslationSchema = {
       loginRequired: 'You must sign in to publish an item in the catalog.',
       publishFailed: 'The item could not be published. Please try again.',
       publishUnexpected: 'An error occurred while publishing your item.',
+      duplicateInSwap: 'You already have this item in a swap in progress.',
+      duplicateActive: 'You already published an item with this name.',
     },
     success: {
       title: 'Item published!',
