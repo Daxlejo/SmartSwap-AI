@@ -155,6 +155,9 @@ export const es = {
     routeDetail: {
       title: 'Tu ruta',
     },
+    deliveryChat: {
+      title: 'Chat de entrega',
+    },
     explore: {
       title: 'Explorar',
     },
@@ -603,6 +606,28 @@ export const es = {
     noItemsTitle: 'Aún no tienes artículos publicados',
     noItemsDescription: 'Para proponer un canje necesitas ofrecer algo. Publica tu primer artículo y vuelve aquí.',
     publishItem: 'Publicar un artículo',
+  },
+  deliveryChat: {
+    disclaimer: 'SmartSwap no se hace responsable de las entregas. Encuéntrense en un lugar público y concurrido, de día, y revisen el artículo antes de entregar el suyo.',
+    meetingTitle: 'Fecha y lugar acordados',
+    meetingAgreed: 'Todos confirmaron la fecha y el lugar.',
+    meetingProposedBy: 'Propuesta de {{name}} · {{done}} de {{total}} confirmaron',
+    autoComplete: 'Se completa automáticamente el {{date}}',
+    meetingDate: 'Fecha y hora',
+    meetingPlace: 'Lugar',
+    meetingPlaceHint: 'Un lugar público y concurrido',
+    proposeMeeting: 'Proponer fecha y lugar',
+    confirmMeeting: 'Confirmar fecha y lugar',
+    changeMeeting: 'Proponer otra fecha o lugar',
+    cancelEdit: 'Cancelar',
+    meetingIncomplete: 'Elige la fecha y escribe el lugar (mínimo 3 letras).',
+    closed: 'Este canje ya no está en entrega: el chat está cerrado.',
+    messagesAria: 'Mensajes del canje',
+    empty: 'Aún no hay mensajes. Saluden y acuerden la entrega.',
+    messageLabel: 'Mensaje',
+    messagePlaceholder: 'Escribe un mensaje',
+    send: 'Enviar mensaje',
+    actionFailed: 'No pudimos completar la acción. Inténtalo de nuevo.',
   },
   itemDetail: {
     ownerWants: 'Le interesa a cambio',

@@ -157,6 +157,9 @@ export const en: TranslationSchema = {
     routeDetail: {
       title: 'Your route',
     },
+    deliveryChat: {
+      title: 'Delivery chat',
+    },
     explore: {
       title: 'Explore',
     },
@@ -605,6 +608,28 @@ export const en: TranslationSchema = {
     noItemsTitle: 'You have no published items yet',
     noItemsDescription: 'To propose a swap you need something to offer. Publish your first item and come back.',
     publishItem: 'Publish an item',
+  },
+  deliveryChat: {
+    disclaimer: 'SmartSwap is not responsible for deliveries. Meet in a busy public place, during the day, and check the item before handing over yours.',
+    meetingTitle: 'Agreed date and place',
+    meetingAgreed: 'Everyone confirmed the date and place.',
+    meetingProposedBy: 'Proposed by {{name}} · {{done}} of {{total}} confirmed',
+    autoComplete: 'Completes automatically on {{date}}',
+    meetingDate: 'Date and time',
+    meetingPlace: 'Place',
+    meetingPlaceHint: 'A busy public place',
+    proposeMeeting: 'Propose date and place',
+    confirmMeeting: 'Confirm date and place',
+    changeMeeting: 'Propose another date or place',
+    cancelEdit: 'Cancel',
+    meetingIncomplete: 'Pick the date and write the place (at least 3 letters).',
+    closed: 'This swap is no longer in delivery: the chat is closed.',
+    messagesAria: 'Swap messages',
+    empty: 'No messages yet. Say hi and agree on the handoff.',
+    messageLabel: 'Message',
+    messagePlaceholder: 'Write a message',
+    send: 'Send message',
+    actionFailed: 'We could not do that. Try again.',
   },
   itemDetail: {
     ownerWants: 'Would take in exchange',
