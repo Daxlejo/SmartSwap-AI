@@ -241,6 +241,14 @@ const SCREENS = [
   { id: 'ring-n2-broken', path: '/swap/route/r-n2-broken' },
   { id: 'ring-n4-closed', path: '/swap/route/r-n4-closed' },
   {
+    id: 'trades-sent',
+    path: '/swaps',
+    scenario: 'sent',
+    go: async (page) => {
+      await page.getByRole('tab', { name: /enviadas/i }).click();
+    },
+  },
+  {
     id: 'trades-in-progress',
     path: '/swaps',
     go: async (page) => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Item, SwapRoute, User } from '@/types';
 import type { NormalizedRouteStep } from '@/services/routes/routes.service';
-import { canProposeRoute, isSignedInUser, toReceivedProposals } from '@/utils/routeView';
+import { canProposeRoute, isSignedInUser, routePhase, toReceivedProposals } from '@/utils/routeView';
 
 const user = (id: string, name: string): User => ({
   id,
@@ -122,5 +122,21 @@ describe('isSignedInUser', () => {
   it('is false when the session or the participant id is missing', () => {
     expect(isSignedInUser(undefined, undefined)).toBe(false);
     expect(isSignedInUser('ana', undefined)).toBe(false);
+  });
+});
+
+describe('routePhase', () => {
+  it('reads PROPOSED, the status the API sends for a waiting proposal, as pending, not cancelled', () => {
+    expect(routePhase('PROPOSED')).toBe('pending');
+    expect(routePhase('ACTIVE')).toBe('pending');
+    expect(routePhase('suggested')).toBe('pending');
+    expect(routePhase(undefined)).toBe('pending');
+  });
+
+  it('keeps the closed states apart', () => {
+    expect(routePhase('CONFIRMED')).toBe('confirmed');
+    expect(routePhase('COMPLETED')).toBe('completed');
+    expect(routePhase('EXPIRED')).toBe('expired');
+    expect(routePhase('CANCELLED')).toBe('cancelled');
   });
 });

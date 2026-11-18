@@ -21,6 +21,8 @@ import { formAlertFor, type FormAlertContent } from '@/utils/formAlert';
 import { useRevealOnError } from '@/hooks/useRevealOnError';
 
 import { ItemImage } from '@/components/ui/ItemImage';
+import { mergeUniqueWants } from '@/utils/wantedItems';
+import { findDuplicateTitle } from '@/utils/itemTitle';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -175,30 +177,10 @@ const mapAiConditionToUi = (rawCondition: string): ItemConditionLabel => {
   return 'Excelente estado';
 };
 
-export const mergeUniqueWants = (
-  existingWants: string[],
-  suggestedWants: string[],
-): string[] => {
-  const seen = new Set(existingWants.map((w) => w.trim().toLowerCase()));
-  const merged = [...existingWants];
-
-  for (const rawSuggestion of suggestedWants) {
-    const trimmed = rawSuggestion.trim();
-    if (!trimmed) continue;
-    const key = trimmed.toLowerCase();
-    if (!seen.has(key)) {
-      seen.add(key);
-      merged.push(trimmed);
-    }
-  }
-
-  return merged.slice(0, 10);
-};
-
 export const PublishScreen: React.FC = () => {
   const navigate = useNavigate();
   const { t, language: locale } = useTranslation();
-  const { currentUser, createItemReal } = useApp();
+  const { currentUser, createItemReal, myItems } = useApp();
   const [isPhotoSheetOpen, setIsPhotoSheetOpen] = useState(false);
 
 
@@ -211,6 +193,14 @@ export const PublishScreen: React.FC = () => {
 
   // Step 2: Information state
   const [name, setName] = useState('');
+  // A repeated title only warns; the API refuses it (409) when the twin is in a swap in progress
+  const duplicateTitle = findDuplicateTitle(myItems, name);
+  const duplicateNotice =
+    duplicateTitle === 'inSwap'
+      ? t('publish.errors.duplicateInSwap')
+      : duplicateTitle === 'active'
+        ? t('publish.errors.duplicateActive')
+        : undefined;
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState<ItemConditionLabel>('Excelente estado');
@@ -542,6 +532,11 @@ export const PublishScreen: React.FC = () => {
   // Step 4 Real Publish Action -> POST /api/v1/items
   const handlePublish = async () => {
     if (isPublishing) return;
+    // Known to end in a 409: stop before uploading photos that would be left orphaned
+    if (duplicateTitle === 'inSwap') {
+      showFormAlert(t('publish.errors.duplicateInSwap'));
+      return;
+    }
 
     setIsPublishing(true);
     setErrors((prev) => ({ ...prev, submit: undefined }));
@@ -585,7 +580,9 @@ export const PublishScreen: React.FC = () => {
         showFormAlert(
           err.statusCode === 401
             ? t('publish.errors.loginRequired')
-            : err.message || t('publish.errors.publishFailed'),
+            : err.statusCode === 409
+              ? t('publish.errors.duplicateInSwap')
+              : err.message || t('publish.errors.publishFailed'),
         );
       } else if (err instanceof Error) {
         showFormAlert(err.message);
@@ -1021,6 +1018,7 @@ export const PublishScreen: React.FC = () => {
               if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             error={errors.name}
+            helperText={duplicateNotice}
           />
 
           {/* Descripción */}

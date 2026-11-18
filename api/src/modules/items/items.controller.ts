@@ -130,6 +130,10 @@ export class ItemsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new item and synchronize its wants' })
   @ApiResponse({ status: 201, description: 'Created item with wants' })
+  @ApiResponse({
+    status: 409,
+    description: 'The user already has an item with the same normalized title reserved in a swap in progress',
+  })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(

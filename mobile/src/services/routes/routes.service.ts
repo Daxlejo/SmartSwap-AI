@@ -9,6 +9,7 @@ import type { Item, Proposal, ProposalStatus, SwapRoute, User } from '@/types';
 
 export type RouteLifecycleStatus =
   | 'SUGGESTED'
+  | 'PROPOSED'
   | 'ACTIVE'
   | 'CONFIRMED'
   | 'COMPLETED'

@@ -37,7 +37,7 @@ export class NotificationsService {
           type: 'SYSTEM_WELCOME',
           badge: 'Red Circular Activa',
           title: '¡Bienvenido a SmartSwap!',
-          body: 'Publica tu primer objeto o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
+          body: 'Publica tu primer artículo o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
           read: false,
         },
       });

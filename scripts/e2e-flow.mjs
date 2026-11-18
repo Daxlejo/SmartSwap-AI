@@ -10,7 +10,7 @@
  *      the user) → results, then back: step 3, 2 and 1, never a second search.
  *   3. No ring found: "Propose a direct swap" replaces Searching, so back from the
  *      confirmation returns to step 3.
- *   4. Own item opened from Profile: only "Delete my listing".
+ *   4. Own item opened from Profile: only "Delete my item".
  *   5. Explore asks the API without the user's own items and shows none of them.
  *
  * Back is the browser history back, the same `history.back()` Android's back button
@@ -53,7 +53,9 @@ const newPhone = async (browser, scenario = 'default') => {
     if (url.pathname.startsWith(API_PREFIX) && url.host !== `localhost:${PORT}`) {
       const path = url.pathname.slice(API_PREFIX.length);
       calls.push({ method: request.method(), path, query: url.search, body: request.postDataJSON?.() ?? null });
-      const answer = respond(request.method(), path + url.search, scenario);
+      // Once a direct proposal is sent, the routes list includes it, as the real API would
+      const sentDirect = calls.some((call) => call.method === 'POST' && call.path === '/routes/direct');
+      const answer = respond(request.method(), path + url.search, scenario === 'default' && sentDirect ? 'sent' : scenario);
       if (!answer) return route.fulfill({ status: 404, json: { message: 'e2e: no fixture' } });
       return route.fulfill({ status: answer[0], json: answer[1] });
     }
@@ -137,6 +139,15 @@ const main = async () => {
       // The back arrow of "Proposal sent" goes Home, never back to the sent form
       await page.getByRole('button', { name: 'Volver atrás' }).click();
       await waitPath(page, /^\/home$/);
+
+      // Swaps → Sent shows it waiting for an answer, never as cancelled (the API calls it PROPOSED)
+      await page.locator('nav a[href="/swaps"]').click();
+      await waitPath(page, /^\/swaps/);
+      await page.getByRole('tab', { name: /enviadas/i }).click();
+      const sentCard = page.locator('[data-testid=trade-card-r-direct]');
+      await sentCard.waitFor({ timeout: URL_TIMEOUT });
+      assert(await sentCard.getByText('En revisión').isVisible(), 'the direct proposal is not shown as in review');
+      assert((await sentCard.getByText('Propuesta cancelada').count()) === 0, 'the direct proposal is shown as cancelled');
     });
 
     await run('circular search waits, and back walks the steps without searching again', browser, 'default', async ({ page, calls }) => {
@@ -249,7 +260,7 @@ const main = async () => {
       await page.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
       await page.click('[data-testid=profile-item-i-me-1]');
       await waitPath(page, /^\/item\/i-me-1$/);
-      assert(await page.getByRole('button', { name: /eliminar mi publicación/i }).isVisible(), 'no delete button on the own item');
+      assert(await page.getByRole('button', { name: /eliminar mi artículo/i }).isVisible(), 'no delete button on the own item');
       assert((await page.locator('[data-testid=item-propose-button]').count()) === 0, 'own item offers a proposal');
     });
 

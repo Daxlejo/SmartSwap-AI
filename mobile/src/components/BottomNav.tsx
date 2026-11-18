@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { Icon } from './ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useApp } from '@/context/AppContext';
+import { routePhase } from '@/utils/routeView';
 
 interface TabProps {
   to: string;
@@ -52,7 +53,7 @@ export const BottomNav = () => {
   const pendingResponses = routes.filter(
     (route) =>
       route.initiatorId !== currentUser?.id &&
-      ['ACTIVE', 'PROPOSED'].includes((route.status || '').toUpperCase()) &&
+      routePhase(route.status) === 'pending' &&
       route.steps?.some((step) => step.userId === currentUser?.id && step.acceptance === 'PENDING'),
   ).length;
 

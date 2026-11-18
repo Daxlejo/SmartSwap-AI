@@ -395,6 +395,8 @@ paths:
           description: Validation error
         '401':
           description: Unauthorized
+        '409':
+          description: The user already has an item with the same normalized title reserved in a swap in progress
       tags:
         - items
       security:

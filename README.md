@@ -61,6 +61,9 @@ Más detalles para el equipo en [mobile/GUIA_EQUIPO.md](mobile/GUIA_EQUIPO.md).
 
 Al 10 de noviembre de 2026, sobre `main`: 157 tests de api, 89 de mobile y 34 de e2e, todos en verde.
 
+## Reglas de negocio
+- **Publicaciones repetidas.** Al publicar, el título se compara normalizado (minúsculas, sin tildes ni espacios extra) con los artículos del mismo usuario. Si ya tiene uno con ese título reservado en un canje en curso (`PENDING_SWAP`), `POST /items` responde **409** y la app muestra "Ya tienes este artículo en un canje en curso": así no se ofrece dos veces el mismo objeto. Si el gemelo está activo, la app solo avisa ("Ya publicaste un artículo con este nombre") y deja continuar. La regla está en `ItemsService.create` (`api/src/modules/items/item-title.ts`) y en `mobile/src/utils/itemTitle.ts`.
+
 ## Cuentas demo
 El seed (`api/src/seed/seed-data.ts`) crea seis personas en municipios de Nariño: `alex`, `valeria`, `mateo`, `camila`, `diego` y `laura`, todas con correo `@smartswap.co`. Sus objetos tienen foto y precio en COP. Con esos datos, el motor encuentra para Alex un ciclo de 2 personas (objetivo "Guitarra"), uno de 3 ("Tablet") y uno de 4 ("Consola Nintendo"). Además queda una propuesta en curso entre Alex, Mateo y Diego, en la que falta que Diego responda. La contraseña no está en el repositorio. Detalle en [el algoritmo de ciclos](docs/architecture/07-algoritmo-ciclos.md).
 
@@ -72,6 +75,7 @@ Esto es lo que sabemos que no está bien y decidimos no arreglar antes de la ent
 3. **`AppContext` no tiene tests unitarios.** `mobile/src/context/AppContext.tsx` concentra la sesión, los objetos, las rutas, las notificaciones y sus estados de carga y error, pero ningún test lo ejercita directamente: en `configureSwap.test.tsx` se reemplaza con `vi.mock`. Los servicios que usa sí tienen tests.
 4. **Dependencia del plan free de Render.** El servicio se duerme cuando no tiene tráfico, y la primera petición paga el arranque en frío (Node + `prisma migrate deploy`), que puede tardar decenas de segundos. Tampoco hay cron: las propuestas vencidas (48 h) se marcan como `EXPIRED` de forma perezosa, cuando alguien lista o responde. La app muestra un aviso de servidor (`ServerStatusBanner`) y para la demo calentamos el servicio antes (ver el plan B del [guion](docs/demo/GUION.md)). La solución de fondo es un plan pago.
 5. **Dinero como entero por convención.** `items.estimatedValue` es `Float` en la base de datos y el DTO no exige `.int()` ([ADR-0002](docs/architecture/adr/0002-cop-como-entero.md)).
+6. **La regla de publicaciones repetidas compara títulos, no objetos.** No se puede verificar que dos publicaciones sean el mismo objeto físico: con otro nombre ("Cámara Canon" y "Canon EOS 2000D") el duplicado pasa, y dos objetos distintos con el mismo título se tratan como uno. Además, el chequeo no va en la misma transacción que la creación: si el gemelo se reserva justo mientras se publica, la publicación pasa.
 
 ## Reglas del repositorio
 Commits convencionales y atómicos (`feat(routes): …`, `docs(docs): …`). Cada fase va en un PR que se fusiona solo después de que se aprueba su puerta ([docs/plan/ORQUESTACION.md](docs/plan/ORQUESTACION.md)). Las reglas para agentes y colaboradores están en [CLAUDE.md](CLAUDE.md).

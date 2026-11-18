@@ -3,8 +3,11 @@ import { RouterProvider } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { router } from './router';
 import { backActionFor } from './layouts/navigation';
+import { useKeepFocusedFieldVisible } from './hooks/useKeepFocusedFieldVisible';
 
 export const App = () => {
+  useKeepFocusedFieldVisible();
+
   useEffect(() => {
     const backListenerPromise = CapApp.addListener('backButton', ({ canGoBack }) => {
       switch (backActionFor(window.location.pathname)) {

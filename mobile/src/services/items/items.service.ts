@@ -59,6 +59,9 @@ export interface RawItemDto {
   category: string;
   condition: string;
   ownerId: string;
+  /** The API flattens the owner into these fields (ItemMapper.toResponse); `owner` is optional. */
+  ownerName?: string | null;
+  ownerRating?: number | null;
   imageUrl?: string | null;
   images?: string[] | null;
   wants?: Array<string | { id?: string; queryText?: string; category?: string }> | null;
@@ -157,6 +160,16 @@ export const normalizeItem = (raw: RawItemDto): Item => {
       location: raw.owner.location || raw.location || 'Colombia',
       verified: typeof raw.owner.verified === 'boolean' ? raw.owner.verified : false,
       co2SavedKg: typeof raw.owner.co2SavedKg === 'number' ? raw.owner.co2SavedKg : 0,
+    };
+  } else if (raw.ownerId && raw.ownerName) {
+    // What the API actually sends (ItemMapper.toResponse): the owner flattened into the item
+    ownerSummary = {
+      id: raw.ownerId,
+      name: raw.ownerName,
+      rating: typeof raw.ownerRating === 'number' ? raw.ownerRating : 5.0,
+      location: raw.location || 'Colombia',
+      verified: false,
+      co2SavedKg: 0,
     };
   }
 

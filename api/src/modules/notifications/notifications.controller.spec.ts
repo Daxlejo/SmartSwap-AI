@@ -24,7 +24,7 @@ describe('NotificationsController', () => {
     type: 'SYSTEM_WELCOME',
     badge: 'Red Circular Activa',
     title: '¡Bienvenido a SmartSwap!',
-    body: 'Publica tu primer objeto o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
+    body: 'Publica tu primer artículo o explora el catálogo para descubrir rutas de trueque multi-salto con IA.',
     read: false,
     routeId: null,
     createdAt: new Date('2026-10-28T12:00:00.000Z'),

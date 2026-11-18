@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { aiService, toAiCondition } from '@/services/ai/ai.service';
 import { apiClient } from '@/services/http/apiClient';
-import { mergeUniqueWants } from '@/screens/PublishScreen';
+import { mergeUniqueWants } from '@/utils/wantedItems';
 
 describe('aiService', () => {
   beforeEach(() => {
