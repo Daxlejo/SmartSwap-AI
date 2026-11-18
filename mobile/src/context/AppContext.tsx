@@ -72,6 +72,8 @@ export interface AppContextValue {
     comment?: string,
   ) => Promise<SwapRoute>;
   completeSwapReal: (routeId: string) => Promise<SwapRoute>;
+  /** Reloads the signed-in user (e.g. "Completed swaps" after a swap closes). */
+  refreshCurrentUser: () => Promise<void>;
   cancelRouteReal: (routeId: string) => Promise<SwapRoute>;
   refreshRoutesReal: () => Promise<SwapRoute[]>;
   markNotificationReadReal: (id: string) => Promise<void>;
@@ -647,28 +649,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async (routeId: string, decision: RouteDecision, comment?: string): Promise<SwapRoute> => {
       const updatedRoute = await routesService.respondToRoute(routeId, decision, comment);
       upsertRoute(updatedRoute, routeId);
+      // Accepting may reserve the items and rejecting returns them: refresh the inventory
+      void loadMarketplaceAndUserItems(true);
       return updatedRoute;
     },
-    [upsertRoute],
+    [upsertRoute, loadMarketplaceAndUserItems],
   );
 
   const completeSwapReal = useCallback(
     async (routeId: string): Promise<SwapRoute> => {
       const completedRoute = await routesService.completeRoute(routeId);
       upsertRoute(completedRoute, routeId);
+      void loadMarketplaceAndUserItems(true);
       return completedRoute;
     },
-    [upsertRoute],
+    [upsertRoute, loadMarketplaceAndUserItems],
   );
 
   const cancelRouteReal = useCallback(
     async (routeId: string): Promise<SwapRoute> => {
       const cancelledRoute = await routesService.cancelRoute(routeId);
       upsertRoute(cancelledRoute, routeId);
+      void loadMarketplaceAndUserItems(true);
       return cancelledRoute;
     },
-    [upsertRoute],
+    [upsertRoute, loadMarketplaceAndUserItems],
   );
+
+  const refreshCurrentUser = useCallback(async () => {
+    if (!tokenStorage.hasToken()) return;
+    const epoch = sessionEpochRef.current;
+    const user = await authService.getMe();
+    if (epoch === sessionEpochRef.current) setCurrentUser(user);
+  }, []);
 
   const value = useMemo<AppContextValue>(
     () => ({
@@ -696,6 +709,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       proposeDirectReal,
       respondToProposalReal,
       completeSwapReal,
+      refreshCurrentUser,
       cancelRouteReal,
       locationScope,
       setLocationScope,
@@ -729,6 +743,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       proposeDirectReal,
       respondToProposalReal,
       completeSwapReal,
+      refreshCurrentUser,
       cancelRouteReal,
       locationScope,
       setLocationScope,
@@ -778,6 +793,7 @@ const fallbackContextValue: AppContextValue = {
   respondToProposalReal: async (routeId, decision, comment) =>
     routesService.respondToRoute(routeId, decision, comment),
   completeSwapReal: async (routeId) => routesService.completeRoute(routeId),
+  refreshCurrentUser: async () => undefined,
   cancelRouteReal: async (routeId) => routesService.cancelRoute(routeId),
   locationScope: 'country',
   setLocationScope: () => undefined,

@@ -215,13 +215,13 @@ export class RoutesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      'Cancel a pending swap route proposal (initiator only) and unlock its items',
+      'Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its items to the catalog',
   })
   @ApiResponse({ status: 200, description: 'Cancelled swap route' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Not the route initiator' })
+  @ApiResponse({ status: 403, description: 'Not the route initiator (pending) or not a participant (confirmed)' })
   @ApiResponse({ status: 404, description: 'Swap route not found' })
-  @ApiResponse({ status: 409, description: 'Route is no longer pending' })
+  @ApiResponse({ status: 409, description: 'Route is already completed, cancelled or expired' })
   async cancelRoute(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Param('id') id: string,

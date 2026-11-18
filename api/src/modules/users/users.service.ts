@@ -166,7 +166,7 @@ export class UsersService {
       this.prisma.item.count({
         where: {
           ownerId: userId,
-          status: ItemStatus.PENDING_SWAP,
+          status: { in: [ItemStatus.PENDING_SWAP, ItemStatus.RESERVED] },
         },
       }),
       this.prisma.swapRoute.count({

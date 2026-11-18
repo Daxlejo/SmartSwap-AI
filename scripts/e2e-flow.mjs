@@ -14,6 +14,8 @@
  *   5. Explore asks the API without the user's own items and shows none of them.
  *   6. Publish: back from step 2 returns to step 1; from step 1 with a photo it asks
  *      "¿Descartar la publicación?" (keep editing stays, discard leaves).
+ *   7. "Your route" and Swaps never loop: answer, wait or open the delivery chat.
+ *   8. Delivery chat: fixed safety notice, agreed date, messages and polling every 5 s.
  *
  * Back is the browser history back, the same `history.back()` Android's back button
  * runs on a secondary screen (see App.tsx). Exit code 0 only when every check passes.
@@ -325,6 +327,132 @@ const main = async () => {
       await discardSheet.waitFor({ timeout: URL_TIMEOUT });
       await page.getByRole('button', { name: 'Descartar' }).click();
       await waitPath(page, /^\/home$/);
+    });
+
+    await run('Your route and Swaps never form a loop', browser, 'handoff', async ({ page }) => {
+      const historyLength = () => page.evaluate(() => window.history.length);
+      await page.goto(`${BASE}/swaps`, { waitUntil: 'networkidle' });
+      const card = page.locator('[data-testid=trade-card-r-active]');
+      await card.waitFor({ timeout: URL_TIMEOUT });
+      const before = await historyLength();
+
+      // Swaps → details → "Answer in Swaps" goes back to the same Swaps screen, twice in a row
+      for (let round = 0; round < 2; round += 1) {
+        await card.getByRole('button', { name: 'Ver detalles' }).click();
+        await waitPath(page, /^\/swap\/route\/r-active$/);
+        await page.getByRole('button', { name: 'Responder en Canjes' }).click();
+        await waitPath(page, /^\/swaps$/);
+        await card.waitFor({ timeout: URL_TIMEOUT });
+      }
+      assert((await historyLength()) === before + 1, `history grew while going back and forth (${before} → ${await historyLength()})`);
+      assert(await page.getByRole('tab', { name: /recibidas/i }).getAttribute('aria-selected') === 'true', 'Swaps did not reopen on Received');
+
+      // Opened from a notification, it goes to Swaps → Received once
+      await page.goto(`${BASE}/swap/route/r-active`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Responder en Canjes' }).click();
+      await waitPath(page, /^\/swaps$/);
+      assert(await page.getByRole('tab', { name: /recibidas/i }).getAttribute('aria-selected') === 'true', 'Swaps did not open on Received');
+
+      // Already answered: no "Answer" button, only a disabled "Waiting for answers"
+      await page.goto(`${BASE}/swap/route/r-answered`, { waitUntil: 'networkidle' });
+      const waiting = page.getByRole('button', { name: 'Esperando respuestas' });
+      await waiting.waitFor({ timeout: URL_TIMEOUT });
+      assert(await waiting.isDisabled(), '"Waiting for answers" can be pressed');
+      assert((await page.getByRole('button', { name: 'Responder en Canjes' }).count()) === 0, 'an answered route still offers to answer');
+
+      // Everyone accepted: the delivery chat
+      await page.goto(`${BASE}/swap/route/r-confirmed`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Abrir chat de entrega' }).waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.getByRole('button', { name: 'Responder en Canjes' }).count()) === 0, 'a confirmed swap still offers to answer');
+    });
+
+    await run('delivery chat: fixed notice, agreed date, messages and polling every 5 s', browser, 'handoff', async ({ page }) => {
+      // A small stateful API for the chat of r-confirmed (page routes win over the fixtures)
+      const people = [
+        { userId: 'u-me', name: 'Alejandra Cabrera', initials: 'AC', avatarUrl: null, meetingConfirmed: false, deliveryConfirmed: false },
+        { userId: 'u-camilo', name: 'Camilo Andrés Guerrero', initials: 'CG', avatarUrl: null, meetingConfirmed: true, deliveryConfirmed: false },
+        { userId: 'u-laura', name: 'Laura Benavides Ortega', initials: 'LB', avatarUrl: null, meetingConfirmed: true, deliveryConfirmed: false },
+      ];
+      const meetingAt = new Date(Date.now() + 2 * 86_400_000).toISOString();
+      const chat = {
+        routeId: 'r-confirmed', code: 'SW-4823', status: 'CONFIRMED', participants: people, handoffDays: 5, autoCompleteAt: null, problem: null, completedAt: null,
+        meeting: { at: meetingAt, place: 'Parque Nariño, frente a la iglesia', proposedById: 'u-camilo', confirmedAt: null },
+        messages: [{ id: 'm1', senderId: 'u-laura', senderName: 'Laura Benavides Ortega', body: '¿Les sirve el sábado?', createdAt: new Date().toISOString() }],
+      };
+      let polls = 0;
+      await page.route('**/routes/r-confirmed/**', async (route) => {
+        const request = route.request();
+        const path = new URL(request.url()).pathname;
+        if (path.endsWith('/handoff')) polls += 1;
+        if (path.endsWith('/messages') && request.method() === 'POST') {
+          chat.messages.push({ id: `m${chat.messages.length + 1}`, senderId: 'u-me', senderName: 'Alejandra Cabrera', body: request.postDataJSON().body, createdAt: new Date().toISOString() });
+        }
+        if (path.endsWith('/meeting/confirm')) {
+          people[0].meetingConfirmed = true;
+          chat.meeting.confirmedAt = new Date().toISOString();
+          chat.autoCompleteAt = new Date(Date.parse(meetingAt) + 5 * 86_400_000).toISOString();
+        }
+        if (path.endsWith('/report-problem')) {
+          chat.problem = { reportedAt: new Date().toISOString(), reportedById: 'u-me', reason: request.postDataJSON()?.reason ?? null };
+          chat.autoCompleteAt = null;
+        }
+        if (!/\/(handoff|messages|meeting|meeting\/confirm|report-problem)$/.test(path)) return route.fallback();
+        return route.fulfill({ status: 200, json: chat });
+      });
+
+      await page.goto(`${BASE}/swap/route/r-confirmed`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Abrir chat de entrega' }).click();
+      await waitPath(page, /^\/swap\/route\/r-confirmed\/chat$/);
+      const notice = page.getByTestId('delivery-disclaimer');
+      await notice.waitFor({ timeout: URL_TIMEOUT });
+      assert((await notice.textContent()).includes('SmartSwap no se hace responsable de las entregas'), 'the safety notice is missing');
+      assert(await page.getByText('¿Les sirve el sábado?').isVisible(), 'the existing message is not shown');
+      assert((await page.getByTestId('auto-complete-date').count()) === 0, 'the auto-complete date shows before everyone agreed');
+
+      assert((await page.getByRole('button', { name: 'Completar canje' }).count()) === 0, '"Complete swap" shows before the date is agreed');
+      assert(await page.getByRole('button', { name: 'Cancelar canje' }).isVisible(), 'no way to cancel the swap from the chat');
+      await page.getByRole('button', { name: 'Confirmar fecha y lugar' }).click();
+      await page.getByTestId('auto-complete-date').waitFor({ timeout: URL_TIMEOUT });
+      assert(await page.getByRole('button', { name: 'Completar canje' }).isVisible(), '"Complete swap" missing once the date is agreed');
+      assert((await page.getByTestId('auto-complete-date').textContent()).includes('Se completa automáticamente el'), 'wrong auto-complete text');
+
+      await page.fill('#chat-draft', 'x'.repeat(520));
+      assert((await page.inputValue('#chat-draft')).length === 500, 'the message is not capped at 500 characters');
+      await page.fill('#chat-draft', 'Perfecto, nos vemos allá');
+      await page.getByRole('button', { name: 'Enviar mensaje' }).click();
+      await page.getByText('Perfecto, nos vemos allá').waitFor({ timeout: URL_TIMEOUT });
+
+      // The notice stays on top after scrolling
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const top = await notice.evaluate((el) => el.getBoundingClientRect().top);
+      assert(top >= 0 && top < 160, `the notice scrolled away (${top})`);
+
+      // Reporting a problem stops the automatic completion
+      await page.getByRole('button', { name: 'Reportar un problema' }).click();
+      await page.fill('#report-reason', 'La bicicleta tiene un pinchazo');
+      await page.getByRole('button', { name: 'Enviar reporte' }).click();
+      await page.getByTestId('problem-reported').waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.getByTestId('auto-complete-date').count()) === 0, 'the auto-complete date stays after a reported problem');
+      assert((await page.getByRole('button', { name: 'Reportar un problema' }).count()) === 0, 'a problem can be reported twice');
+
+      const before = polls;
+      await page.waitForTimeout(5600);
+      assert(polls > before, 'the open chat does not ask for new messages every 5 s');
+
+      // Back returns to the route, not to a loop
+      await page.goBack();
+      await waitPath(page, /^\/swap\/route\/r-confirmed$/);
+    });
+
+    await run('a reserved item sits under "In swap", not under Active', browser, 'handoff', async ({ page }) => {
+      await page.goto(`${BASE}/profile`, { waitUntil: 'networkidle' });
+      await page.locator('[data-testid=profile-item-i-me-2]').waitFor({ timeout: URL_TIMEOUT });
+      assert((await page.locator('[data-testid=profile-item-i-me-1]').count()) === 0, 'the reserved item is listed as active');
+      await page.getByRole('button', { name: /^En canje/ }).click();
+      await page.locator('[data-testid=profile-item-i-me-1]').waitFor({ timeout: URL_TIMEOUT });
+      await page.click('[data-testid=profile-item-i-me-1]');
+      await waitPath(page, /^\/item\/i-me-1$/);
+      assert((await page.getByRole('button', { name: /eliminar mi artículo/i }).count()) === 0, 'a reserved item can be deleted');
     });
 
     await run('Explore leaves out the own items', browser, 'default', async ({ page, calls }) => {

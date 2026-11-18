@@ -181,11 +181,39 @@ export const directRoute = {
   ],
 };
 
+/** The same cycle once the viewer accepted: only Camilo still has to answer. */
+export const answeredRoute = {
+  ...activeRoute,
+  id: 'r-answered',
+  code: 'SW-4822',
+  steps: [
+    step(1, me, camilo, mochila, bici, 'ACCEPTED'),
+    step(2, camilo, laura, libros, mochila, 'PENDING'),
+    step(3, laura, me, bici, libros, 'ACCEPTED'),
+  ],
+};
+
+/** Everyone accepted: the swap waits for its handoff and the items are reserved. */
+export const confirmedRoute = {
+  ...activeRoute,
+  id: 'r-confirmed',
+  code: 'SW-4823',
+  status: 'CONFIRMED',
+  steps: [
+    step(1, me, camilo, { ...mochila, status: 'RESERVED' }, bici, 'ACCEPTED'),
+    step(2, camilo, laura, libros, mochila, 'ACCEPTED'),
+    step(3, laura, me, bici, libros, 'ACCEPTED'),
+  ],
+};
+
+const handoffRoutes = { [answeredRoute.id]: answeredRoute, [confirmedRoute.id]: confirmedRoute };
+
 /**
  * Returns `[status, body]` for an API path (without the `/api/v1` prefix), or null when unknown.
  * Scenario `empty` is a brand-new user: no items of their own, no swaps, no notifications.
  * Scenario `sent` also lists a direct proposal the viewer sent. Scenario `noRings` finds no ring for any search; `wantReserved` answers a ring search
- * as the API does when the wanted item is already reserved in another swap.
+ * as the API does when the wanted item is already reserved in another swap. Scenario `handoff`
+ * lists a proposal to answer, one already answered and a confirmed swap whose backpack is reserved.
  */
 export const respond = (method, path, scenario = 'default') => {
   const p = path.replace(/\?.*$/, '');
@@ -206,6 +234,11 @@ export const respond = (method, path, scenario = 'default') => {
   if (p === '/geo/departments') return [200, [{ code: '52', name: 'Nariño' }, { code: '11', name: 'Bogotá, D.C.' }]];
   if (p === '/geo/municipalities') return [200, [pasto, ipiales, tuquerres]];
   if (p === '/geo/resolve') return [200, { municipality: pasto, distanceKm: 1 }];
+  if (scenario === 'handoff') {
+    if (p === '/items/me' || p === '/items/mine') return [200, [{ ...myItems[0], status: 'RESERVED' }, myItems[1]]];
+    if ((p === '/routes' || p === '/proposals') && method === 'GET') return [200, [activeRoute, answeredRoute, confirmedRoute]];
+  }
+  if (p.startsWith('/routes/') && handoffRoutes[p.split('/')[2]]) return [200, handoffRoutes[p.split('/')[2]]];
   if (p === '/items/me' || p === '/items/mine') return [200, myItems];
   // Like the API: the viewer's own items only come back when the app forgets to leave them out
   if (p === '/items' && method === 'GET') {

@@ -11,7 +11,13 @@ import { randomUUID } from 'crypto';
 type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
 type ModelName =
-  'user' | 'item' | 'want' | 'swapRoute' | 'swapRouteStep' | 'notification';
+  | 'user'
+  | 'item'
+  | 'want'
+  | 'swapRoute'
+  | 'swapRouteStep'
+  | 'notification'
+  | 'swapMessage';
 
 interface Relation {
   model: ModelName;
@@ -38,6 +44,7 @@ const RELATIONS: Record<ModelName, Record<string, Relation>> = {
   swapRoute: {
     initiator: { model: 'user', kind: 'one', key: 'initiatorId' },
     steps: { model: 'swapRouteStep', kind: 'many', key: 'routeId' },
+    messages: { model: 'swapMessage', kind: 'many', key: 'routeId' },
   },
   swapRouteStep: {
     route: { model: 'swapRoute', kind: 'one', key: 'routeId' },
@@ -48,6 +55,10 @@ const RELATIONS: Record<ModelName, Record<string, Relation>> = {
   notification: {
     user: { model: 'user', kind: 'one', key: 'userId' },
     route: { model: 'swapRoute', kind: 'one', key: 'routeId' },
+  },
+  swapMessage: {
+    route: { model: 'swapRoute', kind: 'one', key: 'routeId' },
+    sender: { model: 'user', kind: 'one', key: 'senderId' },
   },
 };
 
@@ -82,13 +93,23 @@ const DEFAULTS: Record<ModelName, () => Row> = {
     aiExplanation: null,
     co2SavedKg: 0,
     expiresAt: null,
+    meetingAt: null,
+    meetingPlace: null,
+    meetingProposedById: null,
+    meetingConfirmedAt: null,
+    problemReportedAt: null,
+    problemReportedById: null,
+    problemReason: null,
+    completedAt: null,
   }),
   swapRouteStep: () => ({
     acceptance: 'PENDING',
     respondedAt: null,
     deliveryConfirmed: false,
+    meetingConfirmed: false,
   }),
   notification: () => ({ read: false, routeId: null }),
+  swapMessage: () => ({}),
 };
 
 const HAS_UPDATED_AT = new Set<ModelName>([
@@ -134,6 +155,7 @@ export class InMemoryPrisma {
     swapRoute: [],
     swapRouteStep: [],
     notification: [],
+    swapMessage: [],
   };
 
   private clock = 0;
@@ -144,6 +166,7 @@ export class InMemoryPrisma {
   readonly swapRoute = this.delegate('swapRoute');
   readonly swapRouteStep = this.delegate('swapRouteStep');
   readonly notification = this.delegate('notification');
+  readonly swapMessage = this.delegate('swapMessage');
 
   async $connect(): Promise<void> {}
   async $disconnect(): Promise<void> {}

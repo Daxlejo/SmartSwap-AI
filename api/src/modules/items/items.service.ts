@@ -340,13 +340,13 @@ export class ItemsService {
   /**
    * Business rule: a user cannot publish again an item whose title (normalized with
    * `normalizeItemTitle`) matches one of theirs that is reserved in a swap in progress
-   * (PENDING_SWAP); that would offer the same object twice. An AVAILABLE duplicate is
+   * (PENDING_SWAP or RESERVED); that would offer the same object twice. An AVAILABLE duplicate is
    * allowed: the app only warns about it. Known limit: titles are compared, not objects,
    * so the same object under another name passes.
    */
   private async assertNotAlreadyInSwap(userId: string, name: string): Promise<void> {
     const reserved = await this.prisma.item.findMany({
-      where: { ownerId: userId, status: ItemStatus.PENDING_SWAP },
+      where: { ownerId: userId, status: { in: [ItemStatus.PENDING_SWAP, ItemStatus.RESERVED] } },
       select: { name: true },
     });
     const title = normalizeItemTitle(name);
@@ -549,7 +549,11 @@ export class ItemsService {
   }
 
   private isLockedInSwap(status: ItemStatus): boolean {
-    return status === ItemStatus.PENDING_SWAP || status === ItemStatus.SWAPPED;
+    return (
+      status === ItemStatus.PENDING_SWAP ||
+      status === ItemStatus.RESERVED ||
+      status === ItemStatus.SWAPPED
+    );
   }
 
   private deriveAiTags(

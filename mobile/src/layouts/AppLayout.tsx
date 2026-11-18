@@ -5,6 +5,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { ServerStatusBanner } from '@/components/ServerStatusBanner';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isFlowEnd, isMainTab } from './navigation';
+import { isDeliveryChatPath } from '@/utils/deliveryChat';
 
 export const AppLayout = () => {
   const { pathname } = useLocation();
@@ -13,6 +14,7 @@ export const AppLayout = () => {
 
   // Title of the secondary screens; they keep the fixed bar with the back arrow
   const getTitle = (): string => {
+    if (isDeliveryChatPath(pathname)) return t('headers.deliveryChat.title');
     if (pathname.startsWith('/swap/route/')) return t('headers.routeDetail.title');
     if (pathname.startsWith('/item/')) return t('headers.itemDetail.title');
     switch (pathname) {
@@ -41,7 +43,10 @@ export const AppLayout = () => {
   // Screens with their own action bar (sticky at the bottom of the flow, so it needs no
   // reserved space and handles the safe area itself)
   const hasActionBar =
-    pathname === '/publish' || pathname === '/swap/configure' || pathname.startsWith('/item/');
+    pathname === '/publish' ||
+    pathname === '/swap/configure' ||
+    pathname.startsWith('/item/') ||
+    isDeliveryChatPath(pathname);
   const showBottomNav = isTab;
 
   // The document is the only scroll container (see `index.css`). The bottom padding keeps

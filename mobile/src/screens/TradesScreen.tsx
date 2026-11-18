@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
@@ -12,6 +12,7 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 import { useTranslation } from '@/hooks/useTranslation';
 import { ownSide, routePhase, toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { deliveryChatPath } from '@/utils/deliveryChat';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
@@ -35,6 +36,7 @@ const ViewDetailsButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
 
 export const TradesScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, language } = useTranslation();
   const {
     routes,
@@ -45,16 +47,16 @@ export const TradesScreen: React.FC = () => {
     cancelRouteReal,
     refreshRoutesReal,
   } = useApp();
-  const [activeTab, setActiveTab] = useState<TabType>('recibidas');
+  // "Your route" can open a given tab (e.g. Received, to answer a proposal)
+  const [activeTab, setActiveTab] = useState<TabType>(
+    (location.state as { tab?: TabType } | null)?.tab ?? 'recibidas',
+  );
 
   // Recibidas state
   const [receivedProposals, setReceivedProposals] = useState<ReceivedProposal[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [actionError, setActionError] = useState<string | null>(null);
-
-  // En Curso state
-  const [completedRouteIds, setCompletedRouteIds] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     void refreshRoutesReal();
@@ -116,18 +118,18 @@ export const TradesScreen: React.FC = () => {
   const handleCompleteRoute = async (routeId: string) => {
     setActionError(null);
     setProcessingId(routeId);
-    setCompletedRouteIds((prev) => ({ ...prev, [routeId]: true }));
     try {
       await completeSwapReal(routeId);
     } catch (error) {
-      setCompletedRouteIds((prev) => ({ ...prev, [routeId]: false }));
       setActionError(describeError(error));
     } finally {
       setProcessingId(null);
     }
   };
 
-  const openRoute = (route: SwapRoute) => navigate(`/swap/route/${route.id}`, { state: { route } });
+  // `from: 'trades'` lets "Your route" go back here instead of opening Trades again
+  const openRoute = (route: SwapRoute) =>
+    navigate(`/swap/route/${route.id}`, { state: { route, from: 'trades' } });
 
   const showTabs = routes.length > 0 || loadStates.routes === 'ready';
 
@@ -415,14 +417,18 @@ export const TradesScreen: React.FC = () => {
             inProgressRoutes.map((route) => {
               const person = counterpartOf(route, currentUser?.id);
               const { offered, received } = ownSide(route, currentUser?.id);
-              const isCompleted =
-                Boolean(completedRouteIds[route.id]) || routePhase(route.status) === 'completed';
+              const isCompleted = routePhase(route.status) === 'completed';
               const total = route.stepsCount;
               const accepted = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
               const progress = isCompleted
                 ? t('trades.circuitCompleted', { count: total })
                 : t('trades.stepProgress', { done: accepted, total });
               const isBusy = processingId === route.id;
+              // Only a swap everyone accepted is handed over; each participant confirms their own delivery
+              const isConfirmed = !isCompleted && routePhase(route.status) === 'confirmed';
+              const ownDelivered = Boolean(
+                route.steps?.find((step) => step.userId === currentUser?.id)?.deliveryConfirmed,
+              );
 
               return (
                 <TradeCard
@@ -443,7 +449,18 @@ export const TradesScreen: React.FC = () => {
                   received={received}
                 >
                   <ViewDetailsButton onClick={() => openRoute(route)} />
-                  {!isCompleted && (
+                  {isConfirmed && (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      fullWidth
+                      leftIcon="forum"
+                      onClick={() => navigate(deliveryChatPath(route.id))}
+                    >
+                      {t('routeDetail.openChat')}
+                    </Button>
+                  )}
+                  {isConfirmed && !ownDelivered && Boolean(route.meetingConfirmedAt) && (
                     <Button
                       variant="ghost"
                       size="md"
@@ -454,6 +471,11 @@ export const TradesScreen: React.FC = () => {
                     >
                       {isBusy ? t('trades.completing') : t('trades.completeSwap')}
                     </Button>
+                  )}
+                  {isConfirmed && ownDelivered && (
+                    <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
+                      {t('deliveryChat.youDelivered')}
+                    </p>
                   )}
                 </TradeCard>
               );
