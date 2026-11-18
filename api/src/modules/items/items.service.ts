@@ -25,6 +25,11 @@ import {
   ItemWithRelations,
 } from './mappers/item.mapper';
 import { SupabaseStorageService } from '../storage/supabase-storage.service';
+import { normalizeItemTitle } from './item-title';
+
+/** 409 of POST /items when the same title is already reserved in a swap in progress. */
+export const ITEM_ALREADY_IN_SWAP_MESSAGE =
+  'You already have an item with this title in a swap in progress';
 
 const ITEM_RELATIONS_INCLUDE = {
   owner: {
@@ -213,6 +218,9 @@ export class ItemsService {
     const trimmedCategory = dto.category.trim();
     const trimmedDescription = dto.description.trim();
 
+    // Checked first, so a repeated post costs no photo upload or embedding
+    await this.assertNotAlreadyInSwap(userId, trimmedName);
+
     const resolvedImages = await this.resolveImages(userId, dto.images);
     const resolvedLocation = await this.resolveLocation(
       userId,
@@ -275,6 +283,24 @@ export class ItemsService {
     });
 
     return ItemMapper.toResponse(createdItem as ItemWithRelations);
+  }
+
+  /**
+   * Business rule: a user cannot publish again an item whose title (normalized with
+   * `normalizeItemTitle`) matches one of theirs that is reserved in a swap in progress
+   * (PENDING_SWAP); that would offer the same object twice. An AVAILABLE duplicate is
+   * allowed: the app only warns about it. Known limit: titles are compared, not objects,
+   * so the same object under another name passes.
+   */
+  private async assertNotAlreadyInSwap(userId: string, name: string): Promise<void> {
+    const reserved = await this.prisma.item.findMany({
+      where: { ownerId: userId, status: ItemStatus.PENDING_SWAP },
+      select: { name: true },
+    });
+    const title = normalizeItemTitle(name);
+    if (reserved.some((item) => normalizeItemTitle(item.name) === title)) {
+      throw new ConflictException(ITEM_ALREADY_IN_SWAP_MESSAGE);
+    }
   }
 
   async update(

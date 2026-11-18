@@ -89,6 +89,8 @@ describe('ItemsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // No item of the user is reserved in a swap unless a test says so
+    mockPrismaService.item.findMany.mockResolvedValue([]);
 
     supabaseStorageService = {
       uploadBase64Image: jest.fn().mockResolvedValue({
@@ -123,6 +125,40 @@ describe('ItemsService', () => {
   });
 
   describe('create', () => {
+    const duplicateDto: CreateItemDto = {
+      name: '  Cámara   CANON  eos ',
+      category: 'Fotografía',
+      condition: 'GOOD',
+      description: 'Cámara réflex con lente de kit y batería extra.',
+      estimatedValue: 900000,
+      location: 'Pasto',
+      images: ['https://cdn.example.com/camara.jpg'],
+      wants: ['Bicicleta'],
+    };
+
+    it('rejects with 409 a title already reserved in a swap in progress, before uploading or embedding', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([{ name: 'Camara Canon EOS' }]);
+
+      await expect(itemsService.create(ownerId, duplicateDto)).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.item.findMany).toHaveBeenCalledWith({
+        where: { ownerId, status: ItemStatus.PENDING_SWAP },
+        select: { name: true },
+      });
+      expect(aiEmbeddingService.generateEmbedding).not.toHaveBeenCalled();
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('lets the same title through when the repeated item is only active (the app just warns)', async () => {
+      // Only PENDING_SWAP items are looked up, so an AVAILABLE twin never reaches the comparison
+      mockPrismaService.item.findMany.mockResolvedValue([{ name: 'Bicicleta Trek' }]);
+      mockTx.item.create.mockResolvedValue(mockCreatedEntity);
+      mockTx.want.createMany.mockResolvedValue({ count: 1 });
+      mockTx.item.findUniqueOrThrow.mockResolvedValue(mockCreatedEntity);
+
+      await expect(itemsService.create(ownerId, duplicateDto)).resolves.toBeDefined();
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+    });
+
     it('should create an item, upload base64 images, generate embeddings & aiTags, and synchronize Want records inside a transaction', async () => {
       const createDto: CreateItemDto = {
         name: 'Sony WH-1000XM5',
