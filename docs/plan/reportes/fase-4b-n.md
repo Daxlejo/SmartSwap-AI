@@ -61,6 +61,8 @@ Carpeta `evidencia/fase-4b-n/`:
 | `06-permiso-ubicacion.png` | "¿Permitir que SmartSwap acceda a la ubicación de este dispositivo?" |
 | `07-permiso-camara.png` | "¿Permitir que SmartSwap tome fotos y grabe videos?" |
 
+Segunda pasada con el APK actual (desinstalar e instalar limpio) en un Xiaomi 2207117BPG, Android 13, por depuración inalámbrica. Capturé el splash (`n2-01-splash.png`, nítido, sin la animación de MIUI, vista horizontal porque el celular estaba rotado). David revisó a mano el resto (login, Inicio en oscuro, ícono y diálogos de permisos) y confirmó que todo está bien; no hay capturas de esa segunda pasada.
+
 Se descartaron las capturas que mostraban datos personales: pantalla de inicio del teléfono, una notificación y el municipio detectado.
 
 ## Criterios de salida
