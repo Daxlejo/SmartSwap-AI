@@ -52,7 +52,7 @@ Ninguna borra ni cambia columnas existentes. Las dos últimas las generó `prism
 - [x] Cuando todos aceptan, los artículos pasan a `RESERVED` **en la misma transacción** que confirma la ruta (antes de releerla).
 - [x] Salen de Explorar (`GET /items` filtra AVAILABLE), de la búsqueda y de rutas nuevas (el motor los excluye); no se pueden ofrecer (409) ni borrar (409). Probado en `api/test/swap-handoff.e2e-spec.ts`.
 - [x] Perfil: pestaña "En canje" con la etiqueta "Propuesta pendiente" o "En canje"; ya no aparecen en Activos. Historial muestra los intercambiados. El detalle de un artículo en canje no ofrece eliminarlo ni proponerlo.
-- [x] Si el canje se cancela, los artículos vuelven a Activos. Lo puede cancelar cualquier participante de un canje confirmado mientras nadie entregó, o después de reportar un problema.
+- [x] Si el canje se cancela, los artículos vuelven a Activos. Lo puede cancelar cualquier participante de un canje confirmado mientras nadie entregó. Si alguien ya entregó, solo quien entregó puede cancelar, y únicamente después de reportar un problema.
 - [x] "Responder en Canjes" solo aparece si falta tu respuesta. Ya respondida: "Esperando respuestas" deshabilitado. Aceptada por todos: "Abrir chat de entrega".
 - [x] Sin bucle: abierta desde Canjes, "Responder en Canjes" vuelve atrás en vez de apilar otra pantalla; desde una notificación abre Canjes → Recibidas. e2e "Your route and Swaps never form a loop": dos idas y vueltas, el historial crece en 1.
 
@@ -84,7 +84,9 @@ Ninguna borra ni cambia columnas existentes. Las dos últimas las generó `prism
 | 4 | La fecha de cierre automático seguía visible en canjes completados o cancelados. | El mapper la informa solo si el estado es CONFIRMED, y la UI solo con el chat abierto. Lo verifica un e2e. |
 | 5 | Un sondeo lento podía pisar el resultado de una acción. | `useHandoff` numera cada sondeo y cada acción, y solo aplica el resultado más reciente. |
 
-El revisor de seguridad automático señaló, después del primer commit, que se podía cancelar un canje con la entrega ya confirmada. Se corrigió en 7e37e4f y se afinó en el hallazgo 1.
+El revisor de seguridad automático hizo dos señalamientos:
+- Después del primer commit, que se podía cancelar un canje con la entrega ya confirmada. Se corrigió en 7e37e4f.
+- Después de 1d84739, que la salida del hallazgo 1 dejaba cancelar tras un problema a quien recibió sin entregar. Ahora, con entregas confirmadas, solo cancela quien entregó, después de reportar un problema; el e2e lo cubre.
 
 ## Audit UI y evidencia
 - `audit:ui` no se corrió: el prompt pidió solo el revisor de código al final.
