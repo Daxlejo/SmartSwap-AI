@@ -367,10 +367,12 @@ describe('Swap handoff (e2e)', () => {
       await testApp.http().post(`/api/v1/routes/${swap.id}/meeting/confirm`).set(authed(mateo.token)).expect(200);
       await testApp.http().post(`/api/v1/routes/${swap.id}/complete`).set(authed(alex.token)).expect(200);
 
-      // Alex delivered and Mateo vanished: cancelling is blocked until someone reports the problem
-      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(valeria.token)).expect(409);
+      // Alex delivered and the others vanished: cancelling is blocked until a problem is reported,
+      // and even then only Alex (who handed over his item) can call it off
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(alex.token)).expect(409);
       await testApp.http().post(`/api/v1/routes/${swap.id}/report-problem`).set(authed(valeria.token)).send({}).expect(200);
-      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(valeria.token)).expect(200);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(valeria.token)).expect(409);
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(alex.token)).expect(200);
       expect(itemStatuses()).toEqual(['AVAILABLE', 'AVAILABLE', 'AVAILABLE']);
 
       const chat = await testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(alex.token)).expect(200);

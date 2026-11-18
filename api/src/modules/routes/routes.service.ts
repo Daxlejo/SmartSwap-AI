@@ -863,16 +863,16 @@ export class RoutesService {
         );
       }
 
-      // Once someone confirmed the handoff, one participant alone cannot undo it, unless a problem
-      // was reported (otherwise the swap could stay stuck with its items reserved forever)
-      if (
-        isConfirmed &&
-        !route.problemReportedAt &&
-        route.steps.some((step) => step.deliveryConfirmed)
-      ) {
-        throw new ConflictException(
-          'A participant already confirmed the delivery; report a problem before cancelling',
-        );
+      // Once someone confirmed the handoff, the swap is only called off after a reported problem and
+      // by someone who already handed over their own item (the one at risk). Whoever has not
+      // delivered cannot cancel and walk away with what they received.
+      if (isConfirmed && route.steps.some((step) => step.deliveryConfirmed)) {
+        const ownStep = route.steps.find((step) => step.userId === userId);
+        if (!route.problemReportedAt || !ownStep?.deliveryConfirmed) {
+          throw new ConflictException(
+            'A participant already confirmed the delivery: only someone who delivered can cancel, after reporting a problem',
+          );
+        }
       }
 
       // Items go back to the catalog before the route is re-read, so the answer shows them active

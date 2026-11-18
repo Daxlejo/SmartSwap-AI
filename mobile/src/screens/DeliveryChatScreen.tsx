@@ -121,8 +121,9 @@ export const DeliveryChatScreen: React.FC = () => {
   const isCompleted = handoff.status.toUpperCase() === 'COMPLETED';
   // Delivery is confirmed only once the date and place are agreed (the API answers 409 before)
   const canComplete = state === 'agreed';
-  // A way out: while nobody delivered, or once a problem was reported
-  const canCancel = deliveredCount === 0 || Boolean(handoff.problem);
+  // A way out: while nobody delivered, or, after a reported problem, for someone who already delivered
+  const canCancel =
+    deliveredCount === 0 || (Boolean(handoff.problem) && Boolean(ownStep?.deliveryConfirmed));
 
   const handleCancel = async () => {
     if (!routeId || isCancelling) return;
