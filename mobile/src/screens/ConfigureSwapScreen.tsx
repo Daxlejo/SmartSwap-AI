@@ -11,6 +11,8 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { LocationScopeSelector } from '@/components/LocationScopeSelector';
+import { SimilarItemsSection } from '@/components/SimilarItemsSection';
+import { useSimilarItems } from '@/hooks/useSimilarItems';
 import { formatCop } from '@/utils/currency';
 import {
   buildCircularSearchPath,
@@ -204,6 +206,8 @@ export const ConfigureSwapScreen = () => {
     () => findWantedCandidates(items, query, currentUser?.id),
     [items, query, currentUser?.id],
   );
+  // No text match: suggest semantically similar items (none if the AI fails)
+  const similar = useSimilarItems(query, step === 2 && !draft.wantFixed && candidates.length === 0);
   // The chosen item stays on the list while the user types something else
   const shownCandidates =
     wantedItem && !draft.wantFixed && !candidates.some((item) => item.id === wantedItem.id)
@@ -346,7 +350,22 @@ export const ConfigureSwapScreen = () => {
           </div>
         )}
 
-        {shownCandidates.length > 0 ? (
+        {candidates.length === 0 && similar.items.length > 0 ? (
+          <SimilarItemsSection>
+            <div role="radiogroup" aria-label={titles[2]} className="flex flex-col gap-2.5">
+              {similar.items.map((item) => (
+                <ItemOption
+                  key={item.id}
+                  item={item}
+                  name="wantedItem"
+                  testId={`want-option-${item.id}`}
+                  selected={item.id === wantedItem?.id}
+                  onSelect={() => goTo({ wantedItemId: item.id }, true)}
+                />
+              ))}
+            </div>
+          </SimilarItemsSection>
+        ) : shownCandidates.length > 0 ? (
           <div role="radiogroup" aria-label={titles[2]} className="flex flex-col gap-2.5">
             {shownCandidates.map((item) => (
               <ItemOption

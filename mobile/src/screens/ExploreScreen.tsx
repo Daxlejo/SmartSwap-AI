@@ -24,6 +24,8 @@ import {
 } from '@/utils/exploreFilters';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { BackToTopButton } from '@/components/BackToTopButton';
+import { SimilarItemsSection } from '@/components/SimilarItemsSection';
+import { useSimilarItems } from '@/hooks/useSimilarItems';
 
 export const ExploreScreen = () => {
   const navigate = useNavigate();
@@ -103,6 +105,12 @@ export const ExploreScreen = () => {
   const filteredItems = useMemo(
     () => applyExploreFilters(othersItems, searchQuery, filters),
     [othersItems, searchQuery, filters],
+  );
+
+  // A search with no text match falls back to semantically similar items (none if the AI fails)
+  const similar = useSimilarItems(
+    searchQuery,
+    Boolean(currentUser) && !isItemsLoading && filteredItems.length === 0,
   );
 
   const municipalityCode = currentUser?.municipalityCode;
@@ -343,6 +351,17 @@ export const ExploreScreen = () => {
           </div>
         ) : loadStates.items === 'error' && items.length === 0 ? (
           <ErrorState onRetry={() => void refreshItems()} />
+        ) : filteredItems.length === 0 && similar.items.length > 0 ? (
+          <SimilarItemsSection>
+            {similar.items.map((item) => (
+              <ObjectCard
+                key={item.id}
+                item={item}
+                owner={resolveOwner(item)}
+                onOpen={() => navigate(`/item/${item.id}`, { state: { item } })}
+              />
+            ))}
+          </SimilarItemsSection>
         ) : filteredItems.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-[45vh]">
             <EmptyState

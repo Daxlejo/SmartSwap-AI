@@ -559,6 +559,8 @@ export const en: TranslationSchema = {
     emptyTitle: 'No results',
     emptyDescription: 'Try other terms or change the filter.',
     resetFilters: 'Reset filters',
+    similarTitle: 'Similar items',
+    similarHint: 'No exact matches, but these are close to what you are looking for.',
     viewDetails: 'View details of {{name}}',
     estimatedShort: '{{value}} est.',
     detailTitle: 'Item details',

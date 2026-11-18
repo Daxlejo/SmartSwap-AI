@@ -557,6 +557,8 @@ export const es = {
     emptyTitle: 'Sin resultados',
     emptyDescription: 'Prueba con otros términos o cambia el filtro.',
     resetFilters: 'Restablecer filtros',
+    similarTitle: 'Artículos parecidos',
+    similarHint: 'No hay coincidencias exactas, pero estos se parecen a lo que buscas.',
     viewDetails: 'Ver detalles de {{name}}',
     estimatedShort: '{{value}} est.',
     detailTitle: 'Detalle del artículo',
