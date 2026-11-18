@@ -47,6 +47,14 @@ npm run build:apk                # build de Vite + npx cap sync android
 cd android
 .\gradlew.bat assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**APK release (Fase 5).** `versionName` 1.0.0, `versionCode` 1. Se firma con un keystore que vive fuera del repositorio. `mobile/android/keystore.properties` (en `.gitignore`) indica la ruta del keystore, el alias y las contraseñas. Si ese archivo no existe, `assembleRelease` genera un APK sin firmar. El build usa `mobile/.env.production` (también en `.gitignore`): `VITE_API_URL` apunta a Render por HTTPS, y el manifiesto tiene `usesCleartextTraffic="false"`, así que no se permite HTTP sin cifrar. **El APK no lleva contraseñas.** Se compila con `VITE_DEMO_PASSWORD` vacía, de modo que no aparece el selector de cuentas demo y en la sustentación se inicia sesión con cuentas reales.
+```powershell
+cd mobile
+npm run build:apk                # usa .env.production
+cd android
+.\gradlew.bat assembleRelease    # app/build/outputs/apk/release/app-release.apk
+```
 Más detalles para el equipo en [mobile/GUIA_EQUIPO.md](mobile/GUIA_EQUIPO.md).
 
 ### Verificación
