@@ -35,8 +35,6 @@ const laura = user('u-laura', 'Laura Benavides Ortega', ipiales);
 const camilo = user('u-camilo', 'Camilo Andrés Guerrero', tuquerres);
 const sofia = user('u-sofia', 'Sofía Rosero', pasto);
 
-const owner = (u) => ({ id: u.id, name: u.name, avatarUrl: null, rating: u.rating, location: u.location, verified: false });
-
 const item = (id, name, category, ownerUser, estimatedValue, extra = {}) => ({
   id,
   name,
@@ -54,7 +52,10 @@ const item = (id, name, category, ownerUser, estimatedValue, extra = {}) => ({
   distanceKm: 12,
   status: 'AVAILABLE',
   aiTags: [],
-  owner: owner(ownerUser),
+  // Flattened like the real API (ItemMapper.toResponse): there is no `owner` object
+  ownerName: ownerUser.name,
+  ownerInitials: ownerUser.name.split(' ').map((part) => part[0]).slice(0, 2).join(''),
+  ownerRating: ownerUser.rating,
   createdAt: NOW,
   ...extra,
 });
