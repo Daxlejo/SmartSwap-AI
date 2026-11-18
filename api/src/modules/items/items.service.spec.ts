@@ -124,6 +124,63 @@ describe('ItemsService', () => {
     itemsService = module.get<ItemsService>(ItemsService);
   });
 
+  describe('findAll search', () => {
+    const camera = {
+      ...mockCreatedEntity,
+      id: 'cam',
+      name: 'Cámara Canon EOS',
+      category: 'Fotografía',
+      description: null,
+    };
+    const headphones = { ...mockCreatedEntity, id: 'aud' };
+
+    it('ignores accents, case and spaces: "camara" finds "Cámara"', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([camera, headphones]);
+
+      const result = await itemsService.findAll({ search: '  CAMARA ' });
+
+      expect(result.map((item) => item.id)).toEqual(['cam']);
+      // The text filter is not sent to the database (it would be accent-sensitive there)
+      const [args] = mockPrismaService.item.findMany.mock.calls[0] as [{ where: object }];
+      expect(args.where).not.toHaveProperty('OR');
+    });
+
+    it('also matches the category and paginates after filtering', async () => {
+      mockPrismaService.item.findMany.mockResolvedValue([camera, { ...camera, id: 'cam2' }, headphones]);
+
+      const result = await itemsService.findAll({ search: 'fotografia', limit: 1, page: 2 });
+
+      expect(result.map((item) => item.id)).toEqual(['cam2']);
+    });
+  });
+
+  describe('findSimilar', () => {
+    const near = { ...mockCreatedEntity, id: 'near', ownerId: otherUserId, embedding: [1, 0, 0, 0] };
+    const closer = { ...mockCreatedEntity, id: 'closer', ownerId: otherUserId, embedding: [0.9, 0.1, 0, 0] };
+    const far = { ...mockCreatedEntity, id: 'far', ownerId: otherUserId, embedding: [0, 0, 0, 1] };
+
+    it('returns active items of other users above the threshold, most similar first', async () => {
+      aiEmbeddingService.generateEmbedding.mockResolvedValue([0.8, 0.2, 0, 0]);
+      mockPrismaService.item.findMany.mockResolvedValue([near, far, closer]);
+
+      const result = await itemsService.findSimilar(ownerId, { q: 'camara reflex' });
+
+      expect(result.map((item) => item.id)).toEqual(['closer', 'near']);
+      expect(mockPrismaService.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { status: ItemStatus.AVAILABLE, ownerId: { not: ownerId } },
+        }),
+      );
+    });
+
+    it('returns nothing when the query has no usable embedding', async () => {
+      aiEmbeddingService.generateEmbedding.mockResolvedValue([0, 0, 0, 0]);
+
+      await expect(itemsService.findSimilar(ownerId, { q: '??' })).resolves.toEqual([]);
+      expect(mockPrismaService.item.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('create', () => {
     const duplicateDto: CreateItemDto = {
       name: '  Cámara   CANON  eos ',

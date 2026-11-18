@@ -26,6 +26,21 @@ import {
 } from './mappers/item.mapper';
 import { SupabaseStorageService } from '../storage/supabase-storage.service';
 import { normalizeItemTitle } from './item-title';
+import { cosineSimilarity } from '../ai/services/ai-embedding.service';
+import { SimilarItemsQueryDto } from './dto/similar-items.dto';
+
+/** Same bar the route engine uses to accept a want as semantically matched. */
+export const SIMILAR_ITEMS_MIN_SCORE = 0.42;
+const SIMILAR_ITEMS_DEFAULT_LIMIT = 6;
+
+/** Whether a normalized search term appears in the item's name, description or category. */
+const matchesSearchTerm = (
+  item: { name: string; description: string | null; category: string },
+  normalizedTerm: string,
+): boolean =>
+  [item.name, item.description ?? '', item.category].some((text) =>
+    normalizeItemTitle(text).includes(normalizedTerm),
+  );
 
 /** 409 of POST /items when the same title is already reserved in a swap in progress. */
 export const ITEM_ALREADY_IN_SWAP_MESSAGE =
@@ -122,15 +137,9 @@ export class ItemsService {
       };
     }
 
-    const rawSearch = query.search || query.query;
-    if (rawSearch) {
-      const searchTerm = rawSearch.trim();
-      where.OR = [
-        { name: { contains: searchTerm, mode: 'insensitive' } },
-        { description: { contains: searchTerm, mode: 'insensitive' } },
-        { category: { contains: searchTerm, mode: 'insensitive' } },
-      ];
-    }
+    // Text search ignores case, accents and extra spaces ("camara" finds "Cámara"), so it runs
+    // in memory over the rows the other filters already narrowed, like the nearest-first sort.
+    const searchTerm = normalizeItemTitle(query.search || query.query || '');
 
     const page = query.page ?? 1;
     const limit = query.limit;
@@ -141,13 +150,21 @@ export class ItemsService {
           ? (page - 1) * limit
           : undefined;
 
-    if (viewer) {
-      // Nearest first: sort and paginate in memory because distance is not a database column.
-      const found = await this.prisma.item.findMany({
+    if (viewer || searchTerm) {
+      const rows = await this.prisma.item.findMany({
         where,
         include: ITEM_RELATIONS_INCLUDE,
         orderBy: { createdAt: 'desc' },
       });
+      const found = searchTerm
+        ? rows.filter((row) => matchesSearchTerm(row, searchTerm))
+        : rows;
+      const start = skip ?? 0;
+      if (!viewer) {
+        const list = ItemMapper.toResponseList(found as ItemWithRelations[]);
+        return limit !== undefined ? list.slice(start, start + limit) : list;
+      }
+      // Nearest first: distance is not a database column either.
       const withDistance = ItemMapper.toResponseList(found as ItemWithRelations[]).map(
         (dto) => ({
           ...dto,
@@ -161,7 +178,6 @@ export class ItemsService {
           (a.distanceKm ?? Number.POSITIVE_INFINITY) -
           (b.distanceKm ?? Number.POSITIVE_INFINITY),
       );
-      const start = skip ?? 0;
       return limit !== undefined ? withDistance.slice(start, start + limit) : withDistance;
     }
 
@@ -173,6 +189,33 @@ export class ItemsService {
     });
 
     return ItemMapper.toResponseList(items as ItemWithRelations[]);
+  }
+
+  /**
+   * Fallback of an empty text search: active items of other users whose embedding is close to
+   * the query's, most similar first. Below the threshold an item is noise and is left out.
+   */
+  async findSimilar(
+    userId: string,
+    query: SimilarItemsQueryDto,
+  ): Promise<ItemResponseDto[]> {
+    const queryEmbedding = await this.aiEmbeddingService.generateEmbedding(query.q);
+    if (queryEmbedding.every((value) => value === 0)) {
+      return [];
+    }
+    const rows = await this.prisma.item.findMany({
+      where: { status: ItemStatus.AVAILABLE, ownerId: { not: userId } },
+      include: ITEM_RELATIONS_INCLUDE,
+    });
+    const ranked = rows
+      .map((row) => ({
+        row,
+        score: cosineSimilarity(queryEmbedding, row.embedding ?? []),
+      }))
+      .filter(({ score }) => score >= SIMILAR_ITEMS_MIN_SCORE)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, query.limit ?? SIMILAR_ITEMS_DEFAULT_LIMIT);
+    return ItemMapper.toResponseList(ranked.map(({ row }) => row) as ItemWithRelations[]);
   }
 
   async findMine(userId: string): Promise<ItemResponseDto[]> {

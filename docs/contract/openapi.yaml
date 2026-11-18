@@ -492,6 +492,22 @@ paths:
         - items
       security:
         - bearer: []
+  /api/v1/items/similar:
+    get:
+      operationId: ItemsController_findSimilar
+      summary: Active items of other users semantically close to a text query (fallback of an empty search)
+      parameters: []
+      responses:
+        '200':
+          description: Items above the similarity threshold, most similar first
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      tags:
+        - items
+      security:
+        - bearer: []
   /api/v1/items/{id}:
     get:
       operationId: ItemsController_findOne

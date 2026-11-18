@@ -47,6 +47,10 @@ import {
   UploadImageDto,
   uploadImageSchema,
 } from './dto/upload-image.dto';
+import {
+  SimilarItemsQueryDto,
+  similarItemsQuerySchema,
+} from './dto/similar-items.dto';
 import { ItemsService } from './items.service';
 import { ItemResponseDto } from './mappers/item.mapper';
 
@@ -77,6 +81,22 @@ export class ItemsController {
     @CurrentUser() currentUser: CurrentUserPayload,
   ): Promise<ItemResponseDto[]> {
     return this.itemsService.findMine(currentUser.sub);
+  }
+
+  @Get('similar')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Active items of other users semantically close to a text query (fallback of an empty search)',
+  })
+  @ApiResponse({ status: 200, description: 'Items above the similarity threshold, most similar first' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async findSimilar(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query(new ZodValidationPipe(similarItemsQuerySchema)) query: SimilarItemsQueryDto,
+  ): Promise<ItemResponseDto[]> {
+    return this.itemsService.findSimilar(currentUser.sub, query);
   }
 
   @Get(':id')
