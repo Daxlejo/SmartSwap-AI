@@ -27,6 +27,9 @@ import { proposeDirectSchema } from '../src/modules/routes/dto/propose-direct.dt
 import { proposeRouteSchema } from '../src/modules/routes/dto/propose-route.dto';
 import { respondRouteSchema } from '../src/modules/routes/dto/respond-route.dto';
 import { searchRoutesSchema } from '../src/modules/routes/dto/search-routes.dto';
+import { proposeMeetingSchema } from '../src/modules/routes/handoff/dto/propose-meeting.dto';
+import { sendMessageSchema } from '../src/modules/routes/handoff/dto/send-message.dto';
+import { reportProblemSchema } from '../src/modules/routes/handoff/dto/report-problem.dto';
 import { updateProfileSchema } from '../src/modules/users/dto/update-profile.dto';
 import { uploadAvatarSchema } from '../src/modules/users/dto/upload-avatar.dto';
 
@@ -61,6 +64,9 @@ const BODY_SCHEMAS: Record<string, ZodTypeAny> = {
   'POST /proposals': proposeRouteSchema,
   'POST /routes/{id}/respond': respondRouteSchema,
   'POST /proposals/{id}/respond': respondRouteSchema,
+  'POST /routes/{id}/messages': sendMessageSchema,
+  'POST /routes/{id}/meeting': proposeMeetingSchema,
+  'POST /routes/{id}/report-problem': reportProblemSchema,
 };
 
 /** Write endpoints that intentionally take no body. */
@@ -69,6 +75,7 @@ const NO_BODY = new Set([
   'POST /proposals/{id}/cancel',
   'POST /routes/{id}/complete',
   'POST /proposals/{id}/complete',
+  'POST /routes/{id}/meeting/confirm',
   'POST /notifications/read-all',
   'PATCH /notifications/read-all',
   'POST /notifications/{id}/read',

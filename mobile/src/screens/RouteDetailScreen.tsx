@@ -9,7 +9,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { useTranslation } from '@/hooks/useTranslation';
-import { canProposeRoute, isSignedInUser } from '@/utils/routeView';
+import { canProposeRoute, isSignedInUser, routeNextAction } from '@/utils/routeView';
+import { deliveryChatPath } from '@/utils/deliveryChat';
 import { formatCop } from '@/utils/currency';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { SwapRing } from '@/components/SwapRing';
@@ -80,6 +81,17 @@ export const RouteDetailScreen: React.FC = () => {
   const aiExplanationText =
     route.aiExplanation || t('routeDetail.fallbackExplanation', { count: route.stepsCount });
   const canPropose = canProposeRoute(route);
+  const nextAction = routeNextAction(route, currentUser?.id);
+
+  // Opened from Trades: going back returns to that same card instead of stacking another Trades
+  // screen on top, so "Your route" and Trades never form a loop in the history.
+  const openTradesToRespond = () => {
+    if ((location.state as { from?: string } | null)?.from === 'trades') {
+      navigate(-1);
+      return;
+    }
+    navigate('/swaps', { state: { tab: 'recibidas' } });
+  };
 
   return (
     <div className="flex flex-col flex-1 bg-surface px-margin pt-4 gap-5">
@@ -170,18 +182,32 @@ export const RouteDetailScreen: React.FC = () => {
         <Button variant="primary" size="lg" fullWidth onClick={handlePropose}>
           {t('routeDetail.propose')}
         </Button>
-      ) : (
-        // A saved route is answered or completed from Trades, not proposed again
+      ) : nextAction === 'respond' ? (
+        // A saved route is answered from Trades, not proposed again
         <Button
           variant="outline"
           size="lg"
           fullWidth
           rightIcon="arrow_forward"
-          onClick={() => navigate('/swaps')}
+          onClick={openTradesToRespond}
         >
           {t('routeDetail.openTrades')}
         </Button>
-      )}
+      ) : nextAction === 'waiting' ? (
+        <Button variant="outline" size="lg" fullWidth leftIcon="hourglass_top" disabled>
+          {t('routeDetail.waitingAnswers')}
+        </Button>
+      ) : nextAction === 'chat' ? (
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          leftIcon="forum"
+          onClick={() => navigate(deliveryChatPath(route.id), { state: { route } })}
+        >
+          {t('routeDetail.openChat')}
+        </Button>
+      ) : null}
 
       <BottomSheet
         isOpen={!!selectedItem}

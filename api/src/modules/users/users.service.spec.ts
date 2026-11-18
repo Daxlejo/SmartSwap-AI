@@ -362,7 +362,7 @@ describe('UsersService', () => {
       expect(mockPrismaService.item.count).toHaveBeenCalledWith({
         where: {
           ownerId: mockUser.id,
-          status: ItemStatus.PENDING_SWAP,
+          status: { in: [ItemStatus.PENDING_SWAP, ItemStatus.RESERVED] },
         },
       });
 

@@ -89,6 +89,7 @@ const INACTIVE_STATUSES = new Set<string>([
   'SWAPPED',
   'ARCHIVED',
   'PENDING_SWAP',
+  'RESERVED',
 ]);
 
 @Injectable()

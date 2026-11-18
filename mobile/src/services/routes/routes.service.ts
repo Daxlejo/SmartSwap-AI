@@ -48,6 +48,8 @@ declare module '@/types' {
     steps?: NormalizedRouteStep[];
     expiresAt?: string;
     createdAt?: string;
+    /** Set once everyone agreed the handoff date and place ("Complete swap" is allowed then). */
+    meetingConfirmedAt?: string;
   }
 }
 
@@ -136,6 +138,7 @@ export interface SwapRouteDto {
   chainItems?: Array<Partial<RawItemDto> & { id: string; name?: string }>;
   expiresAt?: string | Date | null;
   createdAt?: string | Date | null;
+  meetingConfirmedAt?: string | null;
 }
 
 interface RoutesListEnvelope {
@@ -379,6 +382,7 @@ export const mapApiRouteToUiRoute = (apiRoute: SwapRouteDto): SwapRoute => {
     steps: normalizedSteps,
     expiresAt,
     createdAt,
+    meetingConfirmedAt: apiRoute.meetingConfirmedAt ?? undefined,
   };
 };
 

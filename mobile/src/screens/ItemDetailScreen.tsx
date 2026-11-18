@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
 import { ItemImage } from '@/components/ui/ItemImage';
+import { profileItemGroup } from '@/utils/routeView';
 
 /**
  * "Item detail": photo, description and owner of one published item. Another
@@ -67,6 +68,8 @@ export const ItemDetailScreen = () => {
 
   const isMine = Boolean(currentUser && item.ownerId === currentUser.id);
   const owner = isMine ? undefined : itemOwnerAsUser(item);
+  // Promised in a swap (or already traded): it can neither be deleted nor asked for
+  const isLockedInSwap = profileItemGroup(item) === 'inSwap' || profileItemGroup(item) === 'history';
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -153,7 +156,11 @@ export const ItemDetailScreen = () => {
       {/* One action, sticky at the bottom so it is always in reach */}
       <div aria-hidden="true" className="h-6 shrink-0" />
       <div className="sticky bottom-0 mt-auto -mx-margin px-margin pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-surface border-t border-surface-container-high z-40">
-        {isMine ? (
+        {isLockedInSwap ? (
+          <Button variant="outline" size="lg" fullWidth leftIcon="sync_alt" disabled>
+            {t('itemDetail.inSwap')}
+          </Button>
+        ) : isMine ? (
           <Button
             variant="outline"
             size="lg"

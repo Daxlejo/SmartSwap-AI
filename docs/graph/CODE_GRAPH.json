@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-18T01:52:30.881Z",
+  "generatedAt": "2026-11-18T05:34:18.780Z",
   "stats": {
-    "totalFiles": 181,
-    "apiFiles": 70,
-    "mobileFiles": 111,
-    "endpointsCount": 46
+    "totalFiles": 192,
+    "apiFiles": 77,
+    "mobileFiles": 115,
+    "endpointsCount": 51
   },
   "endpoints": [
     {
@@ -244,7 +244,7 @@
       "path": "/proposals/:id/cancel",
       "controller": "ProposalsController",
       "handler": "cancelRoute",
-      "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+      "summary": "Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its items to the catalog",
       "file": "api/src/modules/routes/proposals.controller.ts"
     },
     {
@@ -284,7 +284,7 @@
       "path": "/routes/:id/cancel",
       "controller": "RoutesController",
       "handler": "cancelRoute",
-      "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+      "summary": "Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its items to the catalog",
       "file": "api/src/modules/routes/routes.controller.ts"
     },
     {
@@ -296,12 +296,52 @@
       "file": "api/src/modules/routes/routes.controller.ts"
     },
     {
+      "method": "GET",
+      "path": "/routes/:id/handoff",
+      "controller": "HandoffController",
+      "handler": "getHandoff",
+      "summary": "Read the delivery chat of a swap: messages, agreed date and place, and when it completes by itself (participants only)",
+      "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/meeting",
+      "controller": "HandoffController",
+      "handler": "proposeMeeting",
+      "summary": "Propose the date and place of the handoff; the other participants have to confirm it",
+      "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/meeting/confirm",
+      "controller": "HandoffController",
+      "handler": "confirmMeeting",
+      "summary": "Confirm the proposed date and place; once everyone confirms, the handoff period starts",
+      "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/messages",
+      "controller": "HandoffController",
+      "handler": "sendMessage",
+      "summary": "Send a text message (up to 500 characters) to the delivery chat of a confirmed swap",
+      "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+    },
+    {
       "method": "POST",
       "path": "/routes/:id/propose",
       "controller": "RoutesController",
       "handler": "proposeRouteById",
       "summary": "OpenAPI path-compatible endpoint to propose a discovered circular swap route",
       "file": "api/src/modules/routes/routes.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/routes/:id/report-problem",
+      "controller": "HandoffController",
+      "handler": "reportProblem",
+      "summary": "Report a problem with the handoff; the swap stops completing by itself",
+      "file": "api/src/modules/routes/handoff/handoff.controller.ts"
     },
     {
       "method": "POST",
@@ -452,6 +492,13 @@
       "api/src/modules/routes/dto/search-routes.dto.ts",
       "api/src/modules/routes/engine/route-scoring.strategy.ts",
       "api/src/modules/routes/engine/swap-graph.engine.ts",
+      "api/src/modules/routes/handoff/dto/propose-meeting.dto.ts",
+      "api/src/modules/routes/handoff/dto/report-problem.dto.ts",
+      "api/src/modules/routes/handoff/dto/send-message.dto.ts",
+      "api/src/modules/routes/handoff/handoff.config.ts",
+      "api/src/modules/routes/handoff/handoff.controller.ts",
+      "api/src/modules/routes/handoff/handoff.mapper.ts",
+      "api/src/modules/routes/handoff/handoff.service.ts",
       "api/src/modules/routes/mappers/route.mapper.ts",
       "api/src/modules/routes/proposals.controller.ts",
       "api/src/modules/routes/routes.controller.ts",
@@ -528,6 +575,7 @@
     "mobile/hooks": [
       "mobile/src/hooks/useAppResume.ts",
       "mobile/src/hooks/useExampleRingPeople.ts",
+      "mobile/src/hooks/useHandoff.ts",
       "mobile/src/hooks/useItem.ts",
       "mobile/src/hooks/useKeepFocusedFieldVisible.ts",
       "mobile/src/hooks/useRevealOnError.ts",
@@ -559,6 +607,7 @@
     ],
     "mobile/screens": [
       "mobile/src/screens/ConfigureSwapScreen.tsx",
+      "mobile/src/screens/DeliveryChatScreen.tsx",
       "mobile/src/screens/ExchangesScreen.tsx",
       "mobile/src/screens/ExploreScreen.tsx",
       "mobile/src/screens/HomeScreen.tsx",
@@ -588,6 +637,7 @@
       "mobile/src/services/items/items.service.ts",
       "mobile/src/services/media/photoPicker.ts",
       "mobile/src/services/notifications/notifications.service.ts",
+      "mobile/src/services/routes/handoff.service.ts",
       "mobile/src/services/routes/routes.service.ts",
       "mobile/src/services/storage/preferencesStorage.ts",
       "mobile/src/services/storage/tokenStorage.ts"
@@ -607,6 +657,7 @@
       "mobile/src/utils/avatarIdentity.ts",
       "mobile/src/utils/categoryIcon.ts",
       "mobile/src/utils/currency.ts",
+      "mobile/src/utils/deliveryChat.ts",
       "mobile/src/utils/exampleRing.ts",
       "mobile/src/utils/exploreFilters.ts",
       "mobile/src/utils/formAlert.ts",
@@ -1568,6 +1619,143 @@
         "@nestjs/common"
       ]
     },
+    "api/src/modules/routes/handoff/dto/propose-meeting.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ProposeMeetingDto",
+        "proposeMeetingSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/handoff/dto/report-problem.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "ReportProblemDto",
+        "reportProblemSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/handoff/dto/send-message.dto.ts": {
+      "module": "api/routes",
+      "exports": [
+        "MAX_MESSAGE_LENGTH",
+        "SendMessageDto",
+        "sendMessageSchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/handoff/handoff.config.ts": {
+      "module": "api/routes",
+      "exports": [
+        "autoCompleteAt",
+        "handoffDays"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
+    "api/src/modules/routes/handoff/handoff.controller.ts": {
+      "module": "api/routes",
+      "exports": [
+        "HandoffController"
+      ],
+      "imports": [
+        "../../../common/decorators/current-user.decorator",
+        "../../../common/guards/jwt-auth.guard",
+        "../../../common/pipes/zod-validation.pipe",
+        "./dto/propose-meeting.dto",
+        "./dto/report-problem.dto",
+        "./dto/send-message.dto",
+        "./handoff.mapper",
+        "./handoff.service",
+        "@nestjs/common",
+        "@nestjs/swagger"
+      ],
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/routes/:id/handoff",
+          "controller": "HandoffController",
+          "handler": "getHandoff",
+          "summary": "Read the delivery chat of a swap: messages, agreed date and place, and when it completes by itself (participants only)",
+          "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/messages",
+          "controller": "HandoffController",
+          "handler": "sendMessage",
+          "summary": "Send a text message (up to 500 characters) to the delivery chat of a confirmed swap",
+          "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/meeting",
+          "controller": "HandoffController",
+          "handler": "proposeMeeting",
+          "summary": "Propose the date and place of the handoff; the other participants have to confirm it",
+          "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/meeting/confirm",
+          "controller": "HandoffController",
+          "handler": "confirmMeeting",
+          "summary": "Confirm the proposed date and place; once everyone confirms, the handoff period starts",
+          "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+        },
+        {
+          "method": "POST",
+          "path": "/routes/:id/report-problem",
+          "controller": "HandoffController",
+          "handler": "reportProblem",
+          "summary": "Report a problem with the handoff; the swap stops completing by itself",
+          "file": "api/src/modules/routes/handoff/handoff.controller.ts"
+        }
+      ]
+    },
+    "api/src/modules/routes/handoff/handoff.mapper.ts": {
+      "module": "api/routes",
+      "exports": [
+        "HANDOFF_MESSAGE_INCLUDE",
+        "HANDOFF_ROUTE_INCLUDE",
+        "HandoffDto",
+        "HandoffMapper",
+        "HandoffMeetingDto",
+        "HandoffMessage",
+        "HandoffMessageDto",
+        "HandoffParticipantDto",
+        "HandoffRoute"
+      ],
+      "imports": [
+        "../mappers/route.mapper",
+        "./handoff.config",
+        "@prisma/client"
+      ]
+    },
+    "api/src/modules/routes/handoff/handoff.service.ts": {
+      "module": "api/routes",
+      "exports": [
+        "HandoffService"
+      ],
+      "imports": [
+        "../../../prisma/prisma.service",
+        "../routes.service",
+        "./dto/propose-meeting.dto",
+        "./dto/report-problem.dto",
+        "./dto/send-message.dto",
+        "./handoff.config",
+        "./handoff.mapper",
+        "@nestjs/common",
+        "@prisma/client"
+      ]
+    },
     "api/src/modules/routes/mappers/route.mapper.ts": {
       "module": "api/routes",
       "exports": [
@@ -1644,7 +1832,7 @@
           "path": "/proposals/:id/cancel",
           "controller": "ProposalsController",
           "handler": "cancelRoute",
-          "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+          "summary": "Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its items to the catalog",
           "file": "api/src/modules/routes/proposals.controller.ts"
         },
         {
@@ -1745,7 +1933,7 @@
           "path": "/routes/:id/cancel",
           "controller": "RoutesController",
           "handler": "cancelRoute",
-          "summary": "Cancel a pending swap route proposal (initiator only) and unlock its items",
+          "summary": "Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its items to the catalog",
           "file": "api/src/modules/routes/routes.controller.ts"
         },
         {
@@ -1768,6 +1956,8 @@
         "../geo/geo.module",
         "./engine/route-scoring.strategy",
         "./engine/swap-graph.engine",
+        "./handoff/handoff.controller",
+        "./handoff/handoff.service",
         "./mappers/route.mapper",
         "./proposals.controller",
         "./routes.controller",
@@ -1794,6 +1984,7 @@
         "./dto/search-routes.dto",
         "./engine/route-scoring.strategy",
         "./engine/swap-graph.engine",
+        "./handoff/handoff.config",
         "./mappers/route.mapper",
         "@nestjs/common",
         "@prisma/client"
@@ -2544,6 +2735,17 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useHandoff.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "HandoffLoadState",
+        "useHandoff"
+      ],
+      "imports": [
+        "@/services/routes/handoff.service",
+        "react"
+      ]
+    },
     "mobile/src/hooks/useItem.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2655,6 +2857,7 @@
         "@/components/ServerStatusBanner",
         "@/components/TopBar",
         "@/hooks/useTranslation",
+        "@/utils/deliveryChat",
         "react-router-dom"
       ]
     },
@@ -2749,6 +2952,7 @@
         "@/layouts/AppLayout",
         "@/layouts/AuthLayout",
         "@/screens/ConfigureSwapScreen",
+        "@/screens/DeliveryChatScreen",
         "@/screens/ExploreScreen",
         "@/screens/HomeScreen",
         "@/screens/ItemDetailScreen",
@@ -2787,6 +2991,27 @@
         "@/types",
         "@/utils/currency",
         "@/utils/swapSearch",
+        "react",
+        "react-router-dom"
+      ]
+    },
+    "mobile/src/screens/DeliveryChatScreen.tsx": {
+      "module": "mobile/screens",
+      "exports": [
+        "DeliveryChatScreen"
+      ],
+      "imports": [
+        "@/components/ui/Button",
+        "@/components/ui/ErrorState",
+        "@/components/ui/Icon",
+        "@/components/ui/Input",
+        "@/context/AppContext",
+        "@/hooks/useHandoff",
+        "@/hooks/useTranslation",
+        "@/services/http/apiClient",
+        "@/services/routes/handoff.service",
+        "@/utils/deliveryChat",
+        "@/utils/swapRing",
         "react",
         "react-router-dom"
       ]
@@ -2872,6 +3097,7 @@
         "@/services/http/apiClient",
         "@/types",
         "@/utils/currency",
+        "@/utils/routeView",
         "@/utils/swapSearch",
         "react",
         "react-router-dom"
@@ -2952,6 +3178,7 @@
         "@/components/ProfilePhotoPicker",
         "@/components/ScreenHeader",
         "@/components/ui/Avatar",
+        "@/components/ui/Badge",
         "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/Chip",
@@ -2964,7 +3191,9 @@
         "@/hooks/useTheme",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
+        "@/types",
         "@/utils/currency",
+        "@/utils/routeView",
         "@/utils/swapSearch",
         "react",
         "react-router-dom"
@@ -3070,6 +3299,7 @@
         "@/services/routes/routes.service",
         "@/types",
         "@/utils/currency",
+        "@/utils/deliveryChat",
         "@/utils/routeView",
         "@/utils/swapRing",
         "react",
@@ -3140,6 +3370,7 @@
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/types",
+        "@/utils/deliveryChat",
         "@/utils/relativeTime",
         "@/utils/routeView",
         "react",
@@ -3297,6 +3528,21 @@
       ],
       "imports": [
         "@/components/ui/Badge",
+        "@/services/http/apiClient"
+      ]
+    },
+    "mobile/src/services/routes/handoff.service.ts": {
+      "module": "mobile/services",
+      "exports": [
+        "HANDOFF_POLL_MS",
+        "Handoff",
+        "HandoffMeeting",
+        "HandoffMessage",
+        "HandoffParticipant",
+        "MAX_MESSAGE_LENGTH",
+        "handoffService"
+      ],
+      "imports": [
         "@/services/http/apiClient"
       ]
     },
@@ -3468,6 +3714,23 @@
       ],
       "imports": []
     },
+    "mobile/src/utils/deliveryChat.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "MeetingState",
+        "deliveryChatPath",
+        "formatDay",
+        "formatMeetingDate",
+        "formatMessageTime",
+        "isChatOpen",
+        "isDeliveryChatPath",
+        "meetingState",
+        "toLocalInputValue"
+      ],
+      "imports": [
+        "@/services/routes/handoff.service"
+      ]
+    },
     "mobile/src/utils/exampleRing.ts": {
       "module": "mobile/utils",
       "exports": [
@@ -3549,11 +3812,15 @@
     "mobile/src/utils/routeView.ts": {
       "module": "mobile/utils",
       "exports": [
+        "ProfileItemGroup",
         "ReceivedProposal",
+        "RouteNextAction",
         "RoutePhase",
         "canProposeRoute",
         "isSignedInUser",
         "ownSide",
+        "profileItemGroup",
+        "routeNextAction",
         "routePhase",
         "toReceivedProposals"
       ],

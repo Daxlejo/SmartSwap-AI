@@ -15,6 +15,7 @@ import { ProfileScreen } from '@/screens/ProfileScreen';
 import { NotificationsScreen } from '@/screens/NotificationsScreen';
 import { RouteResultsScreen } from '@/screens/RouteResultsScreen';
 import { RouteDetailScreen } from '@/screens/RouteDetailScreen';
+import { DeliveryChatScreen } from '@/screens/DeliveryChatScreen';
 import { ProposalConfirmScreen } from '@/screens/ProposalConfirmScreen';
 import { ProposalSentScreen } from '@/screens/ProposalSentScreen';
 import { ItemDetailScreen } from '@/screens/ItemDetailScreen';
@@ -96,6 +97,10 @@ export const router = createBrowserRouter(
         {
           path: '/swap/route/:routeId',
           element: <RouteDetailScreen />,
+        },
+        {
+          path: '/swap/route/:routeId/chat',
+          element: <DeliveryChatScreen />,
         },
         {
           path: '/swap/proposal/confirm',

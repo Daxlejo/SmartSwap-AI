@@ -34,6 +34,8 @@ export const envSchema = z.object({
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY is required')
     .default('placeholder-supabase-service-role-key-for-local-development'),
   CORS_ORIGIN: z.string().default('*'),
+  /** Days after the agreed handoff date before a swap completes by itself (0 for demos). */
+  SWAP_HANDOFF_DAYS: z.coerce.number().int().min(0).max(60).default(5),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

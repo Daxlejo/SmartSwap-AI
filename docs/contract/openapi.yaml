@@ -1241,7 +1241,9 @@ paths:
   /api/v1/routes/{id}/cancel:
     post:
       operationId: RoutesController_cancelRoute
-      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      summary: >-
+        Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its
+        items to the catalog
       parameters:
         - name: id
           required: true
@@ -1254,11 +1256,11 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Not the route initiator
+          description: Not the route initiator (pending) or not a participant (confirmed)
         '404':
           description: Swap route not found
         '409':
-          description: Route is no longer pending
+          description: Route is already completed, cancelled or expired
       tags:
         - Routes
       security:
@@ -1437,7 +1439,9 @@ paths:
   /api/v1/proposals/{id}/cancel:
     post:
       operationId: ProposalsController_cancelRoute
-      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      summary: >-
+        Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its
+        items to the catalog
       parameters:
         - name: id
           required: true
@@ -1450,11 +1454,11 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Not the route initiator
+          description: Not the route initiator (pending) or not a participant (confirmed)
         '404':
           description: Swap route not found
         '409':
-          description: Route is no longer pending
+          description: Route is already completed, cancelled or expired
       tags:
         - proposals
       security:
@@ -1484,6 +1488,170 @@ paths:
         - proposals
       security:
         - bearerAuth: []
+  /api/v1/routes/{id}/handoff:
+    get:
+      operationId: HandoffController_getHandoff
+      summary: >-
+        Read the delivery chat of a swap: messages, agreed date and place, and when it completes by itself (participants
+        only)
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery chat of the swap
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+  /api/v1/routes/{id}/messages:
+    post:
+      operationId: HandoffController_sendMessage
+      summary: Send a text message (up to 500 characters) to the delivery chat of a confirmed swap
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Delivery chat with the new message
+        '400':
+          description: Empty or longer than 500 characters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+        '409':
+          description: The swap is not waiting for its handoff
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+                - body
+              additionalProperties: false
+  /api/v1/routes/{id}/meeting:
+    post:
+      operationId: HandoffController_proposeMeeting
+      summary: Propose the date and place of the handoff; the other participants have to confirm it
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery chat with the proposed date and place
+        '400':
+          description: Invalid date or place
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+        '409':
+          description: The swap is not waiting for its handoff
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                at:
+                  type: string
+                  format: date-time
+                place:
+                  type: string
+                  minLength: 3
+                  maxLength: 160
+              required:
+                - at
+                - place
+              additionalProperties: false
+  /api/v1/routes/{id}/meeting/confirm:
+    post:
+      operationId: HandoffController_confirmMeeting
+      summary: Confirm the proposed date and place; once everyone confirms, the handoff period starts
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery chat after the confirmation
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+        '409':
+          description: No date proposed, or the swap is not waiting for its handoff
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+  /api/v1/routes/{id}/report-problem:
+    post:
+      operationId: HandoffController_reportProblem
+      summary: Report a problem with the handoff; the swap stops completing by itself
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery chat with the reported problem
+        '400':
+          description: Reason longer than 500 characters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Swap not found or not a participant
+        '409':
+          description: The swap is not waiting for its handoff
+      tags:
+        - Swap handoff
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
   /api/v1/notifications:
     get:
       operationId: NotificationsController_listUserNotifications

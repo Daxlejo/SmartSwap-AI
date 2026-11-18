@@ -85,6 +85,43 @@ export const routePhase = (status: string | undefined | null): RoutePhase => {
 };
 
 /**
+ * The one thing a saved route asks of the signed-in user, which decides the main button
+ * of "Your route":
+ * - `respond`: they have not answered yet (answered in Trades);
+ * - `waiting`: they accepted and others have not, so there is nothing to do;
+ * - `chat`: everyone accepted, the handoff is arranged in the delivery chat;
+ * - `none`: the route is over (completed, cancelled or expired) or they are not in it.
+ * A preview fresh from a search is proposed instead (see {@link canProposeRoute}).
+ */
+export type RouteNextAction = 'respond' | 'waiting' | 'chat' | 'none';
+
+export const routeNextAction = (
+  route: Pick<SwapRoute, 'status' | 'steps'>,
+  userId: string | undefined,
+): RouteNextAction => {
+  const ownStep = userId ? route.steps?.find((step) => step.userId === userId) : undefined;
+  if (!ownStep) return 'none';
+  const phase = routePhase(route.status);
+  if (phase === 'confirmed') return 'chat';
+  if (phase !== 'pending') return 'none';
+  return ownStep.acceptance === 'PENDING' ? 'respond' : 'waiting';
+};
+
+/** Item statuses of a swap that is under way: proposed (locked) or accepted by all (reserved). */
+const IN_SWAP_ITEM_STATUSES = ['PENDING_SWAP', 'LOCKED_IN_PROPOSAL', 'RESERVED'];
+
+/** Which Profile tab an owned item belongs to. Paused and archived items are not listed. */
+export type ProfileItemGroup = 'active' | 'inSwap' | 'history' | 'hidden';
+
+export const profileItemGroup = (item: Pick<Item, 'status'>): ProfileItemGroup => {
+  const status = (item.status ?? 'ACTIVE').trim().toUpperCase();
+  if (status === 'ACTIVE' || status === 'AVAILABLE') return 'active';
+  if (IN_SWAP_ITEM_STATUSES.includes(status)) return 'inSwap';
+  if (status === 'SWAPPED' || status === 'TRADED') return 'history';
+  return 'hidden';
+};
+
+/**
  * What the signed-in user hands over and gets back in a route: their own step when they
  * take part, otherwise the two ends of the chain.
  */

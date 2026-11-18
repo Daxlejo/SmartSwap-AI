@@ -232,6 +232,14 @@ describe('RoutesService', () => {
         'Ruta circular equilibrada de 3 pasos con alta paridad de valor comercial.',
       co2SavedKg: 7.2,
       expiresAt: futureExpiry,
+      meetingAt: null,
+      meetingPlace: null,
+      meetingProposedById: null,
+      meetingConfirmedAt: null,
+      problemReportedAt: null,
+      problemReportedById: null,
+      problemReason: null,
+      completedAt: null,
       createdAt: fixedNow,
       updatedAt: fixedNow,
       steps: [
@@ -245,6 +253,7 @@ describe('RoutesService', () => {
           acceptance: StepAcceptance.ACCEPTED,
           respondedAt: fixedNow,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
@@ -268,6 +277,7 @@ describe('RoutesService', () => {
           acceptance: stepBAcceptance,
           respondedAt: stepBAcceptance !== StepAcceptance.PENDING ? fixedNow : null,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
@@ -291,6 +301,7 @@ describe('RoutesService', () => {
           acceptance: stepCAcceptance,
           respondedAt: stepCAcceptance !== StepAcceptance.PENDING ? fixedNow : null,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
@@ -329,6 +340,9 @@ describe('RoutesService', () => {
     },
     user: {
       updateMany: jest.fn(),
+    },
+    swapMessage: {
+      deleteMany: jest.fn(),
     },
   };
 
@@ -825,6 +839,61 @@ describe('RoutesService', () => {
       expect(result.status).toBe('CONFIRMED');
       expect(result.steps.every((s) => s.acceptance === 'ACCEPTED')).toBe(true);
     });
+
+    it('reserves every item of the ring in the same transaction, before re-reading the route', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({
+          status: RouteStatus.ACTIVE,
+          stepBAcceptance: StepAcceptance.ACCEPTED,
+          stepCAcceptance: StepAcceptance.PENDING,
+        }),
+      );
+      mockTx.swapRouteStep.update.mockResolvedValue({});
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.swapRoute.update.mockResolvedValue(
+        buildPersisted3HopRoute({
+          status: RouteStatus.CONFIRMED,
+          stepBAcceptance: StepAcceptance.ACCEPTED,
+          stepCAcceptance: StepAcceptance.ACCEPTED,
+          itemStatus: ItemStatus.RESERVED,
+        }),
+      );
+      mockTx.notification.createMany.mockResolvedValue({ count: 3 });
+
+      const result = await routesService.respondToRoute(userCId, routeId, { decision: 'ACCEPTED' });
+
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockTx.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) } },
+        data: { status: ItemStatus.RESERVED },
+      });
+      expect(mockTx.item.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+        mockTx.swapRoute.update.mock.invocationCallOrder[0],
+      );
+      expect(result.steps.every((s) => s.givesItem.status === 'RESERVED')).toBe(true);
+    });
+
+    it('leaves the items locked (not reserved) while other participants still have to answer', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({
+          status: RouteStatus.ACTIVE,
+          stepBAcceptance: StepAcceptance.PENDING,
+          stepCAcceptance: StepAcceptance.PENDING,
+        }),
+      );
+      mockTx.swapRouteStep.update.mockResolvedValue({});
+      mockTx.swapRoute.findUniqueOrThrow.mockResolvedValue(
+        buildPersisted3HopRoute({
+          status: RouteStatus.ACTIVE,
+          stepBAcceptance: StepAcceptance.ACCEPTED,
+          stepCAcceptance: StepAcceptance.PENDING,
+        }),
+      );
+
+      await routesService.respondToRoute(userBId, routeId, { decision: 'ACCEPTED' });
+
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('4. respondToRoute — REJECTED transitions to CANCELLED and unlocks items', () => {
@@ -993,9 +1062,59 @@ describe('RoutesService', () => {
       expect(mockTx.swapRoute.update).not.toHaveBeenCalled();
     });
 
-    it('rejects cancellation of a route that is no longer pending', async () => {
+    it('lets any participant cancel a confirmed swap and returns its reserved items to the catalog', async () => {
+      const confirmed = buildPersisted3HopRoute({
+        status: RouteStatus.CONFIRMED,
+        stepBAcceptance: StepAcceptance.ACCEPTED,
+        stepCAcceptance: StepAcceptance.ACCEPTED,
+        itemStatus: ItemStatus.RESERVED,
+      });
+      mockTx.swapRoute.findUnique.mockResolvedValue(confirmed);
+      mockTx.item.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.swapRoute.update.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CANCELLED, itemStatus: ItemStatus.AVAILABLE }),
+      );
+      mockTx.notification.createMany.mockResolvedValue({ count: 2 });
+
+      const result = await routesService.cancelRoute(userBId, confirmed.id);
+
+      expect(mockTx.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+      const notified = mockTx.notification.createMany.mock.calls[0][0].data.map(
+        (n: { userId: string }) => n.userId,
+      );
+      expect(notified.sort()).toEqual([userAId, userCId].sort());
+      expect(result.status).toBe('CANCELLED');
+      expect(result.steps[0].givesItem.status).toBe('ACTIVE');
+    });
+
+    it('refuses to cancel a confirmed swap once someone confirmed the delivery', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED, allDelivered: true }),
+      );
+
+      await expect(routesService.cancelRoute(userBId, 'route-id')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects cancelling a confirmed swap by someone outside it', async () => {
       mockTx.swapRoute.findUnique.mockResolvedValue(
         buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED }),
+      );
+
+      await expect(routesService.cancelRoute('outsider', 'route-id')).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects cancellation of a route that is already completed', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.COMPLETED }),
       );
 
       await expect(
@@ -1021,8 +1140,12 @@ describe('RoutesService', () => {
         allDelivered: true,
       });
 
+      // Date agreed; Valeria and Camila already confirmed their delivery; Alex is the last one
+      confirmedRoute.meetingConfirmedAt = fixedNow;
+      confirmedRoute.steps[1].deliveryConfirmed = true;
+      confirmedRoute.steps[2].deliveryConfirmed = true;
       mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
-      mockTx.swapRouteStep.updateMany.mockResolvedValue({ count: 3 });
+      mockTx.swapRouteStep.update.mockResolvedValue({});
       mockTx.swapRoute.update.mockResolvedValue(completedRoute);
       mockTx.item.updateMany.mockResolvedValue({ count: 3 });
       mockTx.user.updateMany.mockResolvedValue({ count: 3 });
@@ -1030,12 +1153,18 @@ describe('RoutesService', () => {
 
       const result = await routesService.completeRoute(userAId, routeId);
 
+      expect(mockTx.swapRouteStep.update).toHaveBeenCalledWith({
+        where: { id: 'step-0' },
+        data: { deliveryConfirmed: true },
+      });
       expect(mockTx.swapRoute.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: routeId },
-          data: { status: RouteStatus.COMPLETED },
+          data: { status: RouteStatus.COMPLETED, completedAt: expect.any(Date) },
         }),
       );
+      // The swap stays; its delivery chat goes
+      expect(mockTx.swapMessage.deleteMany).toHaveBeenCalledWith({ where: { routeId } });
       expect(mockTx.item.updateMany).toHaveBeenCalledWith({
         where: {
           id: { in: expect.arrayContaining([itemAId, itemBId, itemCId]) },
@@ -1067,6 +1196,38 @@ describe('RoutesService', () => {
       expect(result.status).toBe('COMPLETED');
       expect(result.steps[0].givesItem.status).toBe('TRADED');
       expect(result.steps.every((s) => s.deliveryConfirmed)).toBe(true);
+    });
+
+    it('only records the delivery while other participants still have to confirm, even for the initiator', async () => {
+      const confirmedRoute = buildPersisted3HopRoute({
+        status: RouteStatus.CONFIRMED,
+        stepBAcceptance: StepAcceptance.ACCEPTED,
+        stepCAcceptance: StepAcceptance.ACCEPTED,
+      });
+      confirmedRoute.meetingConfirmedAt = fixedNow;
+      mockTx.swapRoute.findUnique.mockResolvedValue(confirmedRoute);
+      mockTx.swapRouteStep.update.mockResolvedValue({});
+      mockTx.swapRoute.findUniqueOrThrow.mockResolvedValue(confirmedRoute);
+
+      const result = await routesService.completeRoute(userAId, routeId);
+
+      expect(mockTx.swapRouteStep.update).toHaveBeenCalledWith({
+        where: { id: 'step-0' },
+        data: { deliveryConfirmed: true },
+      });
+      expect(mockTx.swapRouteStep.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.item.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.user.updateMany).not.toHaveBeenCalled();
+      expect(result.status).toBe('CONFIRMED');
+    });
+
+    it('refuses to record a delivery before the date and place are agreed', async () => {
+      mockTx.swapRoute.findUnique.mockResolvedValue(
+        buildPersisted3HopRoute({ status: RouteStatus.CONFIRMED }),
+      );
+
+      await expect(routesService.completeRoute(userAId, routeId)).rejects.toThrow(ConflictException);
+      expect(mockTx.swapRouteStep.update).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException in getRouteById when route does not exist', async () => {

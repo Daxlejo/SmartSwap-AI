@@ -141,7 +141,7 @@ describe('ItemsService', () => {
 
       await expect(itemsService.create(ownerId, duplicateDto)).rejects.toThrow(ConflictException);
       expect(mockPrismaService.item.findMany).toHaveBeenCalledWith({
-        where: { ownerId, status: ItemStatus.PENDING_SWAP },
+        where: { ownerId, status: { in: [ItemStatus.PENDING_SWAP, ItemStatus.RESERVED] } },
         select: { name: true },
       });
       expect(aiEmbeddingService.generateEmbedding).not.toHaveBeenCalled();
@@ -149,7 +149,7 @@ describe('ItemsService', () => {
     });
 
     it('lets the same title through when the repeated item is only active (the app just warns)', async () => {
-      // Only PENDING_SWAP items are looked up, so an AVAILABLE twin never reaches the comparison
+      // Only PENDING_SWAP and RESERVED items are looked up, so an AVAILABLE twin never reaches the comparison
       mockPrismaService.item.findMany.mockResolvedValue([{ name: 'Bicicleta Trek' }]);
       mockTx.item.create.mockResolvedValue(mockCreatedEntity);
       mockTx.want.createMany.mockResolvedValue({ count: 1 });
