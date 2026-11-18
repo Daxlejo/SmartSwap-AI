@@ -14,6 +14,7 @@ import {
   swapDraftForItem,
   swapDraftPath,
 } from '@/utils/swapSearch';
+import { normalizeItem } from '@/services/items/items.service';
 
 let myItems: Item[] = [];
 let catalog: Item[] = [];
@@ -173,6 +174,24 @@ describe('buildDirectPreviewRoute', () => {
       ['user-1', 'item-1', 'ACCEPTED'],
       ['user-2', 'item-9', 'PENDING'],
     ]);
+  });
+
+  it('previews an item exactly as the API sends it (owner flattened, no owner object)', () => {
+    // Regression: the phone went back to step 1 because the wanted item had no owner
+    const wanted = normalizeItem({
+      id: 'item-9',
+      name: 'Control PS5 DualSense',
+      category: 'Videojuegos',
+      condition: 'LIKE_NEW',
+      ownerId: 'user-2',
+      ownerName: 'Laura Benavides',
+      ownerRating: 4.6,
+      location: 'Ipiales, Nariño',
+      status: 'AVAILABLE',
+    });
+    expect(wanted.owner).toMatchObject({ id: 'user-2', name: 'Laura Benavides', rating: 4.6 });
+    const route = buildDirectPreviewRoute({ offeredItem: publishedItem, wantedItem: wanted }, viewer);
+    expect(route?.participants.map((person) => person.name)).toEqual([viewer.name, 'Laura Benavides']);
   });
 
   it('cannot preview without the owner', () => {
