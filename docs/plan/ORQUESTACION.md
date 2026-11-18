@@ -32,11 +32,11 @@
 | 6. Arquitectura 4+1 y guion de demo | jue 12 (en paralelo) | `docs/architecture` | Aprobada |
 | 3. Bloque 0 (correcciones del celular) y anillo de intercambio | vie 13 – dom 15 | `feat/swap-ring` | Aprobada (PR #22 fusionado) |
 | 4a. Primer uso, perfil, filtros, publicar e identidad en el anillo | dom 15 – lun 16 | `feat/ux-first-use` | Aprobada; lo que encontró la prueba en el celular pasa a la 4c (PR #23 se fusiona) |
-| 4c. Flujo de propuesta, navegación y pulido de la 4a | lun 16 (tarde y noche) | `feat/proposal-flow` | **ACTIVA** |
-| 4b-N. Nativo Android (en paralelo con la 4c) | lun 16 (tarde) | `feat/android-native` | **ACTIVA** (solo archivos nativos) |
-| 4b-F. Flujos, limpieza y línea base | mar 17 (temprano) | `feat/ui-polish` | Bloqueada (espera la 4c) |
-| 5. APK release firmado | mar 17 (mañana) | `chore/release-apk` | Bloqueada |
-| 7. Congelación, seed, tag v1.0.0 y ensayos | mar 17 (tarde) | `main` | Bloqueada |
+| 4c. Flujo de propuesta, navegación y pulido de la 4a | lun 16 – mar 17 | `feat/proposal-flow` | Aprobada si pasa la prueba en el celular (PR #24; se fusiona después del #23) |
+| 4b-N. Nativo Android (en paralelo con la 4c) | lun 16 – mar 17 | `feat/android-native` | **ACTIVA** (falta fusionar `main`, recompilar y tomar capturas) |
+| 4b-F. Bugs del celular, lint y término único | mar 17 | `feat/ui-polish` | Aprobada si pasa la prueba en el celular (PR #26). Recortada: sin flow-runner, i18n-audit, visual-snapshot ni skeletons |
+| 5. APK release firmado | mar 17 (noche) | `chore/release-apk` | **ACTIVA** (después de fusionar 4b-N y 4b-F) |
+| 7. Congelación, seed, tag v1.0.0 y ensayos | mar 17 (noche) – mié 18 (mañana) | `main` | Bloqueada (sin visual-regression: no hay línea base) |
 
 ## Plugins por fase
 Activar solo los de la fase en curso (`/plugin`). Los plugins son del usuario: lo que se activa aplica a todas las terminales.
@@ -70,7 +70,9 @@ Activar solo los de la fase en curso (`/plugin`). Los plugins son del usuario: l
 
 **Criterios de salida:** capturas de cada punto; los 3 casos de precio (control PS5 nuevo, bicicleta rodado 29 usada, iPhone 12 usado) con su resultado; `audit:ui` en 0 (100 % y 130 %, los dos temas); suites; revisión de PR; prueba en el celular.
 
-## Fase 4c: Flujo de propuesta, navegación y pulido de la 4a (ACTIVA; encontrado en el celular el 16 de noviembre)
+## Fase 4c: Flujo de propuesta, navegación y pulido de la 4a (aprobada si pasa la prueba en el celular; encontrado en el celular el 16 de noviembre)
+**Resultado:** PR #24. 214 api, 248 mobile, 40 e2e y 10 de 10 flujos de navegador en verde; `openapi:check` al día; `audit:ui` en 0 en 39 pantallas (156 corridas); 12 hallazgos de revisión corregidos y 2 justificados. Nuevo `POST /routes/direct`; la ruta circular solo devuelve anillos de 3 o 4 que terminan en el artículo elegido; artículo eliminado, reservado o propio → "Este artículo ya no está disponible". Anillo del primer uso: variante B ("Entrega", el objeto viaja en una insignia naranja). La rama sale de la 4a, así que se fusiona después del PR #23.
+
 1. **Proponer desde el detalle:** las tarjetas de Explorar ya no tienen "Proponer"; tocar la tarjeta abre "Detalle del artículo" y ahí está "Proponer canje". Explorar y la búsqueda no muestran artículos propios (filtro en la API y en el cliente). Un artículo propio abierto desde Perfil solo muestra "Eliminar mi publicación".
 2. **Nuevo canje en 3 pasos**, con dos entradas (detalle del artículo e Inicio): (1) **Lo que ofreces:** tus artículos activos; si hay uno, ya viene elegido. (2) **Lo que recibes:** desde el detalle, el artículo visto, fijo; desde Inicio, se busca o se elige de los deseados. (3) **Tipo de canje:** *Directo*, propuesta 1 a 1 al dueño aunque tu artículo no esté en su lista de aceptados (es una propuesta; él decide); o *Circular*, la IA busca anillos de 3 o 4 en los que tú recibes ese artículo. Después, confirmar y enviar. Fuera los rótulos "RED INTELIGENTE SMARTSWAP" e "INTERCAMBIO INTELIGENTE". La ruta circular debe respetar el artículo elegido (en la prueba se buscó un control PS5 y la ruta entregaba una Nintendo Switch OLED).
 3. **Búsqueda sin saltos ni bucles:** "Analizando rutas" no navega sola. Al terminar, con rutas muestra "Ver N rutas"; sin rutas, un estado vacío con "Proponer canje directo" y "Volver". La pantalla de carga se reemplaza en el historial, así que atrás desde resultados vuelve al paso 3 y nunca relanza la búsqueda. Mismo patrón en todas las pantallas transitorias (cargas, "Propuesta enviada", primer uso). Test e2e del botón atrás.
