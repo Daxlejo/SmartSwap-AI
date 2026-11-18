@@ -1,5 +1,6 @@
 import type { Item, SwapRoute, User } from '@/types';
 import type { NormalizedRouteStep } from '@/services/routes/routes.service';
+import { matchesSearch, normalizeSearchText } from './searchText';
 
 /** Fair-value band, in percent, the engine allows between consecutive items. */
 export const VALUE_TOLERANCE_PCT = 25;
@@ -111,24 +112,12 @@ export const findWantedCandidates = (
   viewerId: string | undefined,
   limit = 8,
 ): Item[] => {
-  const needle = normalize(query);
-  if (needle.length < 2) return [];
+  if (normalizeSearchText(query).length < 2) return [];
   return catalog
     .filter((item) => item.ownerId !== viewerId && isOfferableItem(item))
-    .filter((item) =>
-      [item.name, item.category, item.description ?? ''].some((text) =>
-        normalize(text).includes(needle),
-      ),
-    )
+    .filter((item) => matchesSearch(query, [item.name, item.category, item.description]))
     .slice(0, limit);
 };
-
-const normalize = (text: string): string =>
-  text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
 
 // ---------------------------------------------------------------------------
 // Direct (1-to-1) proposal

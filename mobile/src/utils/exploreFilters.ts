@@ -1,4 +1,5 @@
 import type { Item } from '@/types';
+import { matchesSearch } from './searchText';
 
 /** Catalog categories the filter offers; anything else counts as "Otros". */
 export const EXPLORE_CATEGORIES = [
@@ -76,12 +77,9 @@ export const applyExploreFilters = (
   searchQuery: string,
   filters: ExploreFilters,
 ): Item[] => {
-  const query = searchQuery.trim().toLowerCase();
   const result = items.filter(
     (item) =>
-      (query === '' ||
-        item.name.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query)) &&
+      matchesSearch(searchQuery, [item.name, item.category, item.description]) &&
       matchesCategory(item, filters.category) &&
       (filters.condition === null || item.condition.toLowerCase() === filters.condition.toLowerCase()) &&
       matchesPrice(item, filters),
