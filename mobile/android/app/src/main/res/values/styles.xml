@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -8,26 +8,34 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:statusBarColor">#00685f</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/smartswap_surface_light</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
+    <!-- Theme of the running app. These bar colors only cover the first frame:
+         ThemeBarsPlugin applies the light or dark theme chosen in the app, also live. -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/smartswap_surface_light</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:statusBarColor">#00685f</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/smartswap_surface_light</item>
+        <item name="android:navigationBarColor">@color/smartswap_surface_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
+    <!-- Splash (androidx core-splashscreen, same look on Android 12+ and older): the
+         SmartSwap arrows on brand teal. MainActivity keeps it until the web app loads. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
-        <item name="android:statusBarColor">#00685f</item>
-        <item name="android:navigationBarColor">#00685f</item>
+        <item name="windowSplashScreenBackground">@color/smartswap_teal</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:statusBarColor">@color/smartswap_teal</item>
+        <item name="android:navigationBarColor">@color/smartswap_teal</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SmartSwap arrows (src/assets/logo.svg) as a vector, so the splash icon stays sharp at any
+     density. Splash icon canvas: 288dp, content inside the central 192dp circle
+     (viewport 72 = 288dp; the arrows' radius is 18 units x 1.2 = 21.6 units = 86dp). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+    <group
+        android:translateX="7.2"
+        android:translateY="7.2"
+        android:scaleX="1.2"
+        android:scaleY="1.2">
+        <path
+            android:fillColor="#89F5E7"
+            android:pathData="M24 10C16.27 10 10 16.27 10 24C10 27.5 11.27 30.7 13.4 33.2L16.2 30.4C14.83 28.6 14 26.4 14 24C14 18.48 18.48 14 24 14V18L30 12L24 6V10Z" />
+        <path
+            android:fillColor="#FD761A"
+            android:pathData="M24 38C31.73 38 38 31.73 38 24C38 20.5 36.73 17.3 34.6 14.8L31.8 17.6C33.17 19.4 34 21.6 34 24C34 29.52 29.52 34 24 34V30L18 36L24 42V38Z" />
+    </group>
+</vector>

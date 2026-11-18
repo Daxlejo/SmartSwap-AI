@@ -8,17 +8,14 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     hostname: 'localhost',
   },
+  // Splash: Android's own splash (styles.xml, AppTheme.NoActionBarLaunch), kept by
+  // MainActivity until the web app loads. Bar colors: ThemeBarsPlugin + src/native/systemBars.ts.
   plugins: {
-    SplashScreen: {
-      backgroundColor: '#00685f',
-      launchShowDuration: 2000,
-      androidScaleType: 'CENTER_CROP',
-      splashFullScreen: true,
-      splashImmersive: true,
-    },
-    StatusBar: {
-      backgroundColor: '#00685f',
-      style: 'DARK',
+    SystemBars: {
+      // The WebView gets the bar sizes as safe-area insets (index.html uses viewport-fit=cover),
+      // and the keyboard resizes the content instead of covering the focused field.
+      insetsHandling: 'css',
+      initialViewportFitValueHint: 'cover',
     },
   },
 };
