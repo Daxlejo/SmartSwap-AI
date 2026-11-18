@@ -62,6 +62,7 @@ model User {
   initiatedRoutes SwapRoute[]     @relation("RouteInitiator")
   steps           SwapRouteStep[]
   notifications   Notification[]
+  swapMessages    SwapMessage[]
 
   @@map("users")
 }
@@ -114,21 +115,28 @@ model Want {
 }
 
 model SwapRoute {
-  id            String      @id @default(uuid())
-  code          String      @unique
-  initiatorId   String
-  initiator     User        @relation("RouteInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
-  objectiveText String
-  matchScore    Float
-  status        RouteStatus @default(SUGGESTED)
-  aiExplanation String?
-  co2SavedKg    Float       @default(0)
-  expiresAt     DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                  String      @id @default(uuid())
+  code                String      @unique
+  initiatorId         String
+  initiator           User        @relation("RouteInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  objectiveText       String
+  matchScore          Float
+  status              RouteStatus @default(SUGGESTED)
+  aiExplanation       String?
+  co2SavedKg          Float       @default(0)
+  expiresAt           DateTime?
+  /// Handoff of a confirmed swap: date and place someone proposed in the delivery chat
+  meetingAt           DateTime?
+  meetingPlace        String?
+  meetingProposedById String?
+  /// Set when every participant confirmed the date and place; the handoff period starts then
+  meetingConfirmedAt  DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
   steps         SwapRouteStep[]
   notifications Notification[]
+  messages      SwapMessage[]
 
   @@index([initiatorId])
   @@map("swap_routes")
@@ -148,6 +156,8 @@ model SwapRouteStep {
   acceptance        StepAcceptance @default(PENDING)
   respondedAt       DateTime?
   deliveryConfirmed Boolean        @default(false)
+  /// This participant agreed to the proposed date and place
+  meetingConfirmed  Boolean        @default(false)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -173,4 +183,18 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+/// Delivery chat of a confirmed swap: text only, visible to its participants, deleted when the swap completes.
+model SwapMessage {
+  id        String    @id @default(uuid())
+  routeId   String
+  route     SwapRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body      String    @db.VarChar(500)
+  createdAt DateTime  @default(now())
+
+  @@index([routeId, createdAt])
+  @@map("swap_messages")
 }

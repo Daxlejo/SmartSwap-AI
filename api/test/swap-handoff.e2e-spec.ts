@@ -123,4 +123,105 @@ describe('Swap handoff (e2e)', () => {
       expect(itemStatuses()).toEqual(['AVAILABLE', 'AVAILABLE', 'AVAILABLE']);
     });
   });
+
+  describe('delivery chat', () => {
+    let lucia: RegisteredUser;
+    let swap: RouteBody;
+
+    const handoff = (user: RegisteredUser) =>
+      testApp.http().get(`/api/v1/routes/${swap.id}/handoff`).set(authed(user.token));
+    const send = (user: RegisteredUser, body: object) =>
+      testApp.http().post(`/api/v1/routes/${swap.id}/messages`).set(authed(user.token)).send(body);
+    const proposeMeeting = (user: RegisteredUser, at: Date, place: string) =>
+      testApp
+        .http()
+        .post(`/api/v1/routes/${swap.id}/meeting`)
+        .set(authed(user.token))
+        .send({ at: at.toISOString(), place });
+    const confirmMeeting = (user: RegisteredUser) =>
+      testApp.http().post(`/api/v1/routes/${swap.id}/meeting/confirm`).set(authed(user.token));
+
+    beforeAll(async () => {
+      lucia = await registerUser(testApp, 'Lucia');
+      swap = await confirmedSwap();
+    });
+
+    it('is only for the participants of the swap', async () => {
+      await handoff(lucia).expect(404);
+      await send(lucia, { body: 'Hola' }).expect(404);
+      await proposeMeeting(lucia, new Date(Date.now() + 86_400_000), 'Parque Nariño').expect(404);
+
+      const own = await handoff(valeria).expect(200);
+      expect(own.body.code).toBe(swap.code);
+      expect(own.body.participants).toHaveLength(3);
+      expect(own.body.messages).toEqual([]);
+      expect(own.body.meeting).toBeNull();
+    });
+
+    it('takes text up to 500 characters and shows it to every participant', async () => {
+      await send(alex, { body: '   ' }).expect(400);
+      await send(alex, { body: 'a'.repeat(501) }).expect(400);
+      await send(alex, { body: 'Hola', image: 'x' }).expect(400);
+
+      await send(alex, { body: '¿Nos vemos el sábado en el parque?' }).expect(201);
+      await send(mateo, { body: 'a'.repeat(500) }).expect(201);
+
+      const seen = await handoff(valeria).expect(200);
+      expect(seen.body.messages.map((m: { senderId: string }) => m.senderId)).toEqual([alex.id, mateo.id]);
+      expect(seen.body.messages[0]).toEqual(
+        expect.objectContaining({ body: '¿Nos vemos el sábado en el parque?', senderName: 'Alex' }),
+      );
+    });
+
+    it('agrees a date and place once everyone confirms, and then shows when it completes by itself', async () => {
+      await confirmMeeting(alex).expect(409);
+
+      const at = new Date(Date.now() + 2 * 86_400_000);
+      const proposed = await proposeMeeting(valeria, at, 'Parque Nariño, frente a la iglesia').expect(200);
+      expect(proposed.body.meeting).toEqual(
+        expect.objectContaining({ place: 'Parque Nariño, frente a la iglesia', proposedById: valeria.id, confirmedAt: null }),
+      );
+      expect(proposed.body.autoCompleteAt).toBeNull();
+      expect(
+        proposed.body.participants.find((p: { userId: string }) => p.userId === valeria.id).meetingConfirmed,
+      ).toBe(true);
+
+      await confirmMeeting(alex).expect(200);
+      const agreed = await confirmMeeting(mateo).expect(200);
+      expect(agreed.body.meeting.confirmedAt).not.toBeNull();
+      expect(agreed.body.handoffDays).toBe(5);
+      expect(new Date(agreed.body.autoCompleteAt).getTime()).toBe(at.getTime() + 5 * 86_400_000);
+
+      const notices = await testApp.http().get('/api/v1/notifications').set(authed(alex.token)).expect(200);
+      expect(notices.body.items).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: 'HANDOFF_MEETING_CONFIRMED', routeId: swap.id })]),
+      );
+    });
+
+    it('asks everyone again when someone changes the date', async () => {
+      const changed = await proposeMeeting(mateo, new Date(Date.now() + 3 * 86_400_000), 'Centro comercial Unicentro').expect(200);
+      expect(changed.body.meeting.confirmedAt).toBeNull();
+      expect(changed.body.autoCompleteAt).toBeNull();
+      const confirmations = changed.body.participants.map((p: { meetingConfirmed: boolean }) => p.meetingConfirmed);
+      expect(confirmations.filter(Boolean)).toHaveLength(1);
+    });
+
+    it('rejects a date long past', async () => {
+      await proposeMeeting(alex, new Date(Date.now() - 3 * 86_400_000), 'Parque Nariño').expect(400);
+    });
+
+    it('closes when the swap is cancelled, and stays closed while a route waits for answers', async () => {
+      await testApp.http().post(`/api/v1/routes/${swap.id}/cancel`).set(authed(alex.token)).expect(200);
+      await send(alex, { body: 'Hola' }).expect(409);
+
+      const pending = await proposeCycle();
+      await testApp
+        .http()
+        .post(`/api/v1/routes/${pending.id}/messages`)
+        .set(authed(alex.token))
+        .send({ body: 'Hola' })
+        .expect(409);
+      await testApp.http().post(`/api/v1/routes/${pending.id}/cancel`).set(authed(alex.token)).expect(200);
+    });
+  });
 });

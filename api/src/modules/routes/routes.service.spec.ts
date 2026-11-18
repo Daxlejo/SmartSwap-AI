@@ -232,6 +232,10 @@ describe('RoutesService', () => {
         'Ruta circular equilibrada de 3 pasos con alta paridad de valor comercial.',
       co2SavedKg: 7.2,
       expiresAt: futureExpiry,
+      meetingAt: null,
+      meetingPlace: null,
+      meetingProposedById: null,
+      meetingConfirmedAt: null,
       createdAt: fixedNow,
       updatedAt: fixedNow,
       steps: [
@@ -245,6 +249,7 @@ describe('RoutesService', () => {
           acceptance: StepAcceptance.ACCEPTED,
           respondedAt: fixedNow,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
@@ -268,6 +273,7 @@ describe('RoutesService', () => {
           acceptance: stepBAcceptance,
           respondedAt: stepBAcceptance !== StepAcceptance.PENDING ? fixedNow : null,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
@@ -291,6 +297,7 @@ describe('RoutesService', () => {
           acceptance: stepCAcceptance,
           respondedAt: stepCAcceptance !== StepAcceptance.PENDING ? fixedNow : null,
           deliveryConfirmed: delivered,
+          meetingConfirmed: false,
           createdAt: fixedNow,
           updatedAt: fixedNow,
           user: {
