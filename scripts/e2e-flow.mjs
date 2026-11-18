@@ -12,6 +12,8 @@
  *      confirmation returns to step 3.
  *   4. Own item opened from Profile: only "Delete my item".
  *   5. Explore asks the API without the user's own items and shows none of them.
+ *   6. Publish: back from step 2 returns to step 1; from step 1 with a photo it asks
+ *      "¿Descartar la publicación?" (keep editing stays, discard leaves).
  *
  * Back is the browser history back, the same `history.back()` Android's back button
  * runs on a secondary screen (see App.tsx). Exit code 0 only when every check passes.
@@ -287,6 +289,42 @@ const main = async () => {
 
       await page.getByTestId('back-to-top').click();
       await page.waitForFunction(() => window.scrollY === 0, null, { timeout: 3000 });
+    });
+
+    await run('Publish: back walks the steps and asks before discarding', browser, 'default', async ({ page }) => {
+      const onePixelPng = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      );
+      const discardSheet = page.getByTestId('publish-discard');
+      const onStep2 = () => page.getByTestId('publish-name-counter').isVisible();
+
+      await page.goto(`${BASE}/home`, { waitUntil: 'networkidle' });
+      await page.locator('a[href="/publish"]').first().click();
+      await waitPath(page, /^\/publish$/);
+      await page.locator('input[type=file]').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: onePixelPng });
+      await page.getByRole('button', { name: 'Continuar' }).click();
+      await page.getByTestId('publish-name-counter').waitFor({ timeout: URL_TIMEOUT });
+
+      // Step 2 → back → step 1, still on Publish
+      await page.goBack();
+      await page.waitForTimeout(400);
+      assert(pathOf(page) === '/publish', `back from step 2 left Publish (${pathOf(page)})`);
+      assert(!(await onStep2()), 'back from step 2 did not return to step 1');
+      assert(!(await discardSheet.isVisible()), 'back from step 2 asked to discard');
+
+      // Step 1 with a photo → back asks; "keep editing" stays
+      await page.goBack();
+      await discardSheet.waitFor({ timeout: URL_TIMEOUT });
+      await page.getByRole('button', { name: 'Seguir editando' }).click();
+      await page.waitForTimeout(300);
+      assert(pathOf(page) === '/publish' && !(await discardSheet.isVisible()), 'keep editing did not stay on Publish');
+
+      // The top bar arrow behaves the same; "discard" leaves
+      await page.getByRole('button', { name: 'Volver atrás' }).first().click();
+      await discardSheet.waitFor({ timeout: URL_TIMEOUT });
+      await page.getByRole('button', { name: 'Descartar' }).click();
+      await waitPath(page, /^\/home$/);
     });
 
     await run('Explore leaves out the own items', browser, 'default', async ({ page, calls }) => {
