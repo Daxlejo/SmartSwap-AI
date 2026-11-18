@@ -5,6 +5,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Chip } from '@/components/ui/Chip';
+import { Badge, type BadgeProps } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
@@ -20,6 +21,8 @@ import { ApiError } from '@/services/http/apiClient';
 import { ItemImage } from '@/components/ui/ItemImage';
 import { ProfilePhotoPicker } from '@/components/ProfilePhotoPicker';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { profileItemGroup } from '@/utils/routeView';
+import type { Item } from '@/types';
 
 export const ProfileScreen = () => {
   const navigate = useNavigate();
@@ -39,7 +42,7 @@ export const ProfileScreen = () => {
 
   const currentUser = appUser;
 
-  const [activeTab, setActiveTab] = useState<'activos' | 'pausados' | 'historial'>('activos');
+  const [activeTab, setActiveTab] = useState<'activos' | 'en_canje' | 'pausados' | 'historial'>('activos');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -163,6 +166,29 @@ export const ProfileScreen = () => {
   };
 
   const tradesCompleted = currentUser?.tradesCompleted ?? 0;
+  // An item promised in a swap is not "active": it sits under "In swap" until the swap ends
+  const activeItems = myItems.filter((item) => profileItemGroup(item) === 'active');
+  const inSwapItems = myItems.filter((item) => profileItemGroup(item) === 'inSwap');
+  const historyItems = myItems.filter((item) => profileItemGroup(item) === 'history');
+
+  /** A read-only row for an item that is in a swap or already traded: tap opens its detail. */
+  const renderLockedItem = (item: Item, label: string, variant: BadgeProps['variant']) => (
+    <button
+      key={item.id}
+      type="button"
+      data-testid={`profile-item-${item.id}`}
+      onClick={() => navigate(`/item/${item.id}`, { state: { item } })}
+      className="w-full text-left rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      <ItemImage src={item.imageUrl} alt={item.name} category={item.category} className="w-14 h-14 rounded-xl shrink-0 bg-surface-container-high" />
+      <span className="min-w-0 flex-1 flex flex-col gap-1">
+        <span className="font-headline-sm text-headline-sm text-on-surface break-words">{item.name}</span>
+        <Badge variant={variant} className="self-start">
+          {label}
+        </Badge>
+      </span>
+    </button>
+  );
 
   return (
     <div className="flex flex-col px-margin py-4 space-y-6">
@@ -254,12 +280,20 @@ export const ProfileScreen = () => {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex items-center gap-2 mb-space-sm">
+        <div className="flex flex-wrap items-center gap-2 mb-space-sm">
           <Chip
             active={activeTab === 'activos'}
             onClick={() => setActiveTab('activos')}
           >
             {t('profile.tabs.active')}
+          </Chip>
+          <Chip
+            active={activeTab === 'en_canje'}
+            onClick={() => setActiveTab('en_canje')}
+          >
+            {inSwapItems.length > 0
+              ? `${t('profile.tabs.inSwap')} (${inSwapItems.length})`
+              : t('profile.tabs.inSwap')}
           </Chip>
           <Chip
             active={activeTab === 'pausados'}
@@ -278,7 +312,7 @@ export const ProfileScreen = () => {
         {/* Tab content */}
         {activeTab === 'activos' && (
           <div className="flex flex-col gap-3">
-            {myItems.length === 0 ? (
+            {activeItems.length === 0 ? (
               <EmptyState
                 iconName="inventory_2"
                 title={t('profile.emptyActiveTitle')}
@@ -295,7 +329,7 @@ export const ProfileScreen = () => {
                 }
               />
             ) : (
-              myItems.map((item) => (
+              activeItems.map((item) => (
                 <div
                   key={item.id}
                   className="rounded-2xl border border-surface-container-high/60 shadow-sm bg-surface-container-lowest p-space-md"
@@ -370,6 +404,28 @@ export const ProfileScreen = () => {
           </div>
         )}
 
+        {activeTab === 'en_canje' && (
+          <div className="flex flex-col gap-3">
+            {inSwapItems.length === 0 ? (
+              <EmptyState
+                iconName="sync_alt"
+                title={t('profile.emptyInSwapTitle')}
+                description={t('profile.emptyInSwapDescription')}
+              />
+            ) : (
+              inSwapItems.map((item) =>
+                renderLockedItem(
+                  item,
+                  (item.status ?? '').toUpperCase() === 'RESERVED'
+                    ? t('profile.inSwapReserved')
+                    : t('profile.inSwapPending'),
+                  (item.status ?? '').toUpperCase() === 'RESERVED' ? 'secondary-subtle' : 'warning',
+                ),
+              )
+            )}
+          </div>
+        )}
+
         {activeTab === 'pausados' && (
           <EmptyState
             iconName="pause_circle"
@@ -378,13 +434,18 @@ export const ProfileScreen = () => {
           />
         )}
 
-        {activeTab === 'historial' && (
-          <EmptyState
-            iconName="history"
-            title={t('profile.emptyHistoryTitle')}
-            description={t('profile.emptyHistoryDescription')}
-          />
-        )}
+        {activeTab === 'historial' &&
+          (historyItems.length === 0 ? (
+            <EmptyState
+              iconName="history"
+              title={t('profile.emptyHistoryTitle')}
+              description={t('profile.emptyHistoryDescription')}
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {historyItems.map((item) => renderLockedItem(item, t('profile.swapped'), 'success'))}
+            </div>
+          ))}
       </section>
 
       {/* Section 3: Preferencias */}

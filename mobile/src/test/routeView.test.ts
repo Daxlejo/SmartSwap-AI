@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Item, SwapRoute, User } from '@/types';
 import type { NormalizedRouteStep } from '@/services/routes/routes.service';
-import { canProposeRoute, isSignedInUser, routePhase, toReceivedProposals } from '@/utils/routeView';
+import {
+  canProposeRoute,
+  isSignedInUser,
+  profileItemGroup,
+  routeNextAction,
+  routePhase,
+  toReceivedProposals,
+} from '@/utils/routeView';
 
 const user = (id: string, name: string): User => ({
   id,
@@ -138,5 +145,41 @@ describe('routePhase', () => {
     expect(routePhase('COMPLETED')).toBe('completed');
     expect(routePhase('EXPIRED')).toBe('expired');
     expect(routePhase('CANCELLED')).toBe('cancelled');
+  });
+});
+
+describe('routeNextAction', () => {
+  it('asks a participant who has not answered to respond', () => {
+    expect(routeNextAction(route(), beto.id)).toBe('respond');
+  });
+
+  it('never offers "Respond" again once the user answered: they wait for the others', () => {
+    expect(routeNextAction(route(), caro.id)).toBe('waiting');
+  });
+
+  it('opens the delivery chat when everyone accepted', () => {
+    expect(routeNextAction(route({ status: 'CONFIRMED' }), beto.id)).toBe('chat');
+  });
+
+  it('offers nothing on a finished route or to someone outside it', () => {
+    expect(routeNextAction(route({ status: 'COMPLETED' }), beto.id)).toBe('none');
+    expect(routeNextAction(route({ status: 'CANCELLED' }), beto.id)).toBe('none');
+    expect(routeNextAction(route({ status: 'EXPIRED' }), beto.id)).toBe('none');
+    expect(routeNextAction(route(), 'stranger')).toBe('none');
+    expect(routeNextAction(route(), undefined)).toBe('none');
+  });
+});
+
+describe('profileItemGroup', () => {
+  it('lists published items as active and promised ones under "In swap", never both', () => {
+    expect(profileItemGroup({ status: 'ACTIVE' })).toBe('active');
+    expect(profileItemGroup({ status: undefined })).toBe('active');
+    expect(profileItemGroup({ status: 'PENDING_SWAP' })).toBe('inSwap');
+    expect(profileItemGroup({ status: 'RESERVED' })).toBe('inSwap');
+  });
+
+  it('moves traded items to history and hides paused ones', () => {
+    expect(profileItemGroup({ status: 'SWAPPED' })).toBe('history');
+    expect(profileItemGroup({ status: 'PAUSED' })).toBe('hidden');
   });
 });

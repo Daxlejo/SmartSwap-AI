@@ -298,9 +298,15 @@ export const en: TranslationSchema = {
     refresh: 'Refresh',
     tabs: {
       active: 'Active',
+      inSwap: 'In a swap',
       paused: 'Paused',
       history: 'History',
     },
+    inSwapPending: 'Proposal pending',
+    inSwapReserved: 'In a swap',
+    swapped: 'Swapped',
+    emptyInSwapTitle: 'Nothing in a swap',
+    emptyInSwapDescription: 'When you propose or accept a swap, its items show up here until it is completed.',
     emptyActiveTitle: 'No published items',
     emptyActiveDescription: 'Publish your first item to start receiving swap proposals.',
     publishItem: 'Publish item',
@@ -413,6 +419,8 @@ export const en: TranslationSchema = {
   },
   routeDetail: {
     openTrades: 'Answer in Swaps',
+    waitingAnswers: 'Waiting for answers',
+    openChat: 'Open delivery chat',
     fallbackExplanation: 'Each person hands their item to the next one and receives what they wanted. {{count}} hand-overs, and nobody pays.',
     people: '{{count}} people in this route',
     stepsAria: 'Route hand-overs',
@@ -600,6 +608,7 @@ export const en: TranslationSchema = {
   },
   itemDetail: {
     ownerWants: 'Would take in exchange',
+    inSwap: 'This item is in a swap',
     yourWants: 'You accept in exchange',
     missingTitle: 'This item is no longer published',
     missingDescription: 'Its owner may have swapped or deleted it.',

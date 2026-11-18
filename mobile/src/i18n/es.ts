@@ -296,9 +296,15 @@ export const es = {
     refresh: 'Actualizar',
     tabs: {
       active: 'Activos',
+      inSwap: 'En canje',
       paused: 'Pausados',
       history: 'Historial',
     },
+    inSwapPending: 'Propuesta pendiente',
+    inSwapReserved: 'En canje',
+    swapped: 'Intercambiado',
+    emptyInSwapTitle: 'Nada en canje',
+    emptyInSwapDescription: 'Cuando propongas o aceptes un canje, sus artículos aparecerán aquí hasta que se complete.',
     emptyActiveTitle: 'Sin artículos publicados',
     emptyActiveDescription: 'Publica tu primer artículo para comenzar a recibir propuestas de intercambio.',
     publishItem: 'Publicar artículo',
@@ -411,6 +417,8 @@ export const es = {
   },
   routeDetail: {
     openTrades: 'Responder en Canjes',
+    waitingAnswers: 'Esperando respuestas',
+    openChat: 'Abrir chat de entrega',
     fallbackExplanation: 'Cada persona entrega su artículo a la siguiente y recibe lo que buscaba. Son {{count}} entregas y nadie paga.',
     people: '{{count}} personas en esta ruta',
     stepsAria: 'Entregas de la ruta',
@@ -598,6 +606,7 @@ export const es = {
   },
   itemDetail: {
     ownerWants: 'Le interesa a cambio',
+    inSwap: 'Este artículo está en un canje',
     yourWants: 'Aceptas a cambio',
     missingTitle: 'Este artículo ya no está publicado',
     missingDescription: 'Puede que su dueño lo haya cambiado o eliminado.',
