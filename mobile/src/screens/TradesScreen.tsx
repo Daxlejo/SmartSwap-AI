@@ -1,182 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Avatar } from '@/components/ui/Avatar';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { TradeCard } from '@/components/TradeCard';
 import type { SwapRoute } from '@/types';
 import { ApiError } from '@/services/http/apiClient';
 import { formatRelativeTime } from '@/utils/relativeTime';
-
-import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
-import { routePhase, toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
+import { ownSide, routePhase, toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { SwapRing } from '@/components/SwapRing';
-import { toRingParticipants } from '@/utils/swapRing';
 
 type TabType = 'recibidas' | 'enviadas' | 'en_curso';
 
-interface InProgressRouteCardProps {
-  route: SwapRoute;
-  isCompleted: boolean;
-  isBusy: boolean;
-  onComplete: () => void;
-  onOpen: () => void;
-}
+/** The person a route is "with": who proposed it, or, for the user's own, who gets their item. */
+const counterpartOf = (route: SwapRoute, userId: string | undefined) => {
+  const proposer = route.participants.find((person) => person.id === route.initiatorId);
+  if (proposer && proposer.id !== userId) return proposer;
+  const ownStep = route.steps?.find((step) => step.userId === userId);
+  return ownStep?.toUser ?? route.participants.find((person) => person.id !== userId) ?? route.participants[0];
+};
 
-const InProgressRouteCard: React.FC<InProgressRouteCardProps> = ({
-  route,
-  isCompleted,
-  isBusy,
-  onComplete,
-  onOpen,
-}) => {
+/** The card's main way in: the route screen with the ring and every step. */
+const ViewDetailsButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { currentUser } = useApp();
-  const ring = toRingParticipants(route.steps ?? []);
-  const totalSteps = route.stepsCount;
-  const acceptedSteps = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
-  const progressPct = isCompleted
-    ? 100
-    : totalSteps > 0
-      ? Math.min(100, Math.round((acceptedSteps / totalSteps) * 100))
-      : 0;
-  const chainSteps = route.chainItems.slice(0, 4).map((item) => ({
-    id: item.id,
-    name: item.name.split(' ')[0],
-    img: item.imageUrl,
-    category: item.category,
-  }));
-
   return (
-    <div className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="font-label-sm text-caption text-secondary font-bold uppercase tracking-wider">
-            {t('trades.circuitLabel', { code: route.code ?? route.id })}
-          </span>
-          <h2 className="font-headline-sm text-headline-sm font-bold text-on-surface">
-            {isCompleted
-              ? t('trades.circuitCompleted', { count: totalSteps })
-              : t('trades.stepProgress', { done: acceptedSteps, total: totalSteps })}
-          </h2>
-        </div>
-        <Badge variant={isCompleted ? 'success' : 'primary'}>
-          {isCompleted ? t('trades.completed') : t('trades.active')}
-        </Badge>
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-caption font-label-sm text-on-surface-variant font-medium">
-          <span>{t('trades.progress', { pct: progressPct })}</span>
-          <span>
-            {isCompleted
-              ? t('trades.deliveryConfirmed')
-              : t('trades.stepsLeft', { count: Math.max(0, totalSteps - acceptedSteps) })}
-          </span>
-        </div>
-      </div>
-
-      {/* The ring shows each person's answer; the old chain and AI text stay only as a fallback */}
-      {ring ? (
-        <SwapRing
-          participants={ring}
-          currentUserId={currentUser?.id}
-          variant="compact"
-          onFindAnotherRoute={() => navigate('/swap/configure')}
-        />
-      ) : (
-        <>
-          <div className="flex flex-col space-y-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
-            <div className="flex items-center justify-between">
-              <span className="font-label-sm text-caption text-on-surface-variant font-semibold">
-                {t('trades.circuitChain')}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-1 overflow-x-auto py-1">
-              {chainSteps.map((step, idx) => {
-                const isLast = idx === chainSteps.length - 1;
-                return (
-                  <div key={step.id} className="flex items-center shrink-0">
-                    <div className="flex flex-col items-center min-w-[56px]">
-                      <div
-                        className={`relative w-12 h-12 rounded-xl bg-surface-container-highest overflow-hidden shadow-xs flex items-center justify-center ${
-                          idx === 0 ? 'ring-2 ring-primary ring-offset-1' : ''
-                        }`}
-                      >
-                        <ItemImage
-                          src={step.img}
-                          alt={step.name}
-                          category={step.category}
-                          className="w-full h-full"
-                        />
-                        {idx === 0 && (
-                          <span className="absolute bottom-0 right-0 px-1 bg-primary text-on-primary rounded-tl-md font-label-sm text-caption font-bold">
-                            {t('trades.you')}
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className={`font-label-sm text-caption font-semibold text-center mt-1 break-words max-w-[62px] ${
-                          idx === 0 ? 'text-primary font-bold' : 'text-on-surface'
-                        }`}
-                      >
-                        {step.name}
-                      </span>
-                    </div>
-                    {!isLast && (
-                      <div className="flex flex-col items-center px-0.5 shrink-0 text-primary">
-                        <Icon name="arrow_forward" size="xs" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {route.aiExplanation && (
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-on-surface-variant font-body-sm text-caption leading-snug">
-              <div className="flex items-center gap-1 text-primary font-label-sm text-caption font-bold mb-0.5">
-                <Icon name="auto_awesome" size="xs" filled />
-                <span>{t('trades.aiFairness')}</span>
-              </div>
-              {route.aiExplanation}
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-2">
-        {!isCompleted && (
-          <Button
-            variant="outline"
-            size="md"
-            fullWidth
-            leftIcon="check_circle"
-            disabled={isBusy}
-            onClick={onComplete}
-          >
-            {isBusy ? t('trades.completing') : t('trades.completeSwap')}
-          </Button>
-        )}
-        <Button variant="primary" size="md" fullWidth rightIcon="arrow_forward" onClick={onOpen}>
-          {t('trades.viewDetails')}
-        </Button>
-      </div>
-    </div>
+    <Button variant="outline" size="md" fullWidth rightIcon="arrow_forward" onClick={onClick}>
+      {t('trades.viewDetails')}
+    </Button>
   );
 };
 
@@ -273,6 +126,8 @@ export const TradesScreen: React.FC = () => {
       setProcessingId(null);
     }
   };
+
+  const openRoute = (route: SwapRoute) => navigate(`/swap/route/${route.id}`, { state: { route } });
 
   const showTabs = routes.length > 0 || loadStates.routes === 'ready';
 
@@ -402,88 +257,53 @@ export const TradesScreen: React.FC = () => {
             const isAccepted = proposal.status === 'accepted';
             const isDeclined = proposal.status === 'declined';
             const isBusy = processingId === proposal.id;
+            const route = routes.find((r) => r.id === proposal.id);
 
             return (
-              <div
+              <TradeCard
                 key={proposal.id}
-                className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-3"
+                id={proposal.id}
+                person={{ name: proposal.senderName, avatarUrl: proposal.senderAvatar }}
+                meta={route?.code}
+                status={
+                  isAccepted
+                    ? { variant: 'success', label: t('trades.status.accepted') }
+                    : isDeclined
+                      ? { variant: 'error', label: t('trades.status.declined') }
+                      : { variant: 'secondary-subtle', label: t('trades.status.pending') }
+                }
+                offered={{
+                  name: proposal.offeredItemName,
+                  imageUrl: proposal.offeredItemImg,
+                  category: proposal.offeredItemCategory,
+                }}
+                received={{
+                  name: proposal.targetItemName,
+                  imageUrl: proposal.targetItemImg,
+                  category: proposal.targetItemCategory,
+                }}
+                note={
+                  isAccepted ? (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                      <Icon name="check_circle" size="sm" filled />
+                      <span className="font-label-md text-label-md font-bold">
+                        {t('trades.acceptedMessage')}
+                      </span>
+                    </div>
+                  ) : isDeclined ? (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm">
+                      <Icon name="cancel" size="sm" />
+                      <span>{t('trades.declinedMessage')}</span>
+                    </div>
+                  ) : null
+                }
               >
-                {/* Header: who proposed it and where the proposal stands */}
-                <div className="flex items-center gap-3">
-                  <Avatar src={proposal.senderAvatar} alt={proposal.senderName} size="md" />
-                  <div className="flex flex-col items-start gap-1 min-w-0">
-                    <span className="font-headline-sm text-headline-sm text-on-surface break-words">
-                      {proposal.senderName}
-                    </span>
-                    <Badge
-                      variant={isAccepted ? 'success' : isDeclined ? 'error' : 'secondary-subtle'}
-                    >
-                      {isAccepted
-                        ? t('trades.status.accepted')
-                        : isDeclined
-                          ? t('trades.status.declined')
-                          : t('trades.status.pending')}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Items exchanged comparison */}
-                <div className="flex flex-col gap-2 p-3 rounded-xl bg-surface-container-low border border-surface-container-high">
-                  {/* Offers */}
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <ItemImage
-                      src={proposal.offeredItemImg}
-                      alt={proposal.offeredItemName}
-                      category={proposal.offeredItemCategory}
-                      className="w-11 h-11 rounded-lg  bg-surface-container shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        {t('trades.offers')}
-                      </span>
-                      <span className="font-label-lg text-label-lg text-on-surface break-words">
-                        {proposal.offeredItemName}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Wants */}
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <ItemImage
-                      src={proposal.targetItemImg}
-                      alt={proposal.targetItemName}
-                      category={proposal.targetItemCategory}
-                      className="w-11 h-11 rounded-lg  bg-surface-container shrink-0"
-                    />
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-body-sm text-body-sm text-on-surface-variant">
-                        {t('trades.inExchangeFor')}
-                      </span>
-                      <span className="font-label-lg text-label-lg text-on-surface break-words">
-                        {proposal.targetItemName}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Actions or Success/Decline Inline State */}
-                {isAccepted ? (
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary">
-                    <Icon name="check_circle" size="sm" filled />
-                    <span className="font-label-md text-label-md font-bold">
-                      {t('trades.acceptedMessage')}
-                    </span>
-                  </div>
-                ) : isDeclined ? (
-                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container text-on-surface-variant font-body-sm text-body-sm">
-                    <Icon name="cancel" size="sm" />
-                    <span>{t('trades.declinedMessage')}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-surface-container-low">
+                {!isAccepted && !isDeclined && (
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="md"
+                      fullWidth
                       disabled={isBusy}
                       onClick={() => handleDeclineProposal(proposal.id)}
                     >
@@ -491,7 +311,8 @@ export const TradesScreen: React.FC = () => {
                     </Button>
                     <Button
                       variant="primary"
-                      size="sm"
+                      size="md"
+                      fullWidth
                       disabled={isBusy}
                       onClick={() => handleAcceptProposal(proposal.id)}
                     >
@@ -499,7 +320,8 @@ export const TradesScreen: React.FC = () => {
                     </Button>
                   </div>
                 )}
-              </div>
+                {route && <ViewDetailsButton onClick={() => openRoute(route)} />}
+              </TradeCard>
             );
           })}
         </div>
@@ -520,111 +342,56 @@ export const TradesScreen: React.FC = () => {
             />
           ) : (
             sentRoutes.map((route) => {
-              const recipient = route.participants[1] ?? route.participants[0];
-              const offered = route.chainItems[0];
-              const target = route.chainItems[route.chainItems.length - 1];
+              const recipient = counterpartOf(route, currentUser?.id);
+              const { offered, received } = ownSide(route, currentUser?.id);
               const phase = routePhase(route.status);
               const isPending = phase === 'pending';
               const isBusy = processingId === route.id;
-              const statusBadge = isPending
-                ? { variant: 'warning' as const, label: t('trades.inReview') }
-                : phase === 'confirmed' || phase === 'completed'
-                  ? { variant: 'success' as const, label: t('trades.status.accepted') }
-                  : phase === 'expired'
-                    ? { variant: 'surface' as const, label: t('trades.expired') }
-                    : { variant: 'error' as const, label: t('trades.cancelledTitle') };
+              const meta = [
+                route.code,
+                route.createdAt
+                  ? t('trades.sentAt', { time: formatRelativeTime(route.createdAt, language) })
+                  : undefined,
+              ]
+                .filter(Boolean)
+                .join(' • ');
 
               return (
-                <div
+                <TradeCard
                   key={route.id}
-                  className="rounded-2xl border border-surface-container-high/60 bg-surface-container-lowest p-4 shadow-sm flex flex-col gap-3"
+                  id={route.id}
+                  person={{
+                    name: recipient?.name ?? '—',
+                    avatarUrl: recipient?.avatarUrl,
+                    verified: recipient?.verified,
+                  }}
+                  meta={meta}
+                  status={
+                    isPending
+                      ? { variant: 'warning', label: t('trades.inReview') }
+                      : phase === 'confirmed' || phase === 'completed'
+                        ? { variant: 'success', label: t('trades.status.accepted') }
+                        : phase === 'expired'
+                          ? { variant: 'surface', label: t('trades.expired') }
+                          : { variant: 'error', label: t('trades.cancelledTitle') }
+                  }
+                  offered={offered}
+                  received={received}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Avatar
-                        src={recipient?.avatarUrl}
-                        alt={recipient?.name ?? ''}
-                        size="md"
-                        verified={recipient?.verified}
-                      />
-                      <div className="min-w-0">
-                        <h2 className="font-headline-sm text-[15px] font-bold text-on-surface break-words">
-                          {t('trades.offerTo', { name: recipient?.name ?? '' })}
-                        </h2>
-                        <span className="font-body-sm text-caption text-on-surface-variant">
-                          {route.code ? `${route.code} • ` : ''}
-                          {route.createdAt
-                            ? t('trades.sentAt', {
-                                time: formatRelativeTime(route.createdAt, language),
-                              })
-                            : t('trades.participants', { count: route.participants.length })}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-container-low border border-surface-container-high/50">
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <ItemImage
-                        src={offered?.imageUrl}
-                        alt={offered?.name ?? ''}
-                        category={offered?.category}
-                        className="w-12 h-12 rounded-lg  bg-surface-container shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
-                          {t('trades.youOffer')}
-                        </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface break-words">
-                          {offered?.name}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center px-1 text-primary">
-                      <Icon name="arrow_forward" size="sm" />
-                    </div>
-
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <ItemImage
-                        src={target?.imageUrl}
-                        alt={target?.name ?? ''}
-                        category={target?.category}
-                        className="w-12 h-12 rounded-lg  bg-surface-container shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-caption text-outline uppercase font-bold">
-                          {t('trades.inExchange')}
-                        </span>
-                        <span className="font-body-sm text-body-sm font-semibold text-on-surface break-words">
-                          {target?.name}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-surface-container-low">
+                  <ViewDetailsButton onClick={() => openRoute(route)} />
+                  {isPending && (
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(`/swap/route/${route.id}`, { state: { route } })}
+                      size="md"
+                      fullWidth
+                      disabled={isBusy}
+                      onClick={() => handleCancelSentRoute(route.id)}
+                      className="text-error hover:bg-error-container/20"
                     >
-                      {t('trades.viewDetails')}
+                      {isBusy ? t('trades.cancelling') : t('trades.cancelProposal')}
                     </Button>
-                    {isPending && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={isBusy}
-                        onClick={() => handleCancelSentRoute(route.id)}
-                        className="text-error hover:bg-error-container/20"
-                      >
-                        {isBusy ? t('trades.cancelling') : t('trades.cancelProposal')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                  )}
+                </TradeCard>
               );
             })
           )}
@@ -645,19 +412,52 @@ export const TradesScreen: React.FC = () => {
               }
             />
           ) : (
-            inProgressRoutes.map((route) => (
-              <InProgressRouteCard
-                key={route.id}
-                route={route}
-                isCompleted={
-                  Boolean(completedRouteIds[route.id]) ||
-                  (route.status || '').toUpperCase() === 'COMPLETED'
-                }
-                isBusy={processingId === route.id}
-                onComplete={() => handleCompleteRoute(route.id)}
-                onOpen={() => navigate(`/swap/route/${route.id}`, { state: { route } })}
-              />
-            ))
+            inProgressRoutes.map((route) => {
+              const person = counterpartOf(route, currentUser?.id);
+              const { offered, received } = ownSide(route, currentUser?.id);
+              const isCompleted =
+                Boolean(completedRouteIds[route.id]) || routePhase(route.status) === 'completed';
+              const total = route.stepsCount;
+              const accepted = (route.steps ?? []).filter((s) => s.acceptance === 'ACCEPTED').length;
+              const progress = isCompleted
+                ? t('trades.circuitCompleted', { count: total })
+                : t('trades.stepProgress', { done: accepted, total });
+              const isBusy = processingId === route.id;
+
+              return (
+                <TradeCard
+                  key={route.id}
+                  id={route.id}
+                  person={{
+                    name: person?.name ?? '—',
+                    avatarUrl: person?.avatarUrl,
+                    verified: person?.verified,
+                  }}
+                  meta={[route.code, progress].filter(Boolean).join(' • ')}
+                  status={
+                    isCompleted
+                      ? { variant: 'success', label: t('trades.completed') }
+                      : { variant: 'primary-subtle', label: t('trades.active') }
+                  }
+                  offered={offered}
+                  received={received}
+                >
+                  <ViewDetailsButton onClick={() => openRoute(route)} />
+                  {!isCompleted && (
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      fullWidth
+                      leftIcon="check_circle"
+                      disabled={isBusy}
+                      onClick={() => handleCompleteRoute(route.id)}
+                    >
+                      {isBusy ? t('trades.completing') : t('trades.completeSwap')}
+                    </Button>
+                  )}
+                </TradeCard>
+              );
+            })
           )}
         </div>
       )}

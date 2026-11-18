@@ -1,4 +1,4 @@
-import type { SwapRoute } from '@/types';
+import type { Item, SwapRoute } from '@/types';
 
 /** A proposal someone else started, seen from the signed-in user's side. */
 export interface ReceivedProposal {
@@ -82,4 +82,19 @@ export const routePhase = (status: string | undefined | null): RoutePhase => {
     default:
       return 'pending';
   }
+};
+
+/**
+ * What the signed-in user hands over and gets back in a route: their own step when they
+ * take part, otherwise the two ends of the chain.
+ */
+export const ownSide = (
+  route: Pick<SwapRoute, 'steps' | 'chainItems'>,
+  userId: string | undefined,
+): { offered?: Item; received?: Item } => {
+  const ownStep = userId ? route.steps?.find((step) => step.userId === userId) : undefined;
+  return {
+    offered: ownStep?.givesItem ?? route.chainItems[0],
+    received: ownStep?.receivesItem ?? route.chainItems[route.chainItems.length - 1],
+  };
 };
