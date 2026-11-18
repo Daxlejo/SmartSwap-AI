@@ -29,6 +29,7 @@
 | `POST` | `/items/analyze-photo` | `ItemsController` | `analyzePhoto` | Analyze an item photo and/or hint text to generate structured catalog metadata |
 | `GET` | `/items/me` | `ItemsController` | `findMine` | List all items owned by the authenticated user |
 | `GET` | `/items/mine` | `ItemsController` | `findMine` | List all items owned by the authenticated user |
+| `GET` | `/items/similar` | `ItemsController` | `findSimilar` | Active items of other users semantically close to a text query (fallback of an empty search) |
 | `POST` | `/items/upload-image` | `ItemsController` | `uploadImage` | Upload a base64 item image to Supabase Storage |
 | `GET` | `/notifications` | `NotificationsController` | `listUserNotifications` | List user notifications with unread count |
 | `DELETE` | `/notifications/:id` | `NotificationsController` | `deleteNotification` | Delete a notification |
