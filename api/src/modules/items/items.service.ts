@@ -218,7 +218,8 @@ export class ItemsService {
     const trimmedCategory = dto.category.trim();
     const trimmedDescription = dto.description.trim();
 
-    // Checked first, so a repeated post costs no photo upload or embedding
+    // Checked first, so a repeated post costs no inline image upload or embedding (the app
+    // uploads photos beforehand, so it runs the same check on its side before uploading)
     await this.assertNotAlreadyInSwap(userId, trimmedName);
 
     const resolvedImages = await this.resolveImages(userId, dto.images);
