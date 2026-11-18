@@ -532,6 +532,11 @@ export const PublishScreen: React.FC = () => {
   // Step 4 Real Publish Action -> POST /api/v1/items
   const handlePublish = async () => {
     if (isPublishing) return;
+    // Known to end in a 409: stop before uploading photos that would be left orphaned
+    if (duplicateTitle === 'inSwap') {
+      showFormAlert(t('publish.errors.duplicateInSwap'));
+      return;
+    }
 
     setIsPublishing(true);
     setErrors((prev) => ({ ...prev, submit: undefined }));
