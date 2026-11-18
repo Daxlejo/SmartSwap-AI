@@ -239,6 +239,14 @@ export const itemsService = {
     return extractItemsArray(response);
   },
 
+  /** Items of other users semantically close to a query; the fallback of an empty text search. */
+  async findSimilar(query: string, limit = 6): Promise<Item[]> {
+    const response = await apiClient.get<RawItemDto[] | PaginatedItemsEnvelope>('/items/similar', {
+      params: { q: query.trim(), limit },
+    });
+    return extractItemsArray(response);
+  },
+
   async listMyItems(): Promise<Item[]> {
     const response = await apiClient.get<RawItemDto[] | PaginatedItemsEnvelope>('/items/me');
     return extractItemsArray(response);

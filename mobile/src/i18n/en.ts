@@ -570,6 +570,8 @@ export const en: TranslationSchema = {
     emptyTitle: 'No results',
     emptyDescription: 'Try other terms or change the filter.',
     resetFilters: 'Reset filters',
+    similarTitle: 'Similar items',
+    similarHint: 'No exact matches, but these are close to what you are looking for.',
     viewDetails: 'View details of {{name}}',
     estimatedShort: '{{value}} est.',
     detailTitle: 'Item details',
@@ -744,6 +746,12 @@ export const en: TranslationSchema = {
     },
     selectPhoto: 'Select item photo',
     previousStep: 'Previous step',
+    discard: {
+      title: 'Discard this post?',
+      description: 'If you leave now, the photos and details you added are lost.',
+      keepEditing: 'Keep editing',
+      confirm: 'Discard',
+    },
     photos: {
       title: 'Add photos of your item',
       subtitle: 'Take a photo with your camera or pick one from your gallery (automatic HD compression).',

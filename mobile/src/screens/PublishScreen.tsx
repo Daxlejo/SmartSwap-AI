@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useBlocker, useNavigate } from 'react-router-dom';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { publishBackAction, shouldHoldPublishExit } from '@/utils/publishBack';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LocationPicker } from '@/components/LocationPicker';
 import { PhotoSourceSheet } from '@/components/PhotoSourceSheet';
@@ -448,6 +450,50 @@ export const PublishScreen: React.FC = () => {
     }
   };
 
+  // Android's back button and the top bar arrow leave /publish through the router; hold that
+  // exit and turn it into "previous step", or into a confirmation when step 1 has data.
+  const hasDraft =
+    photos.length > 0 ||
+    name.trim() !== '' ||
+    description.trim() !== '' ||
+    estimatedValue.trim() !== '' ||
+    wantedItems.length > 0;
+  const backAction = publishBackAction(currentStep, hasDraft);
+  const exitBlocker = useBlocker(({ currentLocation, nextLocation }) =>
+    shouldHoldPublishExit({
+      fromPath: currentLocation.pathname,
+      toPath: nextLocation.pathname,
+      action: backAction,
+      isPublishing,
+    }),
+  );
+  const [isDiscardOpen, setIsDiscardOpen] = useState(false);
+
+  useEffect(() => {
+    if (exitBlocker.state !== 'blocked') return;
+    if (isPublishing) {
+      exitBlocker.reset();
+    } else if (backAction === 'previousStep') {
+      exitBlocker.reset();
+      setErrors((prev) => ({ ...prev, submit: undefined }));
+      setFormAlert(null);
+      setCurrentStep((step) => (step > 1 && step <= 4 ? ((step - 1) as WizardStep) : step));
+    } else if (backAction === 'confirmDiscard') {
+      setIsDiscardOpen(true);
+    } else {
+      exitBlocker.proceed();
+    }
+  }, [exitBlocker, backAction, isPublishing]);
+
+  const keepEditing = () => {
+    setIsDiscardOpen(false);
+    if (exitBlocker.state === 'blocked') exitBlocker.reset();
+  };
+  const discardDraft = () => {
+    setIsDiscardOpen(false);
+    if (exitBlocker.state === 'blocked') exitBlocker.proceed();
+  };
+
   // Step 1 Validation & Next
   const handleNextStep1 = () => {
     if (photos.length === 0) {
@@ -780,6 +826,18 @@ export const PublishScreen: React.FC = () => {
         onFiles={(files) => void handleFiles(files)}
         inputLabel={t('publish.selectPhoto')}
       />
+
+      <BottomSheet isOpen={isDiscardOpen} onClose={keepEditing} title={t('publish.discard.title')}>
+        <div className="flex flex-col gap-4 pt-4" data-testid="publish-discard">
+          <p className="font-body-md text-body-md text-on-surface-variant">{t('publish.discard.description')}</p>
+          <Button variant="primary" size="lg" fullWidth onClick={keepEditing}>
+            {t('publish.discard.keepEditing')}
+          </Button>
+          <Button variant="outline" size="lg" fullWidth onClick={discardDraft}>
+            {t('publish.discard.confirm')}
+          </Button>
+        </div>
+      </BottomSheet>
 
       {/* Top Step Navigation Header */}
       <div className="w-full mb-6">

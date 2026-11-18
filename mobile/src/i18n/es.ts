@@ -568,6 +568,8 @@ export const es = {
     emptyTitle: 'Sin resultados',
     emptyDescription: 'Prueba con otros términos o cambia el filtro.',
     resetFilters: 'Restablecer filtros',
+    similarTitle: 'Artículos parecidos',
+    similarHint: 'No hay coincidencias exactas, pero estos se parecen a lo que buscas.',
     viewDetails: 'Ver detalles de {{name}}',
     estimatedShort: '{{value}} est.',
     detailTitle: 'Detalle del artículo',
@@ -742,6 +744,12 @@ export const es = {
     },
     selectPhoto: 'Seleccionar foto del artículo',
     previousStep: 'Paso anterior',
+    discard: {
+      title: '¿Descartar la publicación?',
+      description: 'Si sales ahora se pierden las fotos y los datos que agregaste.',
+      keepEditing: 'Seguir editando',
+      confirm: 'Descartar',
+    },
     photos: {
       title: 'Agrega fotos de tu artículo',
       subtitle: 'Toma una foto o elígela de tu galería.',

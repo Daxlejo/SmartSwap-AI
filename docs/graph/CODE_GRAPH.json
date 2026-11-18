@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-11-18T05:34:18.780Z",
+  "generatedAt": "2026-11-18T05:48:13.566Z",
   "stats": {
-    "totalFiles": 192,
-    "apiFiles": 77,
-    "mobileFiles": 115,
-    "endpointsCount": 51
+    "totalFiles": 198,
+    "apiFiles": 78,
+    "mobileFiles": 120,
+    "endpointsCount": 52
   },
   "endpoints": [
     {
@@ -149,6 +149,14 @@
       "controller": "ItemsController",
       "handler": "findMine",
       "summary": "List all items owned by the authenticated user",
+      "file": "api/src/modules/items/items.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/items/similar",
+      "controller": "ItemsController",
+      "handler": "findSimilar",
+      "summary": "Active items of other users semantically close to a text query (fallback of an empty search)",
       "file": "api/src/modules/items/items.controller.ts"
     },
     {
@@ -470,6 +478,7 @@
     "api/items": [
       "api/src/modules/items/dto/create-item.dto.ts",
       "api/src/modules/items/dto/query-items.dto.ts",
+      "api/src/modules/items/dto/similar-items.dto.ts",
       "api/src/modules/items/dto/update-item.dto.ts",
       "api/src/modules/items/dto/upload-image.dto.ts",
       "api/src/modules/items/item-title.ts",
@@ -546,6 +555,7 @@
       "mobile/src/components/RouteStep.tsx",
       "mobile/src/components/ScreenHeader.tsx",
       "mobile/src/components/ServerStatusBanner.tsx",
+      "mobile/src/components/SimilarItemsSection.tsx",
       "mobile/src/components/SwapRing.tsx",
       "mobile/src/components/TopBar.tsx",
       "mobile/src/components/TradeCard.tsx",
@@ -580,6 +590,7 @@
       "mobile/src/hooks/useKeepFocusedFieldVisible.ts",
       "mobile/src/hooks/useRevealOnError.ts",
       "mobile/src/hooks/useServerStatus.ts",
+      "mobile/src/hooks/useSimilarItems.ts",
       "mobile/src/hooks/useTheme.ts",
       "mobile/src/hooks/useTranslation.ts"
     ],
@@ -645,6 +656,7 @@
     "mobile/test": [
       "mobile/src/test/avatarIdentity.test.tsx",
       "mobile/src/test/configureSwap.test.tsx",
+      "mobile/src/test/demoAccountSwitcher.test.tsx",
       "mobile/src/test/exampleRing.test.tsx",
       "mobile/src/test/formErrors.test.tsx",
       "mobile/src/test/languageSelector.test.tsx",
@@ -663,8 +675,10 @@
       "mobile/src/utils/formAlert.ts",
       "mobile/src/utils/imageCompressor.ts",
       "mobile/src/utils/itemTitle.ts",
+      "mobile/src/utils/publishBack.ts",
       "mobile/src/utils/relativeTime.ts",
       "mobile/src/utils/routeView.ts",
+      "mobile/src/utils/searchText.ts",
       "mobile/src/utils/swapRing.ts",
       "mobile/src/utils/swapSearch.ts",
       "mobile/src/utils/wantedItems.ts"
@@ -1223,6 +1237,16 @@
         "zod"
       ]
     },
+    "api/src/modules/items/dto/similar-items.dto.ts": {
+      "module": "api/items",
+      "exports": [
+        "SimilarItemsQueryDto",
+        "similarItemsQuerySchema"
+      ],
+      "imports": [
+        "zod"
+      ]
+    },
     "api/src/modules/items/dto/update-item.dto.ts": {
       "module": "api/items",
       "exports": [
@@ -1268,12 +1292,14 @@
         "../ai/services/ai-vision.service",
         "./dto/create-item.dto",
         "./dto/query-items.dto",
+        "./dto/similar-items.dto",
         "./dto/update-item.dto",
         "./dto/upload-image.dto",
         "./items.service",
         "./mappers/item.mapper",
         "@nestjs/common",
-        "@nestjs/swagger"
+        "@nestjs/swagger",
+        "@nestjs/throttler"
       ],
       "endpoints": [
         {
@@ -1298,6 +1324,14 @@
           "controller": "ItemsController",
           "handler": "findMine",
           "summary": "List all items owned by the authenticated user",
+          "file": "api/src/modules/items/items.controller.ts"
+        },
+        {
+          "method": "GET",
+          "path": "/items/similar",
+          "controller": "ItemsController",
+          "handler": "findSimilar",
+          "summary": "Active items of other users semantically close to a text query (fallback of an empty search)",
           "file": "api/src/modules/items/items.controller.ts"
         },
         {
@@ -1369,7 +1403,9 @@
       "module": "api/items",
       "exports": [
         "ITEM_ALREADY_IN_SWAP_MESSAGE",
-        "ItemsService"
+        "ItemsService",
+        "MAX_IN_MEMORY_ROWS",
+        "SIMILAR_ITEMS_MIN_SCORE"
       ],
       "imports": [
         "../../prisma/prisma.service",
@@ -1379,6 +1415,7 @@
         "../storage/supabase-storage.service",
         "./dto/create-item.dto",
         "./dto/query-items.dto",
+        "./dto/similar-items.dto",
         "./dto/update-item.dto",
         "./item-title",
         "./mappers/item.mapper",
@@ -2447,6 +2484,16 @@
         "clsx"
       ]
     },
+    "mobile/src/components/SimilarItemsSection.tsx": {
+      "module": "mobile/components",
+      "exports": [
+        "SimilarItemsSection"
+      ],
+      "imports": [
+        "@/hooks/useTranslation",
+        "react"
+      ]
+    },
     "mobile/src/components/SwapRing.tsx": {
       "module": "mobile/components",
       "exports": [
@@ -2793,6 +2840,18 @@
         "react"
       ]
     },
+    "mobile/src/hooks/useSimilarItems.ts": {
+      "module": "mobile/hooks",
+      "exports": [
+        "useSimilarItems"
+      ],
+      "imports": [
+        "@/services/items/items.service",
+        "@/types",
+        "@/utils/searchText",
+        "react"
+      ]
+    },
     "mobile/src/hooks/useTheme.ts": {
       "module": "mobile/hooks",
       "exports": [
@@ -2979,6 +3038,7 @@
       ],
       "imports": [
         "@/components/LocationScopeSelector",
+        "@/components/SimilarItemsSection",
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/EmptyState",
@@ -2987,6 +3047,7 @@
         "@/components/ui/ItemImage",
         "@/context/AppContext",
         "@/hooks/useItem",
+        "@/hooks/useSimilarItems",
         "@/hooks/useTranslation",
         "@/types",
         "@/utils/currency",
@@ -3037,11 +3098,13 @@
         "@/components/LocationPrompt",
         "@/components/ObjectCard",
         "@/components/ScreenHeader",
+        "@/components/SimilarItemsSection",
         "@/components/ui/Button",
         "@/components/ui/EmptyState",
         "@/components/ui/ErrorState",
         "@/components/ui/Icon",
         "@/context/AppContext",
+        "@/hooks/useSimilarItems",
         "@/hooks/useTranslation",
         "@/services/http/apiClient",
         "@/services/items/items.service",
@@ -3249,6 +3312,7 @@
         "@/components/PhotoSourceSheet",
         "@/components/ui/Avatar",
         "@/components/ui/Badge",
+        "@/components/ui/BottomSheet",
         "@/components/ui/Button",
         "@/components/ui/Chip",
         "@/components/ui/FormErrorAlert",
@@ -3265,6 +3329,7 @@
         "@/utils/formAlert",
         "@/utils/imageCompressor",
         "@/utils/itemTitle",
+        "@/utils/publishBack",
         "@/utils/wantedItems",
         "clsx",
         "react",
@@ -3627,6 +3692,15 @@
         "vitest"
       ]
     },
+    "mobile/src/test/demoAccountSwitcher.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
+        "react-dom/server",
+        "react-router-dom",
+        "vitest"
+      ]
+    },
     "mobile/src/test/exampleRing.test.tsx": {
       "module": "mobile/test",
       "exports": [],
@@ -3767,6 +3841,7 @@
         "isPriceRangeValid"
       ],
       "imports": [
+        "./searchText",
         "@/types"
       ]
     },
@@ -3800,6 +3875,15 @@
         "@/utils/swapSearch"
       ]
     },
+    "mobile/src/utils/publishBack.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "PublishBackAction",
+        "publishBackAction",
+        "shouldHoldPublishExit"
+      ],
+      "imports": []
+    },
     "mobile/src/utils/relativeTime.ts": {
       "module": "mobile/utils",
       "exports": [
@@ -3827,6 +3911,14 @@
       "imports": [
         "@/types"
       ]
+    },
+    "mobile/src/utils/searchText.ts": {
+      "module": "mobile/utils",
+      "exports": [
+        "matchesSearch",
+        "normalizeSearchText"
+      ],
+      "imports": []
     },
     "mobile/src/utils/swapRing.ts": {
       "module": "mobile/utils",
@@ -3888,6 +3980,7 @@
         "swapDraftPath"
       ],
       "imports": [
+        "./searchText",
         "@/services/routes/routes.service",
         "@/types"
       ]

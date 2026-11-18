@@ -17,6 +17,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   CurrentUser,
   CurrentUserPayload,
@@ -47,6 +48,10 @@ import {
   UploadImageDto,
   uploadImageSchema,
 } from './dto/upload-image.dto';
+import {
+  SimilarItemsQueryDto,
+  similarItemsQuerySchema,
+} from './dto/similar-items.dto';
 import { ItemsService } from './items.service';
 import { ItemResponseDto } from './mappers/item.mapper';
 
@@ -77,6 +82,24 @@ export class ItemsController {
     @CurrentUser() currentUser: CurrentUserPayload,
   ): Promise<ItemResponseDto[]> {
     return this.itemsService.findMine(currentUser.sub);
+  }
+
+  @Get('similar')
+  @UseGuards(JwtAuthGuard)
+  // Each call may pay for one OpenAI embedding: stricter than the global 120/min
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Active items of other users semantically close to a text query (fallback of an empty search)',
+  })
+  @ApiResponse({ status: 200, description: 'Items above the similarity threshold, most similar first' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async findSimilar(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query(new ZodValidationPipe(similarItemsQuerySchema)) query: SimilarItemsQueryDto,
+  ): Promise<ItemResponseDto[]> {
+    return this.itemsService.findSimilar(currentUser.sub, query);
   }
 
   @Get(':id')

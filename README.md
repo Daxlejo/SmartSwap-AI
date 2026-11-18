@@ -47,6 +47,14 @@ npm run build:apk                # build de Vite + npx cap sync android
 cd android
 .\gradlew.bat assembleDebug      # app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**APK release (Fase 5).** `versionName` 1.0.0, `versionCode` 1. Se firma con un keystore que vive fuera del repositorio. `mobile/android/keystore.properties` (en `.gitignore`) indica la ruta del keystore, el alias y las contraseñas. Si ese archivo no existe, `assembleRelease` genera un APK sin firmar. El build usa `mobile/.env.production` (también en `.gitignore`): `VITE_API_URL` apunta a Render por HTTPS, y el manifiesto tiene `usesCleartextTraffic="false"`, así que no se permite HTTP sin cifrar. **El APK no lleva contraseñas.** Se compila con `VITE_DEMO_PASSWORD` vacía, de modo que no aparece el selector de cuentas demo y en la sustentación se inicia sesión con cuentas reales.
+```powershell
+cd mobile
+npm run build:apk                # usa .env.production
+cd android
+.\gradlew.bat assembleRelease    # app/build/outputs/apk/release/app-release.apk
+```
 Más detalles para el equipo en [mobile/GUIA_EQUIPO.md](mobile/GUIA_EQUIPO.md).
 
 ### Verificación
@@ -75,7 +83,8 @@ Esto es lo que sabemos que no está bien y decidimos no arreglar antes de la ent
 3. **`AppContext` no tiene tests unitarios.** `mobile/src/context/AppContext.tsx` concentra la sesión, los objetos, las rutas, las notificaciones y sus estados de carga y error, pero ningún test lo ejercita directamente: en `configureSwap.test.tsx` se reemplaza con `vi.mock`. Los servicios que usa sí tienen tests.
 4. **Dependencia del plan free de Render.** El servicio se duerme cuando no tiene tráfico, y la primera petición paga el arranque en frío (Node + `prisma migrate deploy`), que puede tardar decenas de segundos. Tampoco hay cron: las propuestas vencidas (48 h) se marcan como `EXPIRED` de forma perezosa, cuando alguien lista o responde. La app muestra un aviso de servidor (`ServerStatusBanner`) y para la demo calentamos el servicio antes (ver el plan B del [guion](docs/demo/GUION.md)). La solución de fondo es un plan pago.
 5. **Dinero como entero por convención.** `items.estimatedValue` es `Float` en la base de datos y el DTO no exige `.int()` ([ADR-0002](docs/architecture/adr/0002-cop-como-entero.md)).
-6. **La regla de publicaciones repetidas compara títulos, no objetos.** No se puede verificar que dos publicaciones sean el mismo objeto físico: con otro nombre ("Cámara Canon" y "Canon EOS 2000D") el duplicado pasa, y dos objetos distintos con el mismo título se tratan como uno. Además, el chequeo no va en la misma transacción que la creación: si el gemelo se reserva justo mientras se publica, la publicación pasa.
+6. **La búsqueda sin tildes y "Artículos parecidos" filtran en memoria.** `GET /items?search=` normaliza la consulta y los textos en Node, y `GET /items/similar` calcula la similitud coseno en Node. Las dos leen como máximo los 500 artículos más recientes (`MAX_IN_MEMORY_ROWS`). Con un catálogo más grande hay que pasar la búsqueda a PostgreSQL (`unaccent` o una columna normalizada) y los embeddings a `pgvector`.
+7. **La regla de publicaciones repetidas compara títulos, no objetos.** No se puede verificar que dos publicaciones sean el mismo objeto físico: con otro nombre ("Cámara Canon" y "Canon EOS 2000D") el duplicado pasa, y dos objetos distintos con el mismo título se tratan como uno. Además, el chequeo no va en la misma transacción que la creación: si el gemelo se reserva justo mientras se publica, la publicación pasa.
 
 ## Reglas del repositorio
 Commits convencionales y atómicos (`feat(routes): …`, `docs(docs): …`). Cada fase va en un PR que se fusiona solo después de que se aprueba su puerta ([docs/plan/ORQUESTACION.md](docs/plan/ORQUESTACION.md)). Las reglas para agentes y colaboradores están en [CLAUDE.md](CLAUDE.md).

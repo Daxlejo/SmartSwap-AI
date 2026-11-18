@@ -68,6 +68,7 @@ android/.idea/
 *.aab
 *.jks
 *.keystore
+keystore.properties
 
 # TypeScript build cache
 *.tsbuildinfo
