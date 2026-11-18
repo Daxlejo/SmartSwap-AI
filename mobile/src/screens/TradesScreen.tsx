@@ -13,7 +13,7 @@ import { formatRelativeTime } from '@/utils/relativeTime';
 
 import { ItemImage } from '@/components/ui/ItemImage';
 import { useTranslation } from '@/hooks/useTranslation';
-import { toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
+import { routePhase, toReceivedProposals, type ReceivedProposal } from '@/utils/routeView';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SwapRing } from '@/components/SwapRing';
 import { toRingParticipants } from '@/utils/swapRing';
@@ -241,8 +241,8 @@ export const TradesScreen: React.FC = () => {
   const handleDeclineProposal = (id: string) => handleRespond(id, 'REJECTED');
 
   const inProgressRoutes = routes.filter((r) => {
-    const status = (r.status || '').toUpperCase();
-    return status !== 'CANCELLED' && status !== 'EXPIRED';
+    const phase = routePhase(r.status);
+    return phase !== 'cancelled' && phase !== 'expired';
   });
 
   // Enviadas: real proposals the current user initiated
@@ -523,14 +523,14 @@ export const TradesScreen: React.FC = () => {
               const recipient = route.participants[1] ?? route.participants[0];
               const offered = route.chainItems[0];
               const target = route.chainItems[route.chainItems.length - 1];
-              const upperStatus = (route.status || 'ACTIVE').toUpperCase();
-              const isPending = upperStatus === 'ACTIVE' || upperStatus === 'SUGGESTED';
+              const phase = routePhase(route.status);
+              const isPending = phase === 'pending';
               const isBusy = processingId === route.id;
               const statusBadge = isPending
                 ? { variant: 'warning' as const, label: t('trades.inReview') }
-                : upperStatus === 'CONFIRMED' || upperStatus === 'COMPLETED'
+                : phase === 'confirmed' || phase === 'completed'
                   ? { variant: 'success' as const, label: t('trades.status.accepted') }
-                  : upperStatus === 'EXPIRED'
+                  : phase === 'expired'
                     ? { variant: 'surface' as const, label: t('trades.expired') }
                     : { variant: 'error' as const, label: t('trades.cancelledTitle') };
 

@@ -27,12 +27,12 @@ export const toReceivedProposals = (routes: SwapRoute[], userId: string | undefi
       const ownStep = userId ? route.steps?.find((step) => step.userId === userId) : undefined;
       const offered = ownStep?.givesItem ?? route.chainItems[0];
       const target = ownStep?.receivesItem ?? route.chainItems[route.chainItems.length - 1];
-      const upperStatus = (route.status || 'ACTIVE').toUpperCase();
+      const phase = routePhase(route.status);
 
       let status: ReceivedProposal['status'] = 'pending';
-      if (upperStatus === 'CONFIRMED' || upperStatus === 'COMPLETED' || ownStep?.acceptance === 'ACCEPTED') {
+      if (phase === 'confirmed' || phase === 'completed' || ownStep?.acceptance === 'ACCEPTED') {
         status = 'accepted';
-      } else if (upperStatus === 'CANCELLED' || ownStep?.acceptance === 'DECLINED') {
+      } else if (phase === 'cancelled' || phase === 'expired' || ownStep?.acceptance === 'DECLINED') {
         status = 'declined';
       }
 
@@ -60,3 +60,26 @@ export const canProposeRoute = (route: Pick<SwapRoute, 'id'>): boolean => route.
 /** True only when there is a signed-in user and they are the giver; never for two missing ids. */
 export const isSignedInUser = (personId: string | undefined, userId: string | undefined): boolean =>
   Boolean(personId) && Boolean(userId) && personId === userId;
+
+/** Where a saved route stands, whatever spelling of the status the API or an older client used. */
+export type RoutePhase = 'pending' | 'confirmed' | 'completed' | 'expired' | 'cancelled';
+
+/**
+ * The API answers PROPOSED for a proposal still waiting for answers (RouteMapper.mapRouteStatus);
+ * the database names it ACTIVE or SUGGESTED. All three are pending, and so is a missing status.
+ * Only CANCELLED is a cancellation.
+ */
+export const routePhase = (status: string | undefined | null): RoutePhase => {
+  switch ((status ?? '').trim().toUpperCase()) {
+    case 'CONFIRMED':
+      return 'confirmed';
+    case 'COMPLETED':
+      return 'completed';
+    case 'EXPIRED':
+      return 'expired';
+    case 'CANCELLED':
+      return 'cancelled';
+    default:
+      return 'pending';
+  }
+};
