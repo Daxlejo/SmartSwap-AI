@@ -1,4 +1,4 @@
-﻿# Reporte de puerta â€” Fase 5
+# Reporte de puerta â€” Fase 5
 
 ```
 FASE: 5 â€” APK release firmado
