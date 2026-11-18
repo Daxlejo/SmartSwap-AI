@@ -21,6 +21,8 @@ enum ItemStatus {
   PENDING_SWAP
   SWAPPED
   ARCHIVED
+  /// Every participant accepted the route: the item is promised and waits for the handoff.
+  RESERVED
 }
 
 enum RouteStatus {

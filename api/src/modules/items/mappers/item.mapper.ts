@@ -115,6 +115,8 @@ export class ItemMapper {
         return 'PAUSED';
       case 'PENDING_SWAP':
         return 'PENDING_SWAP';
+      case 'RESERVED':
+        return 'RESERVED';
       case 'SWAPPED':
         return 'SWAPPED';
       default:

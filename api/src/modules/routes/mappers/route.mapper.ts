@@ -345,6 +345,8 @@ export class RouteMapper {
       case 'PENDING_SWAP':
       case 'LOCKED_IN_PROPOSAL':
         return 'LOCKED_IN_PROPOSAL';
+      case 'RESERVED':
+        return 'RESERVED';
       case 'SWAPPED':
       case 'TRADED':
         return 'TRADED';

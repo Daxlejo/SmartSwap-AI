@@ -609,6 +609,12 @@ export class RoutesService {
       );
 
       if (allAccepted) {
+        // Promised items leave Explore, search and new routes until the swap ends or is cancelled
+        await tx.item.updateMany({
+          where: { id: { in: involvedItemIds } },
+          data: { status: ItemStatus.RESERVED },
+        });
+
         const confirmedRoute = await tx.swapRoute.update({
           where: { id: route.id },
           data: {
@@ -623,7 +629,7 @@ export class RoutesService {
             type: 'ROUTE_CONFIRMED',
             badge: 'Trueque confirmado',
             title: `¡Ruta ${route.code} confirmada!`,
-            body: `Todos los participantes aceptaron la ruta circular ${route.code}. Ya pueden coordinar la entrega de sus artículos.`,
+            body: `Todos los participantes aceptaron la ruta circular ${route.code}. Abran el chat de entrega para acordar fecha y lugar.`,
             routeId: route.id,
           })),
         });
@@ -769,8 +775,9 @@ export class RoutesService {
   }
 
   /**
-   * Lets the initiator withdraw a pending proposal: the route becomes `CANCELLED`, every locked item
-   * returns to `AVAILABLE`, and the other participants are notified.
+   * Lets the initiator withdraw a pending proposal, or any participant call off a confirmed swap
+   * before it completes: the route becomes `CANCELLED`, every locked or reserved item returns to
+   * `AVAILABLE`, and the other participants are notified.
    */
   async cancelRoute(userId: string, routeId: string): Promise<SwapRouteDto> {
     const cancelledRoute = await this.prisma.$transaction(async (tx) => {
@@ -784,27 +791,33 @@ export class RoutesService {
         throw new NotFoundException(`SwapRoute "${routeId}" not found`);
       }
 
-      if (route.initiatorId !== userId) {
+      const isConfirmed = route.status === RouteStatus.CONFIRMED;
+      const isParticipant = route.steps.some((step) => step.userId === userId);
+
+      if (isConfirmed ? !isParticipant : route.initiatorId !== userId) {
         throw new ForbiddenException(
-          'Only the route initiator can cancel this proposal',
+          isConfirmed
+            ? 'Only a participant can cancel this swap'
+            : 'Only the route initiator can cancel this proposal',
         );
       }
 
-      if (!this.isRouteInProposedState(route.status)) {
+      if (!isConfirmed && !this.isRouteInProposedState(route.status)) {
         throw new ConflictException(
           `Cannot cancel a swap route with status "${RouteMapper.mapRouteStatus(route.status)}"`,
         );
       }
 
+      // Items go back to the catalog before the route is re-read, so the answer shows them active
+      await tx.item.updateMany({
+        where: { id: { in: this.collectUniqueItemIds(route.steps) } },
+        data: { status: ItemStatus.AVAILABLE },
+      });
+
       const updated = await tx.swapRoute.update({
         where: { id: route.id },
         data: { status: RouteStatus.CANCELLED },
         include: ROUTE_RELATIONS_INCLUDE,
-      });
-
-      await tx.item.updateMany({
-        where: { id: { in: this.collectUniqueItemIds(route.steps) } },
-        data: { status: ItemStatus.AVAILABLE },
       });
 
       const recipients = Array.from(
@@ -816,9 +829,11 @@ export class RoutesService {
           data: recipients.map((uid) => ({
             userId: uid,
             type: 'ROUTE_CANCELLED',
-            badge: 'Ruta cancelada',
-            title: `Ruta ${route.code} cancelada`,
-            body: `El iniciador retiró la propuesta ${route.code}. Tus artículos han vuelto a estar activos en el catálogo.`,
+            badge: isConfirmed ? 'Canje cancelado' : 'Ruta cancelada',
+            title: isConfirmed ? `Canje ${route.code} cancelado` : `Ruta ${route.code} cancelada`,
+            body: isConfirmed
+              ? `Un participante canceló el canje ${route.code} antes de la entrega. Tus artículos han vuelto a estar activos en el catálogo.`
+              : `El iniciador retiró la propuesta ${route.code}. Tus artículos han vuelto a estar activos en el catálogo.`,
             routeId: route.id,
           })),
         });

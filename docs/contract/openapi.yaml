@@ -1241,7 +1241,9 @@ paths:
   /api/v1/routes/{id}/cancel:
     post:
       operationId: RoutesController_cancelRoute
-      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      summary: >-
+        Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its
+        items to the catalog
       parameters:
         - name: id
           required: true
@@ -1254,11 +1256,11 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Not the route initiator
+          description: Not the route initiator (pending) or not a participant (confirmed)
         '404':
           description: Swap route not found
         '409':
-          description: Route is no longer pending
+          description: Route is already completed, cancelled or expired
       tags:
         - Routes
       security:
@@ -1437,7 +1439,9 @@ paths:
   /api/v1/proposals/{id}/cancel:
     post:
       operationId: ProposalsController_cancelRoute
-      summary: Cancel a pending swap route proposal (initiator only) and unlock its items
+      summary: >-
+        Cancel a pending proposal (initiator) or a confirmed swap before it completes (any participant) and return its
+        items to the catalog
       parameters:
         - name: id
           required: true
@@ -1450,11 +1454,11 @@ paths:
         '401':
           description: Unauthorized
         '403':
-          description: Not the route initiator
+          description: Not the route initiator (pending) or not a participant (confirmed)
         '404':
           description: Swap route not found
         '409':
-          description: Route is no longer pending
+          description: Route is already completed, cancelled or expired
       tags:
         - proposals
       security:
