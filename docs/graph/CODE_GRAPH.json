@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-17T15:02:07.562Z",
+  "generatedAt": "2026-11-17T15:41:02.915Z",
   "stats": {
-    "totalFiles": 173,
+    "totalFiles": 176,
     "apiFiles": 69,
-    "mobileFiles": 104,
+    "mobileFiles": 107,
     "endpointsCount": 46
   },
   "endpoints": [
@@ -545,6 +545,11 @@
     ],
     "mobile/main.tsx": [
       "mobile/src/main.tsx"
+    ],
+    "mobile/native": [
+      "mobile/src/native/index.ts",
+      "mobile/src/native/serverWarmup.ts",
+      "mobile/src/native/systemBars.ts"
     ],
     "mobile/router.tsx": [
       "mobile/src/router.tsx"
@@ -2651,9 +2656,46 @@
         "./context/ThemeContext",
         "./i18n",
         "./index.css",
+        "./native",
         "./services/storage/preferencesStorage",
         "react",
         "react-dom/client"
+      ]
+    },
+    "mobile/src/native/index.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "initNative"
+      ],
+      "imports": [
+        "./serverWarmup",
+        "./systemBars"
+      ]
+    },
+    "mobile/src/native/serverWarmup.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "WARMUP_MIN_INTERVAL_MS",
+        "createWarmup",
+        "startServerWarmup"
+      ],
+      "imports": [
+        "@/services/health/health.service",
+        "@capacitor/app",
+        "@capacitor/core"
+      ]
+    },
+    "mobile/src/native/systemBars.ts": {
+      "module": "mobile/native",
+      "exports": [
+        "FALLBACK_SURFACE",
+        "ThemeBarsOptions",
+        "readThemeBars",
+        "startSystemBarsSync",
+        "surfaceTokenToHex"
+      ],
+      "imports": [
+        "@capacitor/core"
       ]
     },
     "mobile/src/router.tsx": {
