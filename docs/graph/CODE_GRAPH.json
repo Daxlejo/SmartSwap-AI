@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-18T01:52:30.881Z",
+  "generatedAt": "2026-11-18T02:34:09.699Z",
   "stats": {
-    "totalFiles": 181,
+    "totalFiles": 182,
     "apiFiles": 70,
-    "mobileFiles": 111,
+    "mobileFiles": 112,
     "endpointsCount": 46
   },
   "endpoints": [
@@ -595,6 +595,7 @@
     "mobile/test": [
       "mobile/src/test/avatarIdentity.test.tsx",
       "mobile/src/test/configureSwap.test.tsx",
+      "mobile/src/test/demoAccountSwitcher.test.tsx",
       "mobile/src/test/exampleRing.test.tsx",
       "mobile/src/test/formErrors.test.tsx",
       "mobile/src/test/languageSelector.test.tsx",
@@ -3376,6 +3377,15 @@
         "@/services/items/items.service",
         "@/types",
         "@/utils/swapSearch",
+        "react-dom/server",
+        "react-router-dom",
+        "vitest"
+      ]
+    },
+    "mobile/src/test/demoAccountSwitcher.test.tsx": {
+      "module": "mobile/test",
+      "exports": [],
+      "imports": [
         "react-dom/server",
         "react-router-dom",
         "vitest"
